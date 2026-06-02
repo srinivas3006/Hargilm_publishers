@@ -1,31 +1,32 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, BookOpen, Mail, Lock, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Eye, EyeOff, Mail, Lock, User, BookOpen } from "lucide-react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import toast from 'react-hot-toast';
+} from "@/components/ui/select";
+import toast from "react-hot-toast";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    accountType: 'user',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    accountType: "user",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -35,12 +36,12 @@ export default function RegisterPage() {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Passwords do not match");
       return;
     }
 
     if (!agreeTerms) {
-      toast.error('Please agree to the terms and conditions');
+      toast.error("Please agree to the terms and conditions");
       return;
     }
 
@@ -49,10 +50,10 @@ export default function RegisterPage() {
     try {
       // Simulate registration API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success('Account created successfully! Please log in.');
-      router.push('/login');
+      toast.success("Account created successfully! Please log in.");
+      router.push("/login");
     } catch (error) {
-      toast.error('Something went wrong. Please try again.');
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -66,9 +67,10 @@ export default function RegisterPage() {
         <div
           className="absolute inset-0 opacity-20"
           style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundImage:
+              "url(https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
           }}
         />
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-primary-foreground p-12">
@@ -77,8 +79,8 @@ export default function RegisterPage() {
             Join Our Community
           </h2>
           <p className="text-center text-primary-foreground/80 max-w-md">
-            Whether you&apos;re a reader or an aspiring author, create an account to unlock
-            a world of possibilities.
+            Whether you&apos;re a reader or an aspiring author, create an
+            account to unlock a world of possibilities.
           </p>
         </div>
       </div>
@@ -92,10 +94,20 @@ export default function RegisterPage() {
         >
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2 mb-6">
-              <BookOpen className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-serif font-bold text-foreground">Harglim</span>
+              <Image
+                src="/logo.png"
+                alt="Harglim"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-2xl font-serif font-bold text-foreground">
+                Harglim
+              </span>
             </Link>
-            <h1 className="text-2xl font-bold text-foreground mb-2">Create Account</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Create Account
+            </h1>
             <p className="text-muted-foreground">
               Join thousands of readers and authors
             </p>
@@ -112,7 +124,9 @@ export default function RegisterPage() {
                   placeholder="John Doe"
                   className="pl-10"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -128,7 +142,9 @@ export default function RegisterPage() {
                   placeholder="you@example.com"
                   className="pl-10"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -138,7 +154,9 @@ export default function RegisterPage() {
               <Label htmlFor="accountType">Account Type</Label>
               <Select
                 value={formData.accountType}
-                onValueChange={(value) => setFormData({ ...formData, accountType: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, accountType: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select account type" />
@@ -156,11 +174,13 @@ export default function RegisterPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Create a password"
                   className="pl-10 pr-10"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   required
                 />
                 <button
@@ -168,7 +188,11 @@ export default function RegisterPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -179,11 +203,16 @@ export default function RegisterPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Confirm your password"
                   className="pl-10"
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
                   required
                 />
               </div>
@@ -197,32 +226,40 @@ export default function RegisterPage() {
                 className="mt-0.5"
               />
               <Label htmlFor="terms" className="text-sm cursor-pointer">
-                I agree to the{' '}
+                I agree to the{" "}
                 <Link href="/terms" className="text-primary hover:underline">
                   Terms of Service
-                </Link>{' '}
-                and{' '}
+                </Link>{" "}
+                and{" "}
                 <Link href="/privacy" className="text-primary hover:underline">
                   Privacy Policy
                 </Link>
               </Label>
             </div>
 
-            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   Creating account...
                 </span>
               ) : (
-                'Create Account'
+                "Create Account"
               )}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link href="/login" className="text-primary font-medium hover:underline">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="text-primary font-medium hover:underline"
+            >
               Sign in
             </Link>
           </div>

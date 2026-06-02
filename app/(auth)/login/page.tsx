@@ -1,22 +1,23 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, BookOpen, Mail, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useAuthStore } from '@/store/auth-store';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Eye, EyeOff, Mail, Lock, BookOpen } from "lucide-react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuthStore } from "@/store/auth-store";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,26 +32,35 @@ export default function LoginPage() {
 
       // Mock user based on email
       const mockUser = {
-        _id: 'user-1',
-        name: email.includes('admin') ? 'Admin User' : email.includes('author') ? 'Author User' : 'John Doe',
+        _id: "user-1",
+        name: email.includes("admin")
+          ? "Admin User"
+          : email.includes("author")
+            ? "Author User"
+            : "John Doe",
         email,
-        role: (email.includes('admin') ? 'admin' : email.includes('author') ? 'author' : 'user') as 'admin' | 'author' | 'user',
-        profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+        role: (email.includes("admin")
+          ? "admin"
+          : email.includes("author")
+            ? "author"
+            : "user") as "admin" | "author" | "user",
+        profileImage:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
       };
 
-      login(mockUser, 'mock-jwt-token');
-      toast.success('Welcome back!');
-      
+      login(mockUser, "mock-jwt-token");
+      toast.success("Welcome back!");
+
       // Redirect based on role
-      if (mockUser.role === 'admin') {
-        router.push('/admin');
-      } else if (mockUser.role === 'author') {
-        router.push('/author');
+      if (mockUser.role === "admin") {
+        router.push("/admin");
+      } else if (mockUser.role === "author") {
+        router.push("/author");
       } else {
-        router.push('/dashboard');
+        router.push("/dashboard");
       }
     } catch (error) {
-      toast.error('Invalid email or password');
+      toast.error("Invalid email or password");
     } finally {
       setIsLoading(false);
     }
@@ -67,10 +77,20 @@ export default function LoginPage() {
         >
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2 mb-6">
-              <BookOpen className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-serif font-bold text-foreground">Harglim</span>
+              <Image
+                src="/logo.svg"
+                alt="Harglim"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-2xl font-serif font-bold text-foreground">
+                Harglim
+              </span>
             </Link>
-            <h1 className="text-2xl font-bold text-foreground mb-2">Welcome Back</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Welcome Back
+            </h1>
             <p className="text-muted-foreground">
               Sign in to your account to continue
             </p>
@@ -96,7 +116,10 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -104,7 +127,7 @@ export default function LoginPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   className="pl-10 pr-10"
                   value={password}
@@ -116,7 +139,11 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -132,28 +159,39 @@ export default function LoginPage() {
               </Label>
             </div>
 
-            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   Signing in...
                 </span>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-primary font-medium hover:underline">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/register"
+              className="text-primary font-medium hover:underline"
+            >
               Sign up
             </Link>
           </div>
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
             <p>Demo credentials:</p>
-            <p>User: user@example.com | Admin: admin@example.com | Author: author@example.com</p>
+            <p>
+              User: user@example.com | Admin: admin@example.com | Author:
+              author@example.com
+            </p>
             <p>Any password works</p>
           </div>
         </motion.div>
@@ -165,9 +203,10 @@ export default function LoginPage() {
         <div
           className="absolute inset-0 opacity-20"
           style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundImage:
+              "url(https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
           }}
         />
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-primary-foreground p-12">
@@ -176,8 +215,8 @@ export default function LoginPage() {
             Your Gateway to Amazing Books
           </h2>
           <p className="text-center text-primary-foreground/80 max-w-md">
-            Discover thousands of books from talented authors worldwide. Read, review, and
-            connect with the literary community.
+            Discover thousands of books from talented authors worldwide. Read,
+            review, and connect with the literary community.
           </p>
         </div>
       </div>

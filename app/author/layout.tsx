@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
-  BookOpen,
   FileText,
   DollarSign,
   BarChart3,
@@ -16,6 +15,7 @@ import {
   X,
   PenTool,
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
@@ -57,14 +57,20 @@ export default function AuthorLayout({
       <aside
         className={cn(
           "fixed left-0 top-0 z-50 h-full w-64 transform bg-card border-r transition-transform duration-300 lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center justify-between border-b px-4">
             <Link href="/" className="flex items-center gap-2">
-              <PenTool className="h-6 w-6 text-primary" />
+              <Image
+                src="/logo.svg"
+                alt="Harglim"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
               <span className="font-bold text-lg">Author Portal</span>
             </Link>
             <Button
@@ -103,7 +109,7 @@ export default function AuthorLayout({
                         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                         isActive
                           ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
                       onClick={() => setSidebarOpen(false)}
                     >
