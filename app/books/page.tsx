@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Search, Filter, Grid, List, SlidersHorizontal, X } from 'lucide-react';
@@ -143,7 +143,7 @@ const priceRanges = [
   { label: 'Above ₹800', min: 800, max: 10000 },
 ];
 
-export default function BooksPage() {
+function BooksContent() {
   const searchParams = useSearchParams();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -493,5 +493,13 @@ export default function BooksPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BooksPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading books...</div>}>
+      <BooksContent />
+    </Suspense>
   );
 }

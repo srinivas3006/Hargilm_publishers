@@ -123,7 +123,7 @@ export function BookCard({
     <Link href={`/books/${book.slug}`}>
       <motion.div
         whileHover={{ y: -6 }}
-        className="group bg-card rounded-xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-2xl transition-all duration-300"
+        className="group bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/30 shadow-sm hover:shadow-2xl transition-all duration-500"
       >
         {/* Cover Image */}
         <div className="relative aspect-[2/3] overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
@@ -168,7 +168,7 @@ export function BookCard({
             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
               <Button
                 size="icon"
-                className="h-11 w-11 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg"
+                className="h-11 w-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm transition-transform hover:scale-110"
                 onClick={handleAddToCart}
               >
                 <ShoppingCart className="h-5 w-5" />
@@ -176,7 +176,7 @@ export function BookCard({
               </Button>
               <Button
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white hover:bg-primary/10 text-primary shadow-lg"
+                className="h-11 w-11 rounded-full bg-white/90 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground text-primary shadow-lg transition-transform hover:scale-110"
                 onClick={(e) => e.preventDefault()}
               >
                 <Heart className="h-5 w-5" />
@@ -184,7 +184,7 @@ export function BookCard({
               </Button>
               <Button
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white hover:bg-primary/10 text-primary shadow-lg"
+                className="h-11 w-11 rounded-full bg-white/90 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground text-primary shadow-lg transition-transform hover:scale-110"
               >
                 <Eye className="h-5 w-5" />
                 <span className="sr-only">Quick view</span>

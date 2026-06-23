@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   Facebook,
   Twitter,
@@ -59,6 +62,14 @@ const socialLinks = [
 ];
 
 export function Footer() {
+  const pathname = usePathname();
+  const isHiddenRoute = 
+    pathname?.startsWith('/admin') || 
+    pathname?.startsWith('/login') ||
+    pathname?.startsWith('/register');
+
+  if (isHiddenRoute) return null;
+
   return (
     <footer className="bg-black text-white">
       {/* Newsletter Section */}
@@ -97,7 +108,7 @@ export function Footer() {
                 alt="Harglim Publishers"
                 width={40}
                 height={40}
-                className="object-contain"
+                className="w-10 h-10 object-contain"
               />
               <span className="font-serif text-xl font-bold">
                 Harglim Publishers

@@ -2,8 +2,10 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { CreditCard, QrCode, CheckCircle2, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/store/cart-store';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const defaultAddress = {
   fullName: '',
@@ -28,6 +30,8 @@ export default function CheckoutStepPage() {
   const [address, setAddress] = useState(defaultAddress);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'cod'>('card');
   const [submitting, setSubmitting] = useState(false);
+  const [showUpiModal, setShowUpiModal] = useState(false);
+  const [upiStatus, setUpiStatus] = useState<'waiting' | 'success'>('waiting');
 
   useEffect(() => {
     if (!items.length) {
@@ -42,10 +46,33 @@ export default function CheckoutStepPage() {
       return;
     }
 
+    if (paymentMethod === 'upi') {
+      setShowUpiModal(true);
+      return;
+    }
+
+    processOrder();
+  };
+
+  const processOrder = async () => {
     setSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
-    clearCart();
-    router.push('/checkout/success');
+    
+    // Generate mock order details
+    const orderId = `ORD-${Date.now().toString().slice(-6)}`;
+    const paymentId = paymentMethod === 'cod' ? 'COD' : `PAY-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    
+    // We'll pass it via URL parameters since we have no DB yet.
+    // NOTE: We do not clearCart() here to avoid triggering the useEffect redirect to /cart.
+    // The cart will be cleared on the success page.
+    router.push(`/checkout/success?orderId=${orderId}&paymentId=${paymentId}`);
+  };
+
+  const handleUpiSuccess = async () => {
+    setUpiStatus('success');
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setShowUpiModal(false);
+    processOrder();
   };
 
   return (
@@ -140,11 +167,11 @@ export default function CheckoutStepPage() {
             <div className="space-y-4 rounded-3xl border border-border bg-background p-4">
               <h2 className="text-lg font-semibold">Payment Method</h2>
               <div className="grid gap-3 sm:grid-cols-3">
-                {[
+                {([
                   { value: 'card', label: 'Card Payment' },
                   { value: 'upi', label: 'UPI' },
                   { value: 'cod', label: 'Cash on Delivery' },
-                ] as const.map((method) => (
+                ] as const).map((method) => (
                   <button
                     type="button"
                     key={method.value}
@@ -215,6 +242,71 @@ export default function CheckoutStepPage() {
           </aside>
         </form>
       </div>
+
+      {/* UPI Modal Simulation */}
+      <AnimatePresence>
+        {showUpiModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-sm rounded-3xl bg-card border border-border p-6 shadow-2xl text-center"
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-4"
+                onClick={() => {
+                  setShowUpiModal(false);
+                  setUpiStatus('waiting');
+                }}
+                disabled={upiStatus === 'success'}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+
+              {upiStatus === 'waiting' ? (
+                <>
+                  <div className="mx-auto w-16 h-16 bg-primary/10 text-primary flex items-center justify-center rounded-2xl mb-4">
+                    <QrCode className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Scan to Pay</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Amount: <span className="font-bold text-foreground">₹{total.toFixed(2)}</span>
+                  </p>
+                  
+                  <div className="aspect-square bg-white w-48 mx-auto rounded-xl border-2 border-dashed border-border flex items-center justify-center mb-6">
+                    <QrCode className="h-24 w-24 text-muted-foreground/30" />
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Open your UPI app (GPay, PhonePe, Paytm) and scan this QR code, or click simulate below.
+                  </p>
+
+                  <Button className="w-full" onClick={handleUpiSuccess}>
+                    Simulate Payment Success
+                  </Button>
+                </>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="py-8"
+                >
+                  <div className="mx-auto w-20 h-20 bg-green-500/10 text-green-500 flex items-center justify-center rounded-full mb-6">
+                    <CheckCircle2 className="h-10 w-10" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Payment Successful!</h3>
+                  <p className="text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Redirecting to confirmation...
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  BookOpen,
   X,
   Shield,
   Tag,

@@ -183,7 +183,7 @@ export default function PublishPage() {
               from editing to distribution, so you can focus on what you do best - writing.
             </motion.p>
             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/dashboard/submit">
+              <Link href="/author/manuscripts/new">
                 <Button size="lg" variant="secondary" className="text-base px-8 h-12 font-semibold">
                   Submit Your Manuscript
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -351,11 +351,8 @@ export default function PublishPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/dashboard/submit">
-                  <Button
-                    className="w-full"
-                    variant={pkg.highlighted ? 'default' : 'outline'}
-                  >
+                <Link href="/author/manuscripts/new">
+                  <Button className="w-full" variant="default" size="lg">
                     Get Started
                   </Button>
                 </Link>
@@ -430,7 +427,7 @@ export default function PublishPage() {
               Join hundreds of successful authors who have published with Harglim.
               Your story deserves to be told.
             </p>
-            <Link href="/dashboard/submit">
+            <Link href="/author/manuscripts/new">
               <Button size="lg" variant="secondary" className="text-base px-8 h-12 font-semibold">
                 Start Your Publishing Journey
                 <ArrowRight className="ml-2 h-5 w-5" />

@@ -24,41 +24,47 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!email.trim() || !password.trim()) {
+      toast.error("Please enter both email and password.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Simulate login API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-      // Mock user based on email
+      const normalizedEmail = email.toLowerCase();
+      const role = normalizedEmail.includes("admin")
+        ? "admin"
+        : normalizedEmail.includes("author")
+          ? "author"
+          : "reader";
+
       const mockUser = {
-        _id: "user-1",
-        name: email.includes("admin")
-          ? "Admin User"
-          : email.includes("author")
-            ? "Author User"
-            : "John Doe",
+        _id: role === "admin" ? "admin-1" : role === "author" ? "author-1" : "reader-1",
+        id: role === "admin" ? "admin-1" : role === "author" ? "author-1" : "reader-1",
+        name: role === "admin" ? "Admin User" : role === "author" ? "Author User" : "John Doe",
         email,
-        role: (email.includes("admin")
-          ? "admin"
-          : email.includes("author")
-            ? "author"
-            : "user") as "admin" | "author" | "user",
+        role,
         profileImage:
           "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+        emailVerified: true,
+        isActive: true,
       };
 
       login(mockUser, "mock-jwt-token");
-      toast.success("Welcome back!");
+      toast.success("Welcome back! Redirecting to your dashboard.", {
+        duration: 2000,
+        position: "top-center",
+      });
 
-      // Redirect based on role
-      if (mockUser.role === "admin") {
-        router.push("/admin");
-      } else if (mockUser.role === "author") {
-        router.push("/author");
-      } else {
-        router.push("/dashboard");
-      }
+      setTimeout(() => {
+        if (role === "admin") router.replace("/admin");
+        else if (role === "author") router.replace("/author");
+        else router.replace("/dashboard");
+      }, 300);
     } catch (error) {
       toast.error("Invalid email or password");
     } finally {

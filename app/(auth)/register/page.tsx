@@ -35,6 +35,11 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast.error("Please provide your full name and email.");
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -48,10 +53,12 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // Simulate registration API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success("Account created successfully! Please log in.");
-      router.push("/login");
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      toast.success("Account created successfully! Please log in.", {
+        duration: 3000,
+        position: "top-center",
+      });
+      setTimeout(() => router.replace("/login"), 500);
     } catch (error) {
       toast.error("Something went wrong. Please try again.");
     } finally {

@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BookCard } from "@/components/books/book-card";
 import type { Book } from "@/types";
+import toast from "react-hot-toast";
 
 // Mock data for demonstration
 const mockFeaturedBooks: Book[] = [
@@ -530,40 +531,39 @@ export default function Home() {
       {/* Newsletter */}
       <section className="py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Newsletter */}
-          <section className="py-24 bg-background">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <motion.div
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeInUp}
-                className="bg-gradient-to-br from-card via-card to-card/50 rounded-3xl border border-border hover:border-primary/50 hover:shadow-2xl transition-all p-10 md:p-16 text-center"
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+            className="bg-gradient-to-br from-card via-card to-card/50 rounded-3xl border border-border hover:border-primary/50 hover:shadow-2xl transition-all p-10 md:p-16 text-center"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">
+              Stay Updated
+            </h2>
+            <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+              Get notified about new releases, author interviews, and
+              exclusive offers.
+            </p>
+            <form 
+              className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto"
+              onSubmit={(e) => { e.preventDefault(); toast.success('Subscribed successfully!'); }}
+            >
+              <input
+                type="email"
+                required
+                placeholder="Enter your email"
+                className="flex-1 px-6 py-4 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+              />
+              <Button
+                type="submit"
+                size="lg"
+                className="px-10 h-12 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all"
               >
-                <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">
-                  Stay Updated
-                </h2>
-                <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
-                  Get notified about new releases, author interviews, and
-                  exclusive offers.
-                </p>
-                <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    className="flex-1 px-6 py-4 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                  />
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="px-10 h-12 font-bold bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
-                  >
-                    Subscribe
-                  </Button>
-                </form>
-              </motion.div>
-            </div>
-          </section>
+                Subscribe
+              </Button>
+            </form>
+          </motion.div>
         </div>
       </section>
     </div>

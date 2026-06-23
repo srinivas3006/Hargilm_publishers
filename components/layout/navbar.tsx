@@ -28,6 +28,7 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
 import { cn } from "@/lib/utils";
+import { useHydration } from "@/hooks/useHydration";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -45,6 +46,13 @@ export function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuthStore();
   const itemCount = useCartStore((state) => state.itemCount());
+  const isHydrated = useHydration();
+
+  // Hide Navbar only on admin and auth routes
+  const isHiddenRoute = 
+    pathname?.startsWith('/admin') || 
+    pathname?.startsWith('/login') ||
+    pathname?.startsWith('/register');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -75,6 +83,8 @@ export function Navbar() {
     window.location.href = "/";
   };
 
+  if (isHiddenRoute) return null;
+
   return (
     <header
       className={cn(
@@ -93,7 +103,7 @@ export function Navbar() {
               alt="Harglim Publishers"
               width={40}
               height={40}
-              className="object-contain"
+              className="w-10 h-10 object-contain"
             />
             <span className="font-serif text-xl font-bold text-foreground">
               Harglim Publishers
@@ -132,7 +142,7 @@ export function Navbar() {
             <Link href="/checkout/cart">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-5 w-5" />
-                {itemCount > 0 && (
+                {isHydrated && itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
                     {itemCount > 9 ? "9+" : itemCount}
                   </span>

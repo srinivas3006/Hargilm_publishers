@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   CreditCard,
+  BookOpen,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ export default function DashboardLayout({
   const { user, logout } = useAuthStore();
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="flex bg-muted/30 min-h-[calc(100vh-4rem)]">
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -57,27 +58,16 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-full w-64 transform bg-card border-r transition-transform duration-300 lg:translate-x-0",
+          "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 transform bg-card border-r transition-transform duration-300 lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center justify-between border-b px-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/logo.svg"
-                alt="Harglim"
-                width={32}
-                height={32}
-                className="object-contain"
-              />
-              <span className="font-bold text-lg">Harglim</span>
-            </Link>
+          {/* Mobile Close Button */}
+          <div className="flex items-center justify-end p-2 lg:hidden">
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
@@ -143,7 +133,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <div className="lg:pl-64">
+      <div className="flex-1 lg:pl-64 flex flex-col min-h-[calc(100vh-4rem)]">
         {/* Mobile Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 lg:hidden">
           <Button
