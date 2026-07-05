@@ -15,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/auth-store";
+import { useState, useEffect } from "react";
+import api from "@/lib/api";
 
 const stats = [
   {
@@ -114,6 +116,37 @@ const getStatusColor = (status: string) => {
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const [dynamicStats, setDynamicStats] = useState(stats);
+  const [dynamicOrders, setDynamicOrders] = useState(recentOrders);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user?._id) return;
+      try {
+        const [statsRes, ordersRes] = await Promise.all([
+          api.get(`/users/stats`),
+          api.get(`/users/orders?limit=3&sort=-createdAt`)
+        ]);
+        
+        if (statsRes.data?.success) {
+          const d = statsRes.data.data;
+          setDynamicStats([
+            { ...stats[0], value: d.totalOrders?.toString() || "0" },
+            { ...stats[1], value: d.totalWishlistItems?.toString() || "0" },
+            { ...stats[2], value: d.booksOwned?.toString() || "0" },
+            { ...stats[3], value: `₹${d.totalSpent?.toLocaleString() || "0"}` },
+          ]);
+        }
+        
+        if (ordersRes.data?.success) {
+          setDynamicOrders(ordersRes.data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      }
+    };
+    fetchData();
+  }, [user]);
 
   return (
     <div className="space-y-8">
@@ -129,7 +162,7 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
+        {dynamicStats.map((stat, index) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
@@ -169,9 +202,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentOrders.map((order) => (
+              {dynamicOrders.map((order: any) => (
                 <div
-                  key={order.id}
+                  key={order.id || order._id}
                   className="flex items-center justify-between rounded-lg border p-4"
                 >
                   <div className="flex items-center gap-4">
@@ -179,20 +212,20 @@ export default function DashboardPage() {
                       <Package className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-medium">{order.id}</p>
+                      <p className="font-medium">{order.orderNumber || order.id}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-3.5 w-3.5" />
-                        {order.date}
+                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : order.date}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">₹{order.total}</p>
+                    <p className="font-semibold">₹{order.totalAmount || order.total}</p>
                     <Badge
                       variant="secondary"
-                      className={getStatusColor(order.status)}
+                      className={getStatusColor(order.orderStatus || order.status)}
                     >
-                      {order.status}
+                      {order.orderStatus || order.status}
                     </Badge>
                   </div>
                 </div>

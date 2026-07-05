@@ -31,78 +31,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const books = [
-  {
-    id: 1,
-    title: "The Art of Programming",
-    cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=100&h=150&fit=crop",
-    category: "Technology",
-    publishDate: "2023-06-15",
-    price: 499,
-    sales: 234,
-    revenue: 116766,
-    views: 12500,
-    rating: 4.5,
-    reviews: 89,
-    status: "Published",
-  },
-  {
-    id: 2,
-    title: "Business Strategy 101",
-    cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=100&h=150&fit=crop",
-    category: "Business",
-    publishDate: "2023-09-20",
-    price: 399,
-    sales: 189,
-    revenue: 75411,
-    views: 9800,
-    rating: 4.2,
-    reviews: 67,
-    status: "Published",
-  },
-  {
-    id: 3,
-    title: "Creative Writing Masterclass",
-    cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=100&h=150&fit=crop",
-    category: "Literature",
-    publishDate: "2023-11-10",
-    price: 349,
-    sales: 156,
-    revenue: 54444,
-    views: 7200,
-    rating: 4.8,
-    reviews: 45,
-    status: "Published",
-  },
-  {
-    id: 4,
-    title: "Finance for Everyone",
-    cover: "https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=100&h=150&fit=crop",
-    category: "Finance",
-    publishDate: "2024-01-05",
-    price: 549,
-    sales: 78,
-    revenue: 42822,
-    views: 4500,
-    rating: 4.0,
-    reviews: 23,
-    status: "Published",
-  },
-  {
-    id: 5,
-    title: "Marketing Essentials",
-    cover: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=100&h=150&fit=crop",
-    category: "Business",
-    publishDate: "2024-01-15",
-    price: 449,
-    sales: 45,
-    revenue: 20205,
-    views: 2100,
-    rating: 4.3,
-    reviews: 12,
-    status: "Published",
-  },
-];
+// TODO: Fetch from API
+const books: any[] = [];
 
 export default function AuthorBooksPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,7 +44,7 @@ export default function AuthorBooksPage() {
   const totalSales = books.reduce((sum, book) => sum + book.sales, 0);
   const totalRevenue = books.reduce((sum, book) => sum + book.revenue, 0);
   const avgRating =
-    books.reduce((sum, book) => sum + book.rating, 0) / books.length;
+    books.length > 0 ? books.reduce((sum, book) => sum + book.rating, 0) / books.length : 0;
 
   return (
     <div className="space-y-6">

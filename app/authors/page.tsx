@@ -8,83 +8,8 @@ import { BookOpen, ExternalLink, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { Author } from '@/types';
 
-const mockAuthors: Author[] = [
-  {
-    _id: 'a1',
-    name: 'Priya Sharma',
-    email: 'priya@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop',
-    bio: 'Award-winning author known for evocative storytelling and deeply emotional narratives that touch the heart.',
-    bookCount: 5,
-    socialLinks: {
-      twitter: 'https://twitter.com',
-      instagram: 'https://instagram.com',
-    },
-  },
-  {
-    _id: 'a2',
-    name: 'Rahul Mehta',
-    email: 'rahul@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop',
-    bio: 'Technology enthusiast and author who brings complex tech concepts to life through compelling fiction.',
-    bookCount: 3,
-    socialLinks: {
-      linkedin: 'https://linkedin.com',
-    },
-  },
-  {
-    _id: 'a3',
-    name: 'Anjali Nair',
-    email: 'anjali@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop',
-    bio: 'Bestselling romance author whose books have touched millions of hearts around the world.',
-    bookCount: 7,
-    socialLinks: {
-      instagram: 'https://instagram.com',
-      facebook: 'https://facebook.com',
-    },
-  },
-  {
-    _id: 'a4',
-    name: 'Dr. Vikram Singh',
-    email: 'vikram@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop',
-    bio: 'Psychologist and wellness expert helping readers transform their lives through mindfulness.',
-    bookCount: 4,
-  },
-  {
-    _id: 'a5',
-    name: 'Arjun Reddy',
-    email: 'arjun@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop',
-    bio: 'Fantasy writer creating immersive worlds filled with magic, adventure, and unforgettable characters.',
-    bookCount: 2,
-  },
-  {
-    _id: 'a6',
-    name: 'Sneha Kapoor',
-    email: 'sneha@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop',
-    bio: 'Business strategist and entrepreneur sharing insights on building successful ventures.',
-    bookCount: 6,
-  },
-  {
-    _id: 'a7',
-    name: 'Meera Krishnan',
-    email: 'meera@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop',
-    bio: 'Literary fiction author exploring themes of identity, culture, and human connection.',
-    bookCount: 4,
-  },
-  {
-    _id: 'a8',
-    name: 'Karthik Iyer',
-    email: 'karthik@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop',
-    bio: 'Mystery and thriller writer keeping readers on the edge of their seats with every page.',
-    bookCount: 8,
-  },
-];
+// TODO: Fetch from API
+const mockAuthors: Author[] = [];
 
 export default function AuthorsPage() {
   const [authors, setAuthors] = useState<Author[]>([]);

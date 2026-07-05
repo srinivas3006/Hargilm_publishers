@@ -51,80 +51,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import toast from "react-hot-toast";
 
-const booksData = [
-  {
-    id: 1,
-    title: "The Art of Programming",
-    author: "John Smith",
-    category: "Technology",
-    price: 499,
-    stock: 125,
-    sales: 234,
-    rating: 4.5,
-    status: "Active",
-    cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=60&h=80&fit=crop",
-  },
-  {
-    id: 2,
-    title: "Business Strategy 101",
-    author: "Sarah Johnson",
-    category: "Business",
-    price: 399,
-    stock: 89,
-    sales: 189,
-    rating: 4.2,
-    status: "Active",
-    cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=60&h=80&fit=crop",
-  },
-  {
-    id: 3,
-    title: "Creative Writing Masterclass",
-    author: "Michael Brown",
-    category: "Literature",
-    price: 349,
-    stock: 0,
-    sales: 156,
-    rating: 4.8,
-    status: "Out of Stock",
-    cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=60&h=80&fit=crop",
-  },
-  {
-    id: 4,
-    title: "Finance for Everyone",
-    author: "Emily Davis",
-    category: "Finance",
-    price: 549,
-    stock: 45,
-    sales: 78,
-    rating: 4.0,
-    status: "Active",
-    cover: "https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=60&h=80&fit=crop",
-  },
-  {
-    id: 5,
-    title: "Marketing Essentials",
-    author: "David Wilson",
-    category: "Business",
-    price: 449,
-    stock: 67,
-    sales: 45,
-    rating: 4.3,
-    status: "Active",
-    cover: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=60&h=80&fit=crop",
-  },
-  {
-    id: 6,
-    title: "Psychology Today",
-    author: "Lisa Anderson",
-    category: "Psychology",
-    price: 399,
-    stock: 12,
-    sales: 92,
-    rating: 4.6,
-    status: "Low Stock",
-    cover: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=80&fit=crop",
-  },
-];
+// TODO: Fetch from API
+const booksData: any[] = [];
 
 const getStatusColor = (status: string) => {
   switch (status) {

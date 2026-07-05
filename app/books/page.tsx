@@ -24,116 +24,12 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import type { Book, Category } from '@/types';
+import api from '@/lib/api';
 
-// Mock data
-const mockBooks: Book[] = [
-  {
-    _id: '1',
-    title: 'The Midnight Library',
-    slug: 'the-midnight-library',
-    author: { _id: 'a1', name: 'Priya Sharma', email: '', bookCount: 5 },
-    category: { _id: 'c1', name: 'Fiction', slug: 'fiction', bookCount: 50, isActive: true },
-    description: 'A dazzling novel about all the choices that go into a life well lived.',
-    coverImage: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop',
-    price: 499,
-    discountPrice: 399,
-    format: 'Paperback',
-    publicationStatus: 'published',
-    rating: 4.5,
-    totalReviews: 128,
-    totalSales: 1500,
-    isBestseller: true,
-  },
-  {
-    _id: '2',
-    title: 'Digital Dreams',
-    slug: 'digital-dreams',
-    author: { _id: 'a2', name: 'Rahul Mehta', email: '', bookCount: 3 },
-    category: { _id: 'c2', name: 'Technology', slug: 'technology', bookCount: 30, isActive: true },
-    description: 'A thrilling journey through the world of artificial intelligence.',
-    coverImage: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=600&fit=crop',
-    price: 599,
-    format: 'Hardcover',
-    publicationStatus: 'published',
-    rating: 4.2,
-    totalReviews: 89,
-    totalSales: 850,
-    isNewRelease: true,
-  },
-  {
-    _id: '3',
-    title: 'Whispers of the Heart',
-    slug: 'whispers-of-the-heart',
-    author: { _id: 'a3', name: 'Anjali Nair', email: '', bookCount: 7 },
-    category: { _id: 'c3', name: 'Romance', slug: 'romance', bookCount: 45, isActive: true },
-    description: 'A beautiful love story set in the hills of Kerala.',
-    coverImage: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&h=600&fit=crop',
-    price: 450,
-    discountPrice: 350,
-    format: 'Paperback',
-    publicationStatus: 'published',
-    rating: 4.8,
-    totalReviews: 256,
-    totalSales: 2100,
-    isBestseller: true,
-  },
-  {
-    _id: '4',
-    title: 'The Art of Mindfulness',
-    slug: 'art-of-mindfulness',
-    author: { _id: 'a4', name: 'Dr. Vikram Singh', email: '', bookCount: 4 },
-    category: { _id: 'c4', name: 'Self-Help', slug: 'self-help', bookCount: 35, isActive: true },
-    description: 'Transform your life with ancient wisdom and modern science.',
-    coverImage: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=400&h=600&fit=crop',
-    price: 399,
-    format: 'Ebook',
-    publicationStatus: 'published',
-    rating: 4.6,
-    totalReviews: 178,
-    totalSales: 1200,
-  },
-  {
-    _id: '5',
-    title: 'Chronicles of the Lost Kingdom',
-    slug: 'chronicles-lost-kingdom',
-    author: { _id: 'a5', name: 'Arjun Reddy', email: '', bookCount: 2 },
-    category: { _id: 'c5', name: 'Fantasy', slug: 'fantasy', bookCount: 40, isActive: true },
-    description: 'An epic fantasy adventure in a mystical world.',
-    coverImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=600&fit=crop',
-    price: 549,
-    format: 'Hardcover',
-    publicationStatus: 'published',
-    rating: 4.4,
-    totalReviews: 112,
-    totalSales: 920,
-    isNewRelease: true,
-  },
-  {
-    _id: '6',
-    title: 'Business Mastery',
-    slug: 'business-mastery',
-    author: { _id: 'a6', name: 'Sneha Kapoor', email: '', bookCount: 6 },
-    category: { _id: 'c6', name: 'Business', slug: 'business', bookCount: 28, isActive: true },
-    description: 'Strategies for building a successful business in the modern world.',
-    coverImage: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=600&fit=crop',
-    price: 699,
-    discountPrice: 549,
-    format: 'Paperback',
-    publicationStatus: 'published',
-    rating: 4.3,
-    totalReviews: 145,
-    totalSales: 1050,
-  },
-];
+// TODO: Fetch from API
+const mockBooks: Book[] = [];
 
-const mockCategories: Category[] = [
-  { _id: 'c1', name: 'Fiction', slug: 'fiction', bookCount: 50, isActive: true },
-  { _id: 'c2', name: 'Technology', slug: 'technology', bookCount: 30, isActive: true },
-  { _id: 'c3', name: 'Romance', slug: 'romance', bookCount: 45, isActive: true },
-  { _id: 'c4', name: 'Self-Help', slug: 'self-help', bookCount: 35, isActive: true },
-  { _id: 'c5', name: 'Fantasy', slug: 'fantasy', bookCount: 40, isActive: true },
-  { _id: 'c6', name: 'Business', slug: 'business', bookCount: 28, isActive: true },
-];
+const mockCategories: Category[] = [];
 
 const formats = ['Paperback', 'Hardcover', 'Ebook', 'Audiobook'];
 const priceRanges = [
@@ -155,55 +51,48 @@ function BooksContent() {
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API fetch
-    const timer = setTimeout(() => {
-      let filtered = [...mockBooks];
+    const fetchBooks = async () => {
+      setLoading(true);
+      try {
+        const params: any = {};
+        
+        if (searchQuery) params.q = searchQuery;
+        // The backend supports category filtering (by slug or id) - we might need to adjust based on backend setup
+        if (selectedCategories.length > 0) {
+           params.category = selectedCategories[0]; // Currently supporting single category filter for simplicity
+        }
+        
+        // Price Range
+        if (selectedPriceRange) {
+           const range = priceRanges.find(r => r.label === selectedPriceRange);
+           if (range) {
+             params.minPrice = range.min;
+             params.maxPrice = range.max;
+           }
+        }
 
-      // Filter by search
-      if (searchQuery) {
-        filtered = filtered.filter(
-          (book) =>
-            book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (typeof book.author === 'object' && book.author.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
+        // Sort
+        if (sortBy === 'price-low') params.sort = 'price_asc';
+        else if (sortBy === 'price-high') params.sort = 'price_desc';
+        else if (sortBy === 'newest') params.sort = 'newest';
+
+        const endpoint = searchQuery ? '/search' : '/books';
+        const { data } = await api.get(endpoint, { params });
+        
+        if (data.status === 'success') {
+          setBooks(data.data);
+        } else {
+          setBooks([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch books", error);
+        setBooks([]);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Filter by categories
-      if (selectedCategories.length > 0) {
-        filtered = filtered.filter((book) =>
-          selectedCategories.includes(typeof book.category === 'object' ? book.category._id : book.category)
-        );
-      }
-
-      // Filter by formats
-      if (selectedFormats.length > 0) {
-        filtered = filtered.filter((book) => selectedFormats.includes(book.format));
-      }
-
-      // Sort
-      switch (sortBy) {
-        case 'price-low':
-          filtered.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
-          break;
-        case 'price-high':
-          filtered.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
-          break;
-        case 'rating':
-          filtered.sort((a, b) => b.rating - a.rating);
-          break;
-        case 'bestseller':
-          filtered.sort((a, b) => b.totalSales - a.totalSales);
-          break;
-        default:
-          // newest - keep original order
-          break;
-      }
-
-      setBooks(filtered);
-      setLoading(false);
-    }, 300);
-
-    return () => clearTimeout(timer);
+    fetchBooks();
   }, [searchQuery, sortBy, selectedCategories, selectedFormats, selectedPriceRange]);
 
   const handleCategoryToggle = (categoryId: string) => {

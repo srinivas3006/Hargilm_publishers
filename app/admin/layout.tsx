@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -41,7 +42,20 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated || user?.role !== 'admin') {
+        router.replace('/login');
+      }
+    }
+  }, [isAuthenticated, isLoading, user, router]);
+
+  if (isLoading || !isAuthenticated || user?.role !== 'admin') {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">

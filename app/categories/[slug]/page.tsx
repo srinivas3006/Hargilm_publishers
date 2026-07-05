@@ -15,83 +15,9 @@ import {
 } from '@/components/ui/select';
 import type { Book, Category } from '@/types';
 
-const mockCategory: Category & { image: string } = {
-  _id: 'c1',
-  name: 'Fiction',
-  slug: 'fiction',
-  description: 'Explore imaginative stories and novels that transport you to other worlds. From literary classics to contemporary bestsellers, fiction offers endless possibilities for the imagination.',
-  image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&h=400&fit=crop',
-  bookCount: 156,
-  isActive: true,
-};
-
-const mockBooks: Book[] = [
-  {
-    _id: '1',
-    title: 'The Midnight Library',
-    slug: 'the-midnight-library',
-    author: { _id: 'a1', name: 'Priya Sharma', email: '', bookCount: 5 },
-    category: mockCategory,
-    description: 'A dazzling novel about all the choices that go into a life well lived.',
-    coverImage: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop',
-    price: 499,
-    discountPrice: 399,
-    format: 'Paperback',
-    publicationStatus: 'published',
-    rating: 4.5,
-    totalReviews: 128,
-    totalSales: 1500,
-    isBestseller: true,
-  },
-  {
-    _id: '3',
-    title: 'Whispers of the Heart',
-    slug: 'whispers-of-the-heart',
-    author: { _id: 'a3', name: 'Anjali Nair', email: '', bookCount: 7 },
-    category: mockCategory,
-    description: 'A beautiful love story set in the hills of Kerala.',
-    coverImage: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&h=600&fit=crop',
-    price: 450,
-    discountPrice: 350,
-    format: 'Paperback',
-    publicationStatus: 'published',
-    rating: 4.8,
-    totalReviews: 256,
-    totalSales: 2100,
-    isBestseller: true,
-  },
-  {
-    _id: '5',
-    title: 'Chronicles of the Lost Kingdom',
-    slug: 'chronicles-lost-kingdom',
-    author: { _id: 'a5', name: 'Arjun Reddy', email: '', bookCount: 2 },
-    category: mockCategory,
-    description: 'An epic fantasy adventure in a mystical world.',
-    coverImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=600&fit=crop',
-    price: 549,
-    format: 'Hardcover',
-    publicationStatus: 'published',
-    rating: 4.4,
-    totalReviews: 112,
-    totalSales: 920,
-    isNewRelease: true,
-  },
-  {
-    _id: '7',
-    title: 'The Silent Echo',
-    slug: 'the-silent-echo',
-    author: { _id: 'a7', name: 'Meera Krishnan', email: '', bookCount: 4 },
-    category: mockCategory,
-    description: 'A gripping tale of mystery and redemption.',
-    coverImage: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=600&fit=crop',
-    price: 399,
-    format: 'Paperback',
-    publicationStatus: 'published',
-    rating: 4.3,
-    totalReviews: 98,
-    totalSales: 720,
-  },
-];
+// TODO: Fetch from API
+const mockCategory: (Category & { image: string }) | null = null;
+const mockBooks: Book[] = [];
 
 export default function CategoryDetailPage() {
   const params = useParams();
@@ -102,7 +28,7 @@ export default function CategoryDetailPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setCategory(mockCategory);
+      setCategory(mockCategory as typeof category);
       setBooks(mockBooks);
       setLoading(false);
     }, 300);

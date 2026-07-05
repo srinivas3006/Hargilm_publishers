@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -36,8 +37,21 @@ export default function AuthorLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
+  const router = useRouter();
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated || user?.role !== 'author') {
+        router.replace('/login');
+      }
+    }
+  }, [isAuthenticated, isLoading, user, router]);
+
+  if (isLoading || !isAuthenticated || user?.role !== 'author') {
+    return <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="flex bg-muted/30 min-h-[calc(100vh-4rem)]">

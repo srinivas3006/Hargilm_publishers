@@ -6,6 +6,8 @@ import { CreditCard, QrCode, CheckCircle2, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/store/cart-store';
 import { AnimatePresence, motion } from 'framer-motion';
+import api from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const defaultAddress = {
   fullName: '',
@@ -28,10 +30,14 @@ export default function CheckoutStepPage() {
   const clearCart = useCartStore((state) => state.clearCart);
 
   const [address, setAddress] = useState(defaultAddress);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'cod'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'cod'>('upi');
   const [submitting, setSubmitting] = useState(false);
   const [showUpiModal, setShowUpiModal] = useState(false);
   const [upiStatus, setUpiStatus] = useState<'waiting' | 'success'>('waiting');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [currentOrderId, setCurrentOrderId] = useState('');
+  const [currentOrderNumber, setCurrentOrderNumber] = useState('');
+  const [utr, setUtr] = useState('');
 
   useEffect(() => {
     if (!items.length) {
@@ -46,9 +52,10 @@ export default function CheckoutStepPage() {
       return;
     }
 
-    if (paymentMethod === 'upi') {
-      setShowUpiModal(true);
-      return;
+    // Since the client wants ONLY UPI payments, we'll force it here
+    if (paymentMethod !== 'upi') {
+       toast.error("Only UPI payments are supported currently.");
+       return;
     }
 
     processOrder();
@@ -56,23 +63,58 @@ export default function CheckoutStepPage() {
 
   const processOrder = async () => {
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    // Generate mock order details
-    const orderId = `ORD-${Date.now().toString().slice(-6)}`;
-    const paymentId = paymentMethod === 'cod' ? 'COD' : `PAY-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    
-    // We'll pass it via URL parameters since we have no DB yet.
-    // NOTE: We do not clearCart() here to avoid triggering the useEffect redirect to /cart.
-    // The cart will be cleared on the success page.
-    router.push(`/checkout/success?orderId=${orderId}&paymentId=${paymentId}`);
+    try {
+      // Map cart items for backend
+      const formattedItems = items.map(item => ({
+        bookId: item.book._id,
+        quantity: item.quantity
+      }));
+
+      const payload = {
+        items: formattedItems,
+        shippingAddress: {
+          fullName: address.fullName,
+          addressLine1: address.addressLine1,
+          addressLine2: address.addressLine2,
+          city: address.city,
+          postalCode: address.pincode,
+          country: address.state, // Or 'India'
+        }
+      };
+
+      const { data } = await api.post('/orders/checkout', payload);
+      
+      if (data.status === 'success') {
+        const { order, payment } = data.data;
+        setCurrentOrderId(order._id);
+        setCurrentOrderNumber(order.orderNumber);
+        setQrCodeDataUrl(payment.qrCodeDataUrl);
+        setShowUpiModal(true);
+      }
+    } catch (error: any) {
+       toast.error(error.response?.data?.message || "Failed to create order");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleUpiSuccess = async () => {
-    setUpiStatus('success');
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setShowUpiModal(false);
-    processOrder();
+  const handleVerifyUtr = async () => {
+    if (!utr.trim()) {
+      toast.error("Please enter the UTR / Transaction ID");
+      return;
+    }
+
+    try {
+      setUpiStatus('success'); // show loading state visually
+      await api.put(`/orders/${currentOrderId}/verify-payment`, { utr });
+      
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setShowUpiModal(false);
+      router.push(`/checkout/success?orderId=${currentOrderNumber}&paymentId=UPI`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to verify payment");
+      setUpiStatus('waiting');
+    }
   };
 
   return (
@@ -168,19 +210,17 @@ export default function CheckoutStepPage() {
               <h2 className="text-lg font-semibold">Payment Method</h2>
               <div className="grid gap-3 sm:grid-cols-3">
                 {([
-                  { value: 'card', label: 'Card Payment' },
                   { value: 'upi', label: 'UPI' },
-                  { value: 'cod', label: 'Cash on Delivery' },
                 ] as const).map((method) => (
                   <button
                     type="button"
                     key={method.value}
                     onClick={() => setPaymentMethod(method.value)}
-                    className={`rounded-2xl border p-4 text-left transition ${paymentMethod === method.value ? 'border-primary bg-primary/10' : 'border-border bg-background hover:border-primary/60'}`}
+                    className={`rounded-2xl border p-4 text-left transition border-primary bg-primary/10`}
                   >
                     <p className="font-semibold">{method.label}</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {method.value === 'card' ? 'Visa, Mastercard, UPI-enabled wallets' : method.value === 'upi' ? 'Google Pay, PhonePe, Paytm' : 'Pay when your delivery arrives'}
+                      Pay via Google Pay, PhonePe, Paytm QR Code
                     </p>
                   </button>
                 ))}
@@ -276,16 +316,30 @@ export default function CheckoutStepPage() {
                     Amount: <span className="font-bold text-foreground">₹{total.toFixed(2)}</span>
                   </p>
                   
-                  <div className="aspect-square bg-white w-48 mx-auto rounded-xl border-2 border-dashed border-border flex items-center justify-center mb-6">
-                    <QrCode className="h-24 w-24 text-muted-foreground/30" />
+                  <div className="aspect-square bg-white w-48 mx-auto rounded-xl border-2 border-dashed border-border flex items-center justify-center mb-6 overflow-hidden">
+                    {qrCodeDataUrl ? (
+                      <img src={qrCodeDataUrl} alt="UPI QR Code" className="w-full h-full object-contain" />
+                    ) : (
+                      <QrCode className="h-24 w-24 text-muted-foreground/30" />
+                    )}
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Open your UPI app (GPay, PhonePe, Paytm) and scan this QR code, or click simulate below.
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Open your UPI app (GPay, PhonePe, Paytm) and scan this QR code to complete the payment.
                   </p>
 
-                  <Button className="w-full" onClick={handleUpiSuccess}>
-                    Simulate Payment Success
+                  <div className="space-y-4 mb-6">
+                     <input
+                      type="text"
+                      placeholder="Enter UTR / Transaction ID"
+                      value={utr}
+                      onChange={(e) => setUtr(e.target.value)}
+                      className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
+                     />
+                  </div>
+
+                  <Button className="w-full" onClick={handleVerifyUtr}>
+                    Verify Payment
                   </Button>
                 </>
               ) : (

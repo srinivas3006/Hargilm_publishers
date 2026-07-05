@@ -25,6 +25,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import toast from "react-hot-toast";
+import api from "@/lib/api";
 
 const categories = [
   "Fiction",
@@ -100,12 +101,36 @@ export default function NewManuscriptPage() {
 
     setIsLoading(true);
 
-    // Simulate upload
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // 1. Upload manuscript file
+      const formDataUpload = new FormData();
+      formDataUpload.append("document", file);
+      
+      const uploadRes = await api.post("/uploads/document", formDataUpload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      
+      if (!uploadRes.data.success) throw new Error("Failed to upload manuscript");
+      const fileUrl = uploadRes.data.data.url;
 
-    setIsLoading(false);
-    toast.success("Manuscript submitted successfully!");
-    router.push("/author/manuscripts");
+      // 2. Submit Publish Request
+      const publishPayload = {
+        title: formData.title,
+        description: formData.synopsis,
+        packageId: "basic", // Default/placeholder
+        fileUrl,
+      };
+      
+      const publishRes = await api.post("/publish/request", publishPayload);
+      if (!publishRes.data.success) throw new Error("Failed to submit request");
+      
+      toast.success("Manuscript submitted successfully!");
+      router.push("/author/manuscripts");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message || "Failed to submit manuscript");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

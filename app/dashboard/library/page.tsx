@@ -17,68 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 
-const libraryBooks = [
-  {
-    id: 1,
-    title: "The Art of Programming",
-    author: "John Smith",
-    cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200&h=300&fit=crop",
-    purchaseDate: "2024-01-15",
-    format: "eBook",
-    progress: 75,
-    category: "Technology",
-  },
-  {
-    id: 2,
-    title: "Business Strategy 101",
-    author: "Sarah Johnson",
-    cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&h=300&fit=crop",
-    purchaseDate: "2024-01-10",
-    format: "Paperback",
-    progress: 100,
-    category: "Business",
-  },
-  {
-    id: 3,
-    title: "Creative Writing Masterclass",
-    author: "Michael Brown",
-    cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=200&h=300&fit=crop",
-    purchaseDate: "2024-01-05",
-    format: "eBook",
-    progress: 30,
-    category: "Literature",
-  },
-  {
-    id: 4,
-    title: "Finance for Beginners",
-    author: "Emily Davis",
-    cover: "https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=200&h=300&fit=crop",
-    purchaseDate: "2023-12-20",
-    format: "Hardcover",
-    progress: 0,
-    category: "Finance",
-  },
-  {
-    id: 5,
-    title: "Marketing Essentials",
-    author: "David Wilson",
-    cover: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=200&h=300&fit=crop",
-    purchaseDate: "2023-12-15",
-    format: "eBook",
-    progress: 50,
-    category: "Business",
-  },
-  {
-    id: 6,
-    title: "Psychology Today",
-    author: "Lisa Anderson",
-    cover: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=300&fit=crop",
-    purchaseDate: "2023-12-10",
-    format: "eBook",
-    progress: 100,
-    category: "Psychology",
-  },
-];
+// TODO: Fetch from API
+const libraryBooks: any[] = [];
 
 export default function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState("");

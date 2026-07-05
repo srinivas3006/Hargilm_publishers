@@ -24,77 +24,8 @@ export default function TrackOrderPage() {
   };
 
   // Mock order data for demo
-  const mockOrders: { [key: string]: any } = {
-    HG123456: {
-      orderNumber: "HG123456",
-      customerName: "John Doe",
-      email: "john@example.com",
-      orderDate: "2026-05-15",
-      expectedDelivery: "2026-06-05",
-      status: "in-transit",
-      items: [{ name: "The Midnight Library", quantity: 1, price: "₹399" }],
-      totalPrice: "₹399",
-      shippingAddress: "123 Main St, Mumbai, India 400001",
-      trackingUpdates: [
-        {
-          date: "2026-05-15",
-          status: "Order Placed",
-          description: "Your order has been confirmed",
-        },
-        {
-          date: "2026-05-16",
-          status: "Processing",
-          description: "We are preparing your order",
-        },
-        {
-          date: "2026-05-17",
-          status: "Shipped",
-          description: "Your order has been shipped",
-        },
-        {
-          date: "2026-06-02",
-          status: "In Transit",
-          description: "Your package is on the way",
-        },
-      ],
-    },
-    HG789012: {
-      orderNumber: "HG789012",
-      customerName: "Jane Smith",
-      email: "jane@example.com",
-      orderDate: "2026-05-20",
-      expectedDelivery: "2026-06-02",
-      status: "delivered",
-      items: [
-        { name: "Digital Dreams", quantity: 1, price: "₹599" },
-        { name: "Whispers of the Heart", quantity: 1, price: "₹350" },
-      ],
-      totalPrice: "₹949",
-      shippingAddress: "456 Oak Ave, Bangalore, India 560001",
-      trackingUpdates: [
-        {
-          date: "2026-05-20",
-          status: "Order Placed",
-          description: "Your order has been confirmed",
-        },
-        {
-          date: "2026-05-21",
-          status: "Processing",
-          description: "We are preparing your order",
-        },
-        {
-          date: "2026-05-22",
-          status: "Shipped",
-          description: "Your order has been shipped",
-        },
-        {
-          date: "2026-06-02",
-          status: "Delivered",
-          description: "Your package has been delivered",
-        },
-      ],
-    },
-  };
+  // TODO: Fetch from API
+  const mockOrders: { [key: string]: any } = {};
 
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,13 +143,7 @@ export default function TrackOrderPage() {
               </div>
             </form>
 
-            {/* Demo Orders Info */}
-            <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border">
-              <p className="text-sm text-muted-foreground">
-                <strong>Demo Orders:</strong> Try HG123456 (In Transit) or
-                HG789012 (Delivered)
-              </p>
-            </div>
+
           </motion.div>
 
           {/* Order Details */}

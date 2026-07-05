@@ -28,145 +28,51 @@ import { useCartStore } from '@/store/cart-store';
 import type { Book, Author } from '@/types';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+import api from '@/lib/api';
 
-// Mock data
-const mockBook: Book = {
-  _id: '1',
-  title: 'The Midnight Library',
-  slug: 'the-midnight-library',
-  author: {
-    _id: 'a1',
-    name: 'Priya Sharma',
-    email: 'priya@example.com',
-    bio: 'Priya Sharma is an award-winning author known for her evocative storytelling and deeply emotional narratives.',
-    profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-    bookCount: 5,
-  },
-  category: { _id: 'c1', name: 'Fiction', slug: 'fiction', bookCount: 50, isActive: true },
-  description: `Between life and death there is a library, and within that library, the shelves go on forever. Every book provides a chance to try another life you could have lived. To see how things would be if you had made other choices... Would you have done anything different, if you had the chance to undo your regrets?
-
-A dazzling novel about all the choices that go into a life well lived, from the internationally bestselling author of Reasons to Stay Alive and How To Stop Time.
-
-Somewhere out beyond the edge of the universe there is a library that contains an infinite number of books, each one the story of another reality. One tells the story of your life as it is, along with another book for the other life you could have lived if you had made a different choice at any point in your life. While we all wonder how our lives might have been, what if you had the chance to go to the library and see for yourself? Would any of these other lives truly be better?`,
-  shortDescription: 'A dazzling novel about all the choices that go into a life well lived.',
-  coverImage: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=900&fit=crop',
-  galleryImages: [
-    'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=900&fit=crop',
-    'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600&h=900&fit=crop',
-  ],
-  price: 499,
-  discountPrice: 399,
-  format: 'Paperback',
-  isbn10: '0525559477',
-  isbn13: '978-0525559474',
-  pages: 304,
-  language: 'English',
-  edition: 'First Edition',
-  publisher: 'Harglim Publishers',
-  publishedDate: '2024-01-15',
-  publicationStatus: 'published',
-  rating: 4.5,
-  totalReviews: 128,
-  totalSales: 1500,
-  isBestseller: true,
-  purchaseLinks: {
-    amazon: 'https://amazon.in',
-    flipkart: 'https://flipkart.com',
-  },
-  tags: ['fiction', 'philosophy', 'life choices', 'bestseller'],
-};
-
-const relatedBooks: Book[] = [
-  {
-    _id: '2',
-    title: 'Digital Dreams',
-    slug: 'digital-dreams',
-    author: { _id: 'a2', name: 'Rahul Mehta', email: '', bookCount: 3 },
-    category: { _id: 'c2', name: 'Technology', slug: 'technology', bookCount: 30, isActive: true },
-    description: 'A thrilling journey through the world of artificial intelligence.',
-    coverImage: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&h=600&fit=crop',
-    price: 599,
-    format: 'Hardcover',
-    publicationStatus: 'published',
-    rating: 4.2,
-    totalReviews: 89,
-    totalSales: 850,
-  },
-  {
-    _id: '3',
-    title: 'Whispers of the Heart',
-    slug: 'whispers-of-the-heart',
-    author: { _id: 'a3', name: 'Anjali Nair', email: '', bookCount: 7 },
-    category: { _id: 'c3', name: 'Romance', slug: 'romance', bookCount: 45, isActive: true },
-    description: 'A beautiful love story set in the hills of Kerala.',
-    coverImage: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&h=600&fit=crop',
-    price: 450,
-    discountPrice: 350,
-    format: 'Paperback',
-    publicationStatus: 'published',
-    rating: 4.8,
-    totalReviews: 256,
-    totalSales: 2100,
-  },
-  {
-    _id: '4',
-    title: 'The Art of Mindfulness',
-    slug: 'art-of-mindfulness',
-    author: { _id: 'a4', name: 'Dr. Vikram Singh', email: '', bookCount: 4 },
-    category: { _id: 'c4', name: 'Self-Help', slug: 'self-help', bookCount: 35, isActive: true },
-    description: 'Transform your life with ancient wisdom and modern science.',
-    coverImage: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=400&h=600&fit=crop',
-    price: 399,
-    format: 'Ebook',
-    publicationStatus: 'published',
-    rating: 4.6,
-    totalReviews: 178,
-    totalSales: 1200,
-  },
-];
-
-const reviews = [
-  {
-    id: '1',
-    user: 'Amit Kumar',
-    rating: 5,
-    date: '2024-02-15',
-    comment: 'Absolutely beautiful book! The concept of the midnight library is so creative and thought-provoking.',
-    helpful: 24,
-  },
-  {
-    id: '2',
-    user: 'Neha Patel',
-    rating: 4,
-    date: '2024-02-10',
-    comment: 'A wonderful read that makes you reflect on your own life choices. Highly recommended!',
-    helpful: 18,
-  },
-  {
-    id: '3',
-    user: 'Rajesh Iyer',
-    rating: 5,
-    date: '2024-02-05',
-    comment: 'One of the best books I have read this year. The writing is beautiful and the story is deeply moving.',
-    helpful: 32,
-  },
-];
+// Mock data removed
 
 export default function BookDetailPage() {
   const params = useParams();
   const [book, setBook] = useState<Book | null>(null);
+  const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const addItem = useCartStore((state) => state.addItem);
 
   useEffect(() => {
-    // Simulate API fetch
-    const timer = setTimeout(() => {
-      setBook(mockBook);
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+    const fetchBookData = async () => {
+      setLoading(true);
+      try {
+        const [bookRes, relatedRes, reviewsRes] = await Promise.all([
+          api.get(`/books/${params.slug}`),
+          api.get(`/books/${params.slug}/related?limit=4`),
+          api.get(`/books/${params.slug}/reviews?page=1&limit=5`)
+        ]);
+        
+        if (bookRes.data.status === 'success') {
+          setBook(bookRes.data.data as Book);
+        } else {
+          setBook(null);
+        }
+        
+        if (relatedRes.data.status === 'success') {
+          setRelatedBooks(relatedRes.data.data || []);
+        }
+        
+        if (reviewsRes.data.status === 'success') {
+          setReviews(reviewsRes.data.data || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch book data", error);
+        setBook(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookData();
   }, [params.slug]);
 
   if (loading) {

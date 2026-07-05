@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import api from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -53,14 +54,26 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      // Split full name into firstName and lastName
+      const nameParts = formData.name.trim().split(" ");
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+
+      await api.post('/auth/register', {
+        firstName,
+        lastName: lastName || firstName, // Backend requires lastName
+        email: formData.email,
+        password: formData.password,
+        role: formData.accountType, // "user" or "author"
+      });
+
       toast.success("Account created successfully! Please log in.", {
         duration: 3000,
         position: "top-center",
       });
       setTimeout(() => router.replace("/login"), 500);
-    } catch (error) {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }

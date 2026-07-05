@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/store/auth-store";
 import toast from "react-hot-toast";
+import api from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,36 +34,32 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const { data } = await api.post('/auth/login', { email, password });
+      
+      const { user, token } = data.data; // adjust based on backend response
 
-      const normalizedEmail = email.toLowerCase();
-      const role = normalizedEmail.includes("admin")
-        ? "admin"
-        : normalizedEmail.includes("author")
-          ? "author"
-          : "reader";
-
-      const mockUser = {
-        _id: role === "admin" ? "admin-1" : role === "author" ? "author-1" : "reader-1",
-        id: role === "admin" ? "admin-1" : role === "author" ? "author-1" : "reader-1",
-        name: role === "admin" ? "Admin User" : role === "author" ? "Author User" : "John Doe",
-        email,
-        role,
-        profileImage:
-          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-        emailVerified: true,
-        isActive: true,
-      };
-
-      login(mockUser, "mock-jwt-token");
+      login(
+        {
+          _id: user._id,
+          id: user._id, // map backend id to frontend id
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          role: user.role,
+          profileImage: user.profilePicture || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+          emailVerified: true,
+          isActive: true,
+        },
+        token
+      );
+      
       toast.success("Welcome back! Redirecting to your dashboard.", {
         duration: 2000,
         position: "top-center",
       });
 
       setTimeout(() => {
-        if (role === "admin") router.replace("/admin");
-        else if (role === "author") router.replace("/author");
+        if (user.role === "admin") router.replace("/admin");
+        else if (user.role === "author") router.replace("/author");
         else router.replace("/dashboard");
       }, 300);
     } catch (error) {
@@ -190,15 +187,6 @@ export default function LoginPage() {
             >
               Sign up
             </Link>
-          </div>
-
-          <div className="mt-6 text-center text-xs text-muted-foreground">
-            <p>Demo credentials:</p>
-            <p>
-              User: user@example.com | Admin: admin@example.com | Author:
-              author@example.com
-            </p>
-            <p>Any password works</p>
           </div>
         </motion.div>
       </div>

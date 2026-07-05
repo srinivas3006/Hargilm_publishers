@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/store/cart-store";
+import type { Book } from "@/types";
 import toast from "react-hot-toast";
 
 const wishlistItems = [
@@ -76,15 +77,15 @@ export default function WishlistPage() {
       toast.error("Item is out of stock");
       return;
     }
-    addItem({
-      id: item.id.toString(),
+    const bookToAdd = {
+      _id: item.id.toString(),
       title: item.title,
-      author: item.author,
+      author: { name: item.author },
       price: item.price,
-      quantity: 1,
-      cover: item.cover,
+      coverImage: item.cover,
       format: "Paperback",
-    });
+    } as unknown as Book;
+    addItem(bookToAdd, 1);
     toast.success("Added to cart");
   };
 
