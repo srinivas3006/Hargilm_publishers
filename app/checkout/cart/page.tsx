@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart-store";
+import { useAuthStore } from "@/store/auth-store";
 import type { CartItem } from "@/types";
 
 function CartItemRow({ item }: { item: CartItem }) {
@@ -89,6 +90,7 @@ export default function CartPage() {
   const tax = useCartStore((state) => state.getTax());
   const shipping = useCartStore((state) => state.getShipping());
   const total = useCartStore((state) => state.getTotal());
+  const { user } = useAuthStore();
 
   const handleCheckout = () => {
     router.push("/checkout/checkout");
@@ -101,14 +103,33 @@ export default function CartPage() {
           <div className="rounded-3xl border border-dashed border-muted bg-card p-16">
             <ShoppingCart className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
             <h1 className="text-3xl font-bold">Your cart is empty</h1>
-            <p className="text-muted-foreground mt-3">
-              Browse our catalog and add a few books to get started.
-            </p>
-            <Link href="/books">
-              <Button className="mt-8" size="lg">
-                Browse Books
-              </Button>
-            </Link>
+            
+            {!user ? (
+              <>
+                <p className="text-muted-foreground mt-3 text-lg">
+                  Create an account to start building your personal library.
+                </p>
+                <div className="mt-8 flex justify-center gap-4">
+                  <Link href="/login">
+                    <Button size="lg">Log In</Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="lg" variant="outline">Sign Up</Button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground mt-3">
+                  Browse our catalog and add a few books to get started.
+                </p>
+                <Link href="/books">
+                  <Button className="mt-8" size="lg">
+                    Browse Books
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

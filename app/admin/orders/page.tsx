@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import api from "@/lib/api";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   Search,
   Filter,
@@ -40,68 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import toast from "react-hot-toast";
 
-const ordersData = [
-  {
-    id: "ORD-2024-1234",
-    customer: "Rahul Sharma",
-    email: "rahul@example.com",
-    items: 3,
-    amount: 1299,
-    paymentMethod: "UPI",
-    date: "2024-01-20",
-    status: "Completed",
-  },
-  {
-    id: "ORD-2024-1233",
-    customer: "Priya Patel",
-    email: "priya@example.com",
-    items: 1,
-    amount: 799,
-    paymentMethod: "UPI",
-    date: "2024-01-20",
-    status: "Processing",
-  },
-  {
-    id: "ORD-2024-1232",
-    customer: "Amit Kumar",
-    email: "amit@example.com",
-    items: 2,
-    amount: 549,
-    paymentMethod: "UPI",
-    date: "2024-01-19",
-    status: "Shipped",
-  },
-  {
-    id: "ORD-2024-1231",
-    customer: "Sneha Reddy",
-    email: "sneha@example.com",
-    items: 4,
-    amount: 1899,
-    paymentMethod: "UPI",
-    date: "2024-01-19",
-    status: "Completed",
-  },
-  {
-    id: "ORD-2024-1230",
-    customer: "Vikram Singh",
-    email: "vikram@example.com",
-    items: 1,
-    amount: 699,
-    paymentMethod: "UPI",
-    date: "2024-01-18",
-    status: "Cancelled",
-  },
-  {
-    id: "ORD-2024-1229",
-    customer: "Ananya Gupta",
-    email: "ananya@example.com",
-    items: 2,
-    amount: 899,
-    paymentMethod: "UPI",
-    date: "2024-01-18",
-    status: "Processing",
-  },
-];
+
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -134,28 +75,74 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState(ordersData);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const filteredOrders = orders.filter((order) => {
+  const fetchOrders = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get("/admin/orders").catch(() => api.get("/orders"));
+      setOrders(data.data || data);
+    } catch (err) {
+      console.error("Failed to fetch admin orders:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const filteredOrders = orders.filter((order: any) => {
+    const orderId = order.orderNumber || order.id || order._id || "";
+    const customer = order.customerName || order.user?.name || "Guest";
     const matchesSearch =
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchQuery.toLowerCase());
+      orderId.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const totalRevenue = orders
-    .filter((o) => o.status !== "Cancelled")
-    .reduce((sum, o) => sum + o.amount, 0);
+    .filter((o: any) => o.status !== "Cancelled")
+    .reduce((sum: number, o: any) => sum + (o.totalAmount || o.amount || 0), 0);
 
-  const updateStatus = (id: string, newStatus: string) => {
-    setOrders(
-      orders.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
-    );
-    toast.success(`Order status updated to ${newStatus}`);
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      await api.put(`/admin/orders/${id}/status`, { status: newStatus });
+      setOrders(
+        orders.map((o: any) => ((o.id || o._id) === id ? { ...o, status: newStatus } : o))
+      );
+      toast.success(`Order status updated to ${newStatus}`);
+    } catch (err) {
+      console.error("Failed to update order status:", err);
+      toast.error("Failed to update order status");
+    }
   };
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load orders"
+        message="We encountered an issue fetching the orders list. Please try again."
+        onRetry={fetchOrders}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -254,32 +241,32 @@ export default function AdminOrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOrders.map((order, index) => {
+                {filteredOrders.map((order: any, index: number) => {
                   const StatusIcon = getStatusIcon(order.status);
                   return (
                     <motion.tr
-                      key={order.id}
+                      key={order.id || order._id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
                       className="border-b"
                     >
-                      <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell className="font-medium">{order.orderNumber || order.id || order._id}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{order.customer}</p>
+                          <p className="font-medium">{order.customerName || order.user?.name || "Guest"}</p>
                           <p className="text-sm text-muted-foreground">
-                            {order.email}
+                            {order.email || order.user?.email || "-"}
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">{order.items}</TableCell>
+                      <TableCell className="text-center">{order.items?.length || order.items || 0}</TableCell>
                       <TableCell className="text-right font-semibold">
-                        ₹{order.amount.toLocaleString()}
+                        ₹{(order.totalAmount || order.amount || 0).toLocaleString()}
                       </TableCell>
-                      <TableCell>{order.paymentMethod}</TableCell>
+                      <TableCell>{order.paymentMethod || "UPI"}</TableCell>
                       <TableCell>
-                        {new Date(order.date).toLocaleDateString()}
+                        {new Date(order.createdAt || order.date).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <Badge className={`gap-1 ${getStatusColor(order.status)}`}>
@@ -301,7 +288,7 @@ export default function AdminOrdersPage() {
                             </DropdownMenuItem>
                             {order.status === "Processing" && (
                               <DropdownMenuItem
-                                onClick={() => updateStatus(order.id, "Shipped")}
+                                onClick={() => updateStatus(order.id || order._id, "Shipped")}
                               >
                                 <Truck className="mr-2 h-4 w-4" />
                                 Mark as Shipped
@@ -309,7 +296,7 @@ export default function AdminOrdersPage() {
                             )}
                             {order.status === "Shipped" && (
                               <DropdownMenuItem
-                                onClick={() => updateStatus(order.id, "Completed")}
+                                onClick={() => updateStatus(order.id || order._id, "Completed")}
                               >
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Mark as Completed
@@ -319,7 +306,7 @@ export default function AdminOrdersPage() {
                               order.status !== "Completed" && (
                                 <DropdownMenuItem
                                   className="text-destructive"
-                                  onClick={() => updateStatus(order.id, "Cancelled")}
+                                  onClick={() => updateStatus(order.id || order._id, "Cancelled")}
                                 >
                                   <XCircle className="mr-2 h-4 w-4" />
                                   Cancel Order

@@ -380,11 +380,13 @@ export default function NewManuscriptPage() {
                       htmlFor="agreeToTerms"
                       className="font-normal text-sm leading-relaxed"
                     >
-                      I agree to the{" "}
-                      <a href="#" className="text-primary hover:underline">
-                        Terms and Conditions
-                      </a>{" "}
-                      and confirm this is my original work
+                      <span>
+                        I agree to the{" "}
+                        <a href="#" className="text-primary hover:underline">
+                          Terms and Conditions
+                        </a>{" "}
+                        and confirm this is my original work
+                      </span>
                     </Label>
                   </div>
 

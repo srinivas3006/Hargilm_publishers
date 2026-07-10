@@ -36,13 +36,13 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       
-      const { user, token } = data.data; // adjust based on backend response
+      const { user, token } = data.data || data; // fallback in case data is not nested
 
       login(
         {
-          _id: user._id,
-          id: user._id, // map backend id to frontend id
-          name: `${user.firstName} ${user.lastName}`,
+          _id: user._id || user.id,
+          id: user._id || user.id, // map backend id to frontend id
+          name: user.name,
           email: user.email,
           role: user.role,
           profileImage: user.profilePicture || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
@@ -70,37 +70,37 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md my-auto py-4"
         >
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-6">
+          <div className="text-center mb-6">
+            <Link href="/" className="inline-flex items-center gap-2 mb-4">
               <Image
                 src="/logo.svg"
                 alt="Harglim"
                 width={40}
                 height={40}
-                className="object-contain"
+                className="h-10 w-auto object-contain"
               />
               <span className="text-2xl font-serif font-bold text-foreground">
                 Harglim
               </span>
             </Link>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl font-bold text-foreground mb-1">
               Welcome Back
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Sign in to your account to continue
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -116,7 +116,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
                 <Link
@@ -192,7 +192,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - Image */}
-      <div className="hidden lg:block lg:w-1/2 bg-primary relative overflow-hidden">
+      <div className="hidden lg:block lg:w-1/2 bg-primary relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-primary/80" />
         <div
           className="absolute inset-0 opacity-20"

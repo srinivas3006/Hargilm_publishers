@@ -10,20 +10,57 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/auth-store";
 import toast from "react-hot-toast";
+import { useEffect } from "react";
+import { ErrorState } from "@/components/ui/error-state";
+import api from "@/lib/api";
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [error, setError] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || "John Doe",
-    email: user?.email || "john@example.com",
-    phone: "+91 98765 43210",
-    bio: "Avid reader and book collector. Love exploring different genres and discovering new authors.",
-    address: "123 Main Street, Apartment 4B",
-    city: "Mumbai",
-    state: "Maharashtra",
-    pincode: "400001",
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: "",
+    bio: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
   });
+
+  const fetchProfile = async () => {
+    if (!user?._id && !user?.id) return;
+    const userId = user._id || user.id;
+    setIsFetching(true);
+    setError(false);
+    try {
+      const { data } = await api.get(`/users/${userId}`);
+      const userData = data.data || data;
+      if (userData) {
+        setFormData({
+          name: userData.name || "",
+          email: userData.email || "",
+          phone: userData.phone || "",
+          bio: userData.bio || "",
+          address: userData.address || "",
+          city: userData.city || "",
+          state: userData.state || "",
+          pincode: userData.pincode || "",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile", err);
+      setError(true);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, [user]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -33,14 +70,40 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?._id && !user?.id) return;
+    const userId = user._id || user.id;
+
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    setIsLoading(false);
-    toast.success("Profile updated successfully");
+    try {
+      await api.put(`/users/${userId}`, formData);
+      toast.success("Profile updated successfully");
+    } catch (err) {
+      console.error("Failed to update profile", err);
+      toast.error("Failed to update profile. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <ErrorState 
+          title="Could not load profile"
+          message="We were unable to load your profile information."
+          onRetry={fetchProfile}
+        />
+      </div>
+    );
+  }
+
+  if (isFetching) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

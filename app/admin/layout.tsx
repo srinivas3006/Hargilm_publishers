@@ -23,6 +23,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
+import { AuthGuard } from "@/components/auth/auth-guard";
 
 const sidebarLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -42,22 +43,11 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated || user?.role !== 'admin') {
-        router.replace('/login');
-      }
-    }
-  }, [isAuthenticated, isLoading, user, router]);
-
-  if (isLoading || !isAuthenticated || user?.role !== 'admin') {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
   return (
+    <AuthGuard requiredRole="admin">
     <div className="min-h-screen bg-muted/30">
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
@@ -88,7 +78,7 @@ export default function AdminLayout({
                 alt="Harglim Admin"
                 width={32}
                 height={32}
-                className="object-contain"
+                className="h-8 w-auto object-contain"
               />
               <span className="font-bold text-lg">Admin Panel</span>
             </Link>
@@ -178,5 +168,6 @@ export default function AdminLayout({
         <main className="p-4 lg:p-8">{children}</main>
       </div>
     </div>
+    </AuthGuard>
   );
 }

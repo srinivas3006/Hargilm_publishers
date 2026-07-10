@@ -6,22 +6,36 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { BookOpen, ExternalLink, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { ErrorState } from '@/components/ui/error-state';
 import type { Author } from '@/types';
+import api from '@/lib/api';
 
-// TODO: Fetch from API
-const mockAuthors: Author[] = [];
+
 
 export default function AuthorsPage() {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setAuthors(mockAuthors);
+  const fetchAuthors = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get('/authors');
+      const items = data.data?.authors || data.data || data || [];
+      setAuthors(Array.isArray(items) ? items : []);
+    } catch (err) {
+      console.error("Failed to fetch authors:", err);
+      setError(true);
+      setAuthors([]);
+    } finally {
       setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+    }
+  };
+
+  useEffect(() => {
+    fetchAuthors();
   }, []);
 
   const filteredAuthors = authors.filter((author) =>
@@ -76,6 +90,12 @@ export default function AuthorsPage() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <ErrorState 
+            title="Failed to load authors"
+            message="We couldn't fetch the list of authors at this moment. Please try again."
+            onRetry={fetchAuthors}
+          />
         ) : filteredAuthors.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-lg text-muted-foreground">No authors found matching your search.</p>

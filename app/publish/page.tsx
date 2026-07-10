@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import api from '@/lib/api';
 import {
   BookOpen,
   Edit,
@@ -78,67 +80,24 @@ const publishingSteps = [
   },
 ];
 
-const packages = [
-  {
-    name: 'Essential',
-    price: '₹25,000',
-    description: 'Perfect for first-time authors',
-    features: [
-      'Copy editing',
-      'Basic cover design',
-      'Ebook formatting',
-      'Amazon distribution',
-      '40% royalties',
-    ],
-    highlighted: false,
-  },
-  {
-    name: 'Professional',
-    price: '₹50,000',
-    description: 'Our most popular package',
-    features: [
-      'Full editing suite',
-      'Custom cover design',
-      'Print + Ebook formatting',
-      'Multi-platform distribution',
-      'Basic marketing',
-      '55% royalties',
-    ],
-    highlighted: true,
-  },
-  {
-    name: 'Premium',
-    price: '₹1,00,000',
-    description: 'Complete publishing experience',
-    features: [
-      'Premium editing',
-      'Illustrated cover design',
-      'All format options',
-      'Global distribution',
-      'Full marketing campaign',
-      'Author branding',
-      '70% royalties',
-    ],
-    highlighted: false,
-  },
-];
-
-const testimonials = [
-  {
-    name: 'Priya Sharma',
-    book: 'The Midnight Library',
-    quote: 'Harglim made my publishing dream a reality. Their team was incredibly supportive!',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-  },
-  {
-    name: 'Rahul Mehta',
-    book: 'Digital Dreams',
-    quote: 'Professional editing and beautiful cover design. Exceeded all expectations!',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-  },
-];
-
 export default function PublishPage() {
+  const [packages, setPackages] = useState<any[]>([]);
+  const [loadingPackages, setLoadingPackages] = useState(true);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const { data } = await api.get('/publish-packages');
+        setPackages(data.data || data);
+      } catch (error) {
+        console.error("Failed to fetch publishing packages:", error);
+      } finally {
+        setLoadingPackages(false);
+      }
+    };
+    fetchPackages();
+  }, []);
+
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
@@ -321,9 +280,14 @@ export default function PublishPage() {
             variants={staggerContainer}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
-            {packages.map((pkg, index) => (
-              <motion.div
-                key={index}
+            {loadingPackages ? (
+              <div className="col-span-1 md:col-span-3 flex justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+              </div>
+            ) : packages.length > 0 ? (
+              packages.map((pkg, index) => (
+                <motion.div
+                  key={pkg.id || pkg._id || index}
                 variants={fadeInUp}
                 className={`bg-card p-8 rounded-xl border-2 ${
                   pkg.highlighted
@@ -341,10 +305,10 @@ export default function PublishPage() {
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-semibold text-foreground mb-1">{pkg.name}</h3>
                   <p className="text-sm text-muted-foreground mb-4">{pkg.description}</p>
-                  <div className="text-3xl font-bold text-primary">{pkg.price}</div>
+                  <div className="text-3xl font-bold text-primary">₹{pkg.price?.toLocaleString()}</div>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  {pkg.features.map((feature, idx) => (
+                  {pkg.features?.map((feature: any, idx: number) => (
                     <li key={idx} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                       {feature}
@@ -357,7 +321,12 @@ export default function PublishPage() {
                   </Button>
                 </Link>
               </motion.div>
-            ))}
+            ))
+          ) : (
+            <div className="col-span-1 md:col-span-3 text-center text-muted-foreground">
+              No packages available at the moment.
+            </div>
+          )}
           </motion.div>
         </div>
       </section>
@@ -384,7 +353,20 @@ export default function PublishPage() {
             variants={staggerContainer}
             className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto"
           >
-            {testimonials.map((testimonial, index) => (
+            {[
+              {
+                name: 'Priya Sharma',
+                book: 'The Midnight Library',
+                quote: 'Harglim made my publishing dream a reality. Their team was incredibly supportive!',
+                image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+              },
+              {
+                name: 'Rahul Mehta',
+                book: 'Digital Dreams',
+                quote: 'Professional editing and beautiful cover design. Exceeded all expectations!',
+                image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+              },
+            ].map((testimonial, index) => (
               <motion.div
                 key={index}
                 variants={fadeInUp}

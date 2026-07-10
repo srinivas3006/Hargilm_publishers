@@ -1,6 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import api from "@/lib/api";
+import { ErrorState } from "@/components/ui/error-state";
 import { motion } from "framer-motion";
 import {
   BookOpen,
@@ -18,11 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-const stats = [
+const statsConfig = [
   {
     label: "Total Books",
-    value: "1,245",
-    change: "+12",
+    id: "totalBooks",
     trend: "up",
     icon: BookOpen,
     color: "text-primary",
@@ -31,8 +33,7 @@ const stats = [
   },
   {
     label: "Total Users",
-    value: "8,432",
-    change: "+156",
+    id: "totalUsers",
     trend: "up",
     icon: Users,
     color: "text-blue-500",
@@ -41,8 +42,7 @@ const stats = [
   },
   {
     label: "Total Orders",
-    value: "3,892",
-    change: "+89",
+    id: "totalOrders",
     trend: "up",
     icon: ShoppingBag,
     color: "text-amber-500",
@@ -51,8 +51,7 @@ const stats = [
   },
   {
     label: "Revenue",
-    value: "₹15,42,800",
-    change: "+8.5%",
+    id: "totalRevenue",
     trend: "up",
     icon: DollarSign,
     color: "text-emerald-500",
@@ -61,91 +60,7 @@ const stats = [
   },
 ];
 
-const recentOrders = [
-  {
-    id: "ORD-2024-1234",
-    customer: "Rahul Sharma",
-    amount: 1299,
-    status: "Completed",
-    date: "2 hours ago",
-  },
-  {
-    id: "ORD-2024-1233",
-    customer: "Priya Patel",
-    amount: 799,
-    status: "Processing",
-    date: "4 hours ago",
-  },
-  {
-    id: "ORD-2024-1232",
-    customer: "Amit Kumar",
-    amount: 549,
-    status: "Shipped",
-    date: "6 hours ago",
-  },
-  {
-    id: "ORD-2024-1231",
-    customer: "Sneha Reddy",
-    amount: 1899,
-    status: "Completed",
-    date: "8 hours ago",
-  },
-  {
-    id: "ORD-2024-1230",
-    customer: "Vikram Singh",
-    amount: 699,
-    status: "Processing",
-    date: "12 hours ago",
-  },
-];
 
-const pendingManuscripts = [
-  {
-    id: 1,
-    title: "The Future of AI",
-    author: "Dr. Arun Mehta",
-    submittedDate: "Jan 20, 2024",
-    category: "Technology",
-  },
-  {
-    id: 2,
-    title: "Leadership Lessons",
-    author: "Sunita Kapoor",
-    submittedDate: "Jan 18, 2024",
-    category: "Business",
-  },
-  {
-    id: 3,
-    title: "Modern Poetry",
-    author: "Rajesh Nair",
-    submittedDate: "Jan 15, 2024",
-    category: "Literature",
-  },
-];
-
-const topBooks = [
-  {
-    id: 1,
-    title: "The Art of Programming",
-    author: "John Smith",
-    sales: 234,
-    views: 12500,
-  },
-  {
-    id: 2,
-    title: "Business Strategy 101",
-    author: "Sarah Johnson",
-    sales: 189,
-    views: 9800,
-  },
-  {
-    id: 3,
-    title: "Creative Writing",
-    author: "Michael Brown",
-    sales: 156,
-    views: 7200,
-  },
-];
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -161,6 +76,71 @@ const getStatusColor = (status: string) => {
 };
 
 export default function AdminDashboard() {
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      // Trying to fetch stats and analytics
+      const [statsRes, analyticsRes] = await Promise.all([
+        api.get("/admin/stats").catch(() => ({ data: {} })),
+        api.get("/admin/analytics").catch(() => ({ data: {} })),
+      ]);
+      const stats = statsRes.data?.data || statsRes.data;
+      const analytics = analyticsRes.data?.data || analyticsRes.data;
+      setDashboardData({ ...stats, ...analytics });
+    } catch (err) {
+      console.error("Failed to fetch admin dashboard data:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load admin dashboard"
+        message="We encountered an issue fetching your dashboard data. Please try again."
+        onRetry={fetchDashboardData}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const {
+    totalBooks = 0,
+    totalUsers = 0,
+    totalOrders = 0,
+    totalRevenue = 0,
+    recentOrders = [],
+    pendingManuscripts = [],
+    topBooks = [],
+  } = dashboardData || {};
+
+  const stats = statsConfig.map((config) => {
+    let value = "0";
+    if (config.id === "totalBooks") value = totalBooks.toString();
+    if (config.id === "totalUsers") value = totalUsers.toString();
+    if (config.id === "totalOrders") value = totalOrders.toString();
+    if (config.id === "totalRevenue") value = `₹${totalRevenue.toLocaleString()}`;
+    return { ...config, value, change: "+0" };
+  });
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -226,25 +206,31 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-medium">{order.id}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {order.customer}
-                    </p>
+              {recentOrders.length > 0 ? (
+                recentOrders.slice(0, 5).map((order: any) => (
+                  <div
+                    key={order.id || order._id}
+                    className="flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-medium">{order.orderNumber || order.id || order._id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {order.customerName || order.user?.name || "Guest"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">₹{order.totalAmount || order.amount || 0}</p>
+                      <Badge className={getStatusColor(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">₹{order.amount}</p>
-                    <Badge className={getStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground py-4 text-center">
+                  No recent orders.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -264,27 +250,33 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pendingManuscripts.map((manuscript) => (
-                <div
-                  key={manuscript.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{manuscript.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      by {manuscript.author}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline">{manuscript.category}</Badge>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {manuscript.submittedDate}
-                      </span>
+              {pendingManuscripts.length > 0 ? (
+                pendingManuscripts.slice(0, 5).map((manuscript: any) => (
+                  <div
+                    key={manuscript.id || manuscript._id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{manuscript.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        by {manuscript.authorName || manuscript.author?.name || "Unknown Author"}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline">{manuscript.category || "Uncategorized"}</Badge>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(manuscript.submittedDate || manuscript.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
+                    <Button size="sm">Review</Button>
                   </div>
-                  <Button size="sm">Review</Button>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground py-4 text-center">
+                  No pending manuscripts.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -302,28 +294,36 @@ export default function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-3">
-            {topBooks.map((book, index) => (
-              <motion.div
-                key={book.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="rounded-lg border p-4"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Badge variant="outline">#{index + 1}</Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {book.sales} sales
-                  </span>
-                </div>
-                <h4 className="font-semibold">{book.title}</h4>
-                <p className="text-sm text-muted-foreground">{book.author}</p>
-                <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-                  <Eye className="h-3.5 w-3.5" />
-                  {book.views.toLocaleString()} views
-                </div>
-              </motion.div>
-            ))}
+            {topBooks.length > 0 ? (
+              topBooks.slice(0, 3).map((book: any, index: number) => (
+                <motion.div
+                  key={book.id || book._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="rounded-lg border p-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="outline">#{index + 1}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {book.sales || 0} sales
+                    </span>
+                  </div>
+                  <h4 className="font-semibold">{book.title}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {book.authorName || book.author?.name || "Unknown Author"}
+                  </p>
+                  <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
+                    <Eye className="h-3.5 w-3.5" />
+                    {(book.views || 0).toLocaleString()} views
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <p className="col-span-3 text-sm text-muted-foreground py-4 text-center">
+                No top performing books data available.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

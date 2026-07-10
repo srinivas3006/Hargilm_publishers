@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import api from "@/lib/api";
 
 export default function TrackOrderPage() {
   const [orderNumber, setOrderNumber] = useState("");
@@ -23,26 +24,38 @@ export default function TrackOrderPage() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
-  // Mock order data for demo
-  // TODO: Fetch from API
-  const mockOrders: { [key: string]: any } = {};
-
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const order = mockOrders[orderNumber.toUpperCase()];
-      if (order) {
-        setTrackedOrder(order);
-      } else {
-        setTrackedOrder({
-          error: "Order not found. Please check your order number.",
-        });
-      }
+    try {
+      const { data } = await api.get(`/orders/track/${orderNumber.toUpperCase()}`);
+      const orderData = data.data || data;
+      setTrackedOrder({
+        orderNumber: orderData.orderNumber || orderData.id,
+        orderDate: orderData.createdAt || orderData.date,
+        status: orderData.orderStatus || orderData.status,
+        expectedDelivery: orderData.expectedDelivery || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        items: (orderData.items || []).map((item: any) => ({
+          name: item.book?.title || item.title || "Book",
+          quantity: item.quantity,
+          price: `₹${item.price}`
+        })),
+        totalPrice: `₹${orderData.totalAmount || orderData.total}`,
+        shippingAddress: orderData.shippingAddress ? `${orderData.shippingAddress.name}, ${orderData.shippingAddress.addressLine1 || orderData.shippingAddress.address}, ${orderData.shippingAddress.city}` : "Address not available",
+        trackingUpdates: orderData.timeline || [
+          { status: "Order Placed", date: orderData.createdAt, description: "Your order has been placed." },
+          { status: orderData.orderStatus || orderData.status, date: new Date().toISOString(), description: `Order is currently ${orderData.orderStatus || orderData.status}` }
+        ]
+      });
+    } catch (error) {
+      console.error("Failed to track order:", error);
+      setTrackedOrder({
+        error: "Order not found. Please check your order number.",
+      });
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const getStatusIcon = (status: string) => {

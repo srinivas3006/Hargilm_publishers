@@ -21,6 +21,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
+import { AuthGuard } from "@/components/auth/auth-guard";
 
 const sidebarLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -38,23 +39,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        router.replace('/login');
-      }
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  if (isLoading || !isAuthenticated) {
-    return <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">Loading...</div>;
-  }
-
   return (
+    <AuthGuard>
     <div className="flex bg-muted/30 min-h-[calc(100vh-4rem)]">
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
@@ -164,5 +154,6 @@ export default function DashboardLayout({
         <main className="p-4 lg:p-8">{children}</main>
       </div>
     </div>
+    </AuthGuard>
   );
 }

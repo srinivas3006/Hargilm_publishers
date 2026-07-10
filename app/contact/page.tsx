@@ -14,27 +14,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { siteConfig } from '@/config/site';
 
 const contactInfo = [
   {
     icon: Mail,
     title: 'Email Us',
-    details: ['support@harglim.com', 'authors@harglim.com'],
+    details: [siteConfig.contact.supportEmail, siteConfig.contact.authorsEmail],
   },
   {
     icon: Phone,
     title: 'Call Us',
-    details: ['+91 98765 43210', '+91 87654 32109'],
+    details: [siteConfig.contact.phonePrimary, siteConfig.contact.phoneSecondary],
   },
   {
     icon: MapPin,
     title: 'Visit Us',
-    details: ['123 Publishing Lane', 'Andheri East, Mumbai 400069'],
+    details: [siteConfig.contact.addressLine1, siteConfig.contact.addressLine2],
   },
   {
     icon: Clock,
     title: 'Working Hours',
-    details: ['Mon - Fri: 9:00 AM - 6:00 PM', 'Sat: 10:00 AM - 4:00 PM'],
+    details: [siteConfig.contact.workingHours.weekdays, siteConfig.contact.workingHours.weekends],
   },
 ];
 
@@ -260,18 +261,6 @@ export default function ContactPage() {
         </div>
       </div>
 
-      {/* FAQ CTA */}
-      <section className="py-16 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-serif font-bold text-foreground mb-4">
-            Have Questions?
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Check our frequently asked questions for quick answers.
-          </p>
-          <Button variant="outline">View FAQ</Button>
-        </div>
-      </section>
     </div>
   );
 }

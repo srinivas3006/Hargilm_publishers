@@ -7,6 +7,7 @@ import { Search, Filter, Grid, List, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BookCard } from '@/components/books/book-card';
+import { ErrorState } from '@/components/ui/error-state';
 import {
   Select,
   SelectContent,
@@ -26,10 +27,6 @@ import { Label } from '@/components/ui/label';
 import type { Book, Category } from '@/types';
 import api from '@/lib/api';
 
-// TODO: Fetch from API
-const mockBooks: Book[] = [];
-
-const mockCategories: Category[] = [];
 
 const formats = ['Paperback', 'Hardcover', 'Ebook', 'Audiobook'];
 const priceRanges = [
@@ -43,16 +40,32 @@ function BooksContent() {
   const searchParams = useSearchParams();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data } = await api.get('/categories');
+        const items = data.data?.categories || data.data || data || [];
+        setCategories(Array.isArray(items) ? items : []);
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const fetchBooks = async () => {
       setLoading(true);
+      setError(false);
       try {
         const params: any = {};
         
@@ -79,13 +92,11 @@ function BooksContent() {
         const endpoint = searchQuery ? '/search' : '/books';
         const { data } = await api.get(endpoint, { params });
         
-        if (data.status === 'success') {
-          setBooks(data.data);
-        } else {
-          setBooks([]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch books", error);
+        const items = data.data?.books || data.data || data || [];
+        setBooks(Array.isArray(items) ? items : []);
+      } catch (err) {
+        console.error("Failed to fetch books", err);
+        setError(true);
         setBooks([]);
       } finally {
         setLoading(false);
@@ -122,7 +133,7 @@ function BooksContent() {
       <div>
         <h3 className="font-semibold text-foreground mb-3">Categories</h3>
         <div className="space-y-2">
-          {mockCategories.map((category) => (
+          {categories.map((category) => (
             <div key={category._id} className="flex items-center gap-2">
               <Checkbox
                 id={`cat-${category._id}`}
@@ -297,7 +308,7 @@ function BooksContent() {
             {hasActiveFilters && (
               <div className="flex flex-wrap gap-2 mb-6">
                 {selectedCategories.map((catId) => {
-                  const cat = mockCategories.find((c) => c._id === catId);
+                  const cat = categories.find((c) => c._id === catId);
                   return cat ? (
                     <span
                       key={catId}
@@ -358,6 +369,19 @@ function BooksContent() {
                   </div>
                 ))}
               </div>
+            ) : error ? (
+              <ErrorState 
+                title="Unable to load catalog" 
+                message="We encountered an issue fetching the books list. Please try again later."
+                onRetry={() => {
+                  setError(false);
+                  setLoading(true);
+                  // Since effect depends on states, we can force a re-render/fetch by 
+                  // slightly altering a dependent state, or simply calling fetchBooks.
+                  // Since fetchBooks is inside useEffect, we can clear and set query.
+                  setSearchQuery(searchQuery);
+                }}
+              />
             ) : books.length === 0 ? (
               <div className="text-center py-16">
                 <p className="text-lg text-muted-foreground mb-4">No books found matching your criteria</p>

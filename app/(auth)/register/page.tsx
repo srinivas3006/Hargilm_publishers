@@ -27,7 +27,7 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    accountType: "user",
+    accountType: "reader",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -54,17 +54,11 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // Split full name into firstName and lastName
-      const nameParts = formData.name.trim().split(" ");
-      const firstName = nameParts[0];
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
-
       await api.post('/auth/register', {
-        firstName,
-        lastName: lastName || firstName, // Backend requires lastName
+        name: formData.name.trim(),
         email: formData.email,
         password: formData.password,
-        role: formData.accountType, // "user" or "author"
+        role: formData.accountType, // e.g., "user" or "author" or "reader"
       });
 
       toast.success("Account created successfully! Please log in.", {
@@ -80,9 +74,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Left side - Image */}
-      <div className="hidden lg:block lg:w-1/2 bg-primary relative overflow-hidden">
+      <div className="hidden lg:block lg:w-1/2 bg-primary relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-primary/80" />
         <div
           className="absolute inset-0 opacity-20"
@@ -106,35 +100,35 @@ export default function RegisterPage() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md my-auto py-4"
         >
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-6">
+          <div className="text-center mb-6">
+            <Link href="/" className="inline-flex items-center gap-2 mb-4">
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Harglim"
                 width={40}
                 height={40}
-                className="object-contain"
+                className="h-10 w-auto object-contain"
               />
               <span className="text-2xl font-serif font-bold text-foreground">
                 Harglim
               </span>
             </Link>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl font-bold text-foreground mb-1">
               Create Account
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Join thousands of readers and authors
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -152,7 +146,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -170,7 +164,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="accountType">Account Type</Label>
               <Select
                 value={formData.accountType}
@@ -182,13 +176,13 @@ export default function RegisterPage() {
                   <SelectValue placeholder="Select account type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">Reader</SelectItem>
+                  <SelectItem value="reader">Reader</SelectItem>
                   <SelectItem value="author">Author</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -217,7 +211,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />

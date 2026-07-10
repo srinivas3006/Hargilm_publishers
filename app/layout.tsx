@@ -4,7 +4,9 @@ import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
+import { MainContainer } from '@/components/layout/main-container';
 import { Providers } from './providers';
+import { siteConfig } from '@/config/site';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,6 +21,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: 'Harglim Publishers | Discover Your Next Great Read',
     template: '%s | Harglim Publishers',
@@ -54,6 +57,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  alternates: {
+    canonical: siteConfig.url,
+  },
 };
 
 export default function RootLayout({
@@ -61,12 +67,53 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: siteConfig.name,
+    url: siteConfig.url,
+    logo: `${siteConfig.url}/logo.svg`,
+    description: siteConfig.description,
+    sameAs: [
+      siteConfig.social.facebook,
+      siteConfig.social.twitter,
+      siteConfig.social.instagram,
+      siteConfig.social.linkedin,
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: siteConfig.contact.phonePrimary,
+      contactType: 'customer support',
+      email: siteConfig.contact.email,
+    },
+  };
+
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: siteConfig.name,
+    url: siteConfig.url,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${siteConfig.url}/search?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} bg-background`}>
       <body className="font-sans antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <Providers>
           <Navbar />
-          <main className="min-h-screen pt-16">{children}</main>
+          <MainContainer>{children}</MainContainer>
           <Footer />
         </Providers>
         {process.env.NODE_ENV === 'production' && <Analytics />}

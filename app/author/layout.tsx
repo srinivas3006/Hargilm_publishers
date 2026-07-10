@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 
+import { AuthGuard } from "@/components/auth/auth-guard";
+
 const sidebarLinks = [
   { href: "/author", label: "Dashboard", icon: LayoutDashboard },
   { href: "/author/books", label: "My Books", icon: BookOpen },
@@ -37,23 +39,12 @@ export default function AuthorLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated || user?.role !== 'author') {
-        router.replace('/login');
-      }
-    }
-  }, [isAuthenticated, isLoading, user, router]);
-
-  if (isLoading || !isAuthenticated || user?.role !== 'author') {
-    return <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">Loading...</div>;
-  }
-
   return (
+    <AuthGuard requiredRole="author">
     <div className="flex bg-muted/30 min-h-[calc(100vh-4rem)]">
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
@@ -158,8 +149,14 @@ export default function AuthorLayout({
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 lg:p-8">{children}</main>
+
+        {/* Author Footer */}
+        <footer className="border-t p-4 text-center text-sm text-muted-foreground bg-card">
+          &copy; {new Date().getFullYear()} Harglim Publishers. Author Portal.
+        </footer>
       </div>
     </div>
+    </AuthGuard>
   );
 }

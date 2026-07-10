@@ -16,83 +16,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useAuthStore } from "@/store/auth-store";
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import { ErrorState } from "@/components/ui/error-state";
 
 const stats = [
   {
     label: "Published Books",
-    value: "5",
+    value: "0",
     icon: BookOpen,
-    trend: "+1 this year",
+    trend: "Start your journey",
     color: "text-primary",
     bgColor: "bg-primary/10",
   },
   {
     label: "Total Earnings",
-    value: "₹1,24,500",
+    value: "₹0",
     icon: DollarSign,
-    trend: "+15% this month",
+    trend: "Publish to earn",
     color: "text-emerald-500",
     bgColor: "bg-emerald-500/10",
   },
   {
     label: "Total Views",
-    value: "45.2K",
+    value: "0",
     icon: Eye,
-    trend: "+2.1K this week",
+    trend: "Grow your audience",
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
   },
   {
     label: "Avg. Rating",
-    value: "4.6",
+    value: "-",
     icon: Star,
-    trend: "Based on 892 reviews",
+    trend: "No reviews yet",
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
-  },
-];
-
-const recentBooks = [
-  {
-    id: 1,
-    title: "The Art of Programming",
-    cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=100&h=150&fit=crop",
-    sales: 234,
-    revenue: 46800,
-    rating: 4.5,
-  },
-  {
-    id: 2,
-    title: "Business Strategy 101",
-    cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=100&h=150&fit=crop",
-    sales: 189,
-    revenue: 37800,
-    rating: 4.2,
-  },
-  {
-    id: 3,
-    title: "Creative Writing",
-    cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=100&h=150&fit=crop",
-    sales: 156,
-    revenue: 31200,
-    rating: 4.8,
-  },
-];
-
-const manuscripts = [
-  {
-    id: 1,
-    title: "The Future of AI",
-    status: "Under Review",
-    progress: 75,
-    submittedDate: "2024-01-10",
-  },
-  {
-    id: 2,
-    title: "Leadership Lessons",
-    status: "In Editing",
-    progress: 45,
-    submittedDate: "2024-01-05",
   },
 ];
 
@@ -112,6 +72,69 @@ const getStatusColor = (status: string) => {
 };
 
 export default function AuthorDashboard() {
+  const { user } = useAuthStore();
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchDashboardData = async () => {
+    if (!user?._id && !user?.id) return;
+    const authorId = user._id || user.id;
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get(`/authors/${authorId}/stats`);
+      const resData = data.data || data;
+      setDashboardData(resData);
+    } catch (err) {
+      console.error("Failed to fetch author dashboard data:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [user]);
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load dashboard"
+        message="We encountered an issue fetching your author dashboard data. Please try again."
+        onRetry={fetchDashboardData}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const {
+    publishedBooks = 0,
+    totalEarnings = 0,
+    totalViews = 0,
+    avgRating = 0,
+    recentBooks = [],
+    manuscripts = [],
+    thisMonthEarnings = 0,
+    pendingPayout = 0,
+    totalWithdrawals = 0,
+  } = dashboardData || {};
+
+  const dynamicStats = [
+    { ...stats[0], value: publishedBooks.toString() },
+    { ...stats[1], value: `₹${totalEarnings.toLocaleString()}` },
+    { ...stats[2], value: totalViews.toString() },
+    { ...stats[3], value: avgRating ? avgRating.toFixed(1) : "-" },
+  ];
+
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
@@ -132,7 +155,7 @@ export default function AuthorDashboard() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
+        {dynamicStats.map((stat, index) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
@@ -159,7 +182,28 @@ export default function AuthorDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      {recentBooks.length === 0 && manuscripts.length === 0 ? (
+        <Card className="mt-8 border-dashed bg-muted/30">
+          <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="rounded-full bg-primary/10 p-4 mb-4">
+              <BookOpen className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Publish Your First Book</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              You haven't published any books or submitted any manuscripts yet. 
+              Start your publishing journey today by submitting a new manuscript for review!
+            </p>
+            <Button asChild size="lg" className="gap-2">
+              <Link href="/author/manuscripts/new">
+                <FileText className="h-4 w-4" />
+                Submit New Manuscript
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+      <>
+        <div className="grid gap-8 lg:grid-cols-2">
         {/* Recent Books Performance */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -172,13 +216,13 @@ export default function AuthorDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentBooks.map((book) => (
+              {recentBooks.map((book: any) => (
                 <div
-                  key={book.id}
+                  key={book._id || book.id}
                   className="flex items-center gap-4 rounded-lg border p-3"
                 >
                   <img
-                    src={book.cover}
+                    src={book.coverImage || book.cover}
                     alt={book.title}
                     className="h-16 w-12 rounded object-cover"
                   />
@@ -195,7 +239,7 @@ export default function AuthorDashboard() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-emerald-600">
-                      ₹{book.revenue.toLocaleString()}
+                      ₹{(book.revenue || book.sales * book.price || 0).toLocaleString()}
                     </p>
                     <p className="text-xs text-muted-foreground">Revenue</p>
                   </div>
@@ -217,9 +261,9 @@ export default function AuthorDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {manuscripts.map((manuscript) => (
+              {manuscripts.map((manuscript: any) => (
                 <div
-                  key={manuscript.id}
+                  key={manuscript._id || manuscript.id}
                   className="rounded-lg border p-4"
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -231,13 +275,13 @@ export default function AuthorDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">{manuscript.progress}%</span>
+                      <span className="font-medium">{manuscript.progress || 0}%</span>
                     </div>
-                    <Progress value={manuscript.progress} className="h-2" />
+                    <Progress value={manuscript.progress || 0} className="h-2" />
                   </div>
                   <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
-                    Submitted on {new Date(manuscript.submittedDate).toLocaleDateString()}
+                    Submitted on {new Date(manuscript.createdAt || manuscript.submittedDate).toLocaleDateString()}
                   </div>
                 </div>
               ))}
@@ -255,29 +299,30 @@ export default function AuthorDashboard() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg bg-muted/50 p-4">
               <p className="text-sm text-muted-foreground">This Month</p>
-              <p className="text-2xl font-bold mt-1">₹18,500</p>
-              <div className="flex items-center gap-1 text-sm text-emerald-600 mt-1">
-                <TrendingUp className="h-3.5 w-3.5" />
-                +12% from last month
+              <p className="text-2xl font-bold mt-1">₹{thisMonthEarnings.toLocaleString()}</p>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                {thisMonthEarnings > 0 ? "Keep it up!" : "No earnings yet"}
               </div>
             </div>
             <div className="rounded-lg bg-muted/50 p-4">
               <p className="text-sm text-muted-foreground">Pending Payout</p>
-              <p className="text-2xl font-bold mt-1">₹8,200</p>
+              <p className="text-2xl font-bold mt-1">₹{pendingPayout.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Next payout: Jan 30
+                {pendingPayout > 0 ? "Processing..." : "-"}
               </p>
             </div>
             <div className="rounded-lg bg-muted/50 p-4">
               <p className="text-sm text-muted-foreground">Total Withdrawn</p>
-              <p className="text-2xl font-bold mt-1">₹97,800</p>
+              <p className="text-2xl font-bold mt-1">₹{totalWithdrawals.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                8 withdrawals
+                Lifetime earnings transferred
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

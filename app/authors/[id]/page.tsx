@@ -8,11 +8,9 @@ import { motion } from 'framer-motion';
 import { BookOpen, ChevronRight, Mail, Twitter, Instagram, Linkedin, Facebook, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BookCard } from '@/components/books/book-card';
+import { ErrorState } from '@/components/ui/error-state';
 import type { Author, Book } from '@/types';
-
-// TODO: Fetch from API
-const mockAuthor: Author | null = null;
-const mockBooks: Book[] = [];
+import api from '@/lib/api';
 
 const socialIcons: Record<string, React.ElementType> = {
   twitter: Twitter,
@@ -27,14 +25,39 @@ export default function AuthorDetailPage() {
   const [author, setAuthor] = useState<Author | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchAuthorData = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [authorRes, booksRes] = await Promise.all([
+        api.get(`/authors/${params.id}`),
+        api.get(`/authors/${params.id}/books`)
+      ]);
+      
+      const authorData = authorRes.data.data || authorRes.data;
+      if (authorData) {
+        setAuthor(authorData as Author);
+      } else {
+        setAuthor(null);
+      }
+      
+      const booksData = booksRes.data.data || booksRes.data;
+      if (booksData) {
+        setBooks(Array.isArray(booksData) ? booksData : []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch author data:", err);
+      setError(true);
+      setAuthor(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAuthor(mockAuthor);
-      setBooks(mockBooks);
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+    fetchAuthorData();
   }, [params.id]);
 
   if (loading) {
@@ -52,6 +75,18 @@ export default function AuthorDetailPage() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-background min-h-screen flex items-center justify-center p-4">
+        <ErrorState 
+          title="Author not found"
+          message="We couldn't fetch the details for this author right now. Please try again."
+          onRetry={fetchAuthorData}
+        />
       </div>
     );
   }

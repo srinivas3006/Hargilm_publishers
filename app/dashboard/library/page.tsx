@@ -16,14 +16,40 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-
-// TODO: Fetch from API
-const libraryBooks: any[] = [];
+import { ErrorState } from "@/components/ui/error-state";
+import { useAuthStore } from "@/store/auth-store";
+import { useEffect } from "react";
+import api from "@/lib/api";
 
 export default function LibraryPage() {
+  const { user } = useAuthStore();
+  const [libraryBooks, setLibraryBooks] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [formatFilter, setFormatFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchLibrary = async () => {
+    if (!user?._id && !user?.id) return;
+    const userId = user._id || user.id;
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get(`/users/${userId}/library`);
+      const booksData = data.data || data;
+      setLibraryBooks(Array.isArray(booksData) ? booksData : []);
+    } catch (err) {
+      console.error("Failed to fetch library:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLibrary();
+  }, [user]);
 
   const categories = Array.from(new Set(libraryBooks.map((b) => b.category)));
 
@@ -140,7 +166,17 @@ export default function LibraryPage() {
       </Card>
 
       {/* Books Grid */}
-      {filteredBooks.length > 0 ? (
+      {error ? (
+        <ErrorState 
+          title="Unable to load library"
+          message="We couldn't fetch your library books right now. Please try again."
+          onRetry={fetchLibrary}
+        />
+      ) : loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : filteredBooks.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredBooks.map((book, index) => (
             <motion.div
@@ -152,7 +188,7 @@ export default function LibraryPage() {
               <Card className="overflow-hidden group">
                 <div className="relative aspect-[2/3]">
                   <img
-                    src={book.cover}
+                    src={book.coverImage || book.cover}
                     alt={book.title}
                     className="h-full w-full object-cover transition-transform group-hover:scale-105"
                   />
@@ -171,7 +207,7 @@ export default function LibraryPage() {
                       )}
                       {book.format !== "eBook" && (
                         <Button size="sm" className="flex-1" asChild>
-                          <Link href={`/books/${book.id}`}>View Details</Link>
+                          <Link href={`/books/${book.slug || book.id}`}>View Details</Link>
                         </Button>
                       )}
                     </div>
@@ -180,25 +216,25 @@ export default function LibraryPage() {
                 </div>
                 <CardContent className="p-4">
                   <Badge variant="outline" className="mb-2">
-                    {book.category}
+                    {typeof book.category === 'object' ? book.category?.name : book.category}
                   </Badge>
                   <h3 className="font-semibold line-clamp-1">{book.title}</h3>
-                  <p className="text-sm text-muted-foreground">{book.author}</p>
+                  <p className="text-sm text-muted-foreground">{typeof book.author === 'object' ? book.author?.name : book.author}</p>
                   
                   {book.format === "eBook" && (
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-sm mb-1">
                         <span className="text-muted-foreground">
-                          {getProgressLabel(book.progress)}
+                          {getProgressLabel(book.progress || 0)}
                         </span>
-                        <span className="font-medium">{book.progress}%</span>
+                        <span className="font-medium">{book.progress || 0}%</span>
                       </div>
-                      <Progress value={book.progress} className="h-2" />
+                      <Progress value={book.progress || 0} className="h-2" />
                     </div>
                   )}
                   
                   <p className="text-xs text-muted-foreground mt-3">
-                    Purchased on {new Date(book.purchaseDate).toLocaleDateString()}
+                    Purchased on {new Date(book.purchaseDate || book.createdAt).toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>

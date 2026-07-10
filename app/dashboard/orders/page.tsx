@@ -26,109 +26,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const orders = [
-  {
-    id: "ORD-2024-001",
-    date: "2024-01-15",
-    status: "Delivered",
-    total: 1299,
-    paymentMethod: "UPI",
-    items: [
-      {
-        id: 1,
-        title: "The Art of Programming",
-        author: "John Smith",
-        quantity: 1,
-        price: 499,
-        cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=100&h=150&fit=crop",
-      },
-      {
-        id: 2,
-        title: "Business Strategy 101",
-        author: "Sarah Johnson",
-        quantity: 2,
-        price: 400,
-        cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=100&h=150&fit=crop",
-      },
-    ],
-    shippingAddress: {
-      name: "John Doe",
-      address: "123 Main Street, Apartment 4B",
-      city: "Mumbai",
-      state: "Maharashtra",
-      pincode: "400001",
-    },
-    timeline: [
-      { status: "Order Placed", date: "Jan 15, 2024 10:30 AM", completed: true },
-      { status: "Payment Confirmed", date: "Jan 15, 2024 10:35 AM", completed: true },
-      { status: "Processing", date: "Jan 15, 2024 02:00 PM", completed: true },
-      { status: "Shipped", date: "Jan 16, 2024 09:00 AM", completed: true },
-      { status: "Delivered", date: "Jan 18, 2024 03:30 PM", completed: true },
-    ],
-  },
-  {
-    id: "ORD-2024-002",
-    date: "2024-01-20",
-    status: "In Transit",
-    total: 799,
-    paymentMethod: "UPI",
-    items: [
-      {
-        id: 3,
-        title: "Creative Writing Masterclass",
-        author: "Michael Brown",
-        quantity: 1,
-        price: 799,
-        cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=100&h=150&fit=crop",
-      },
-    ],
-    shippingAddress: {
-      name: "John Doe",
-      address: "123 Main Street, Apartment 4B",
-      city: "Mumbai",
-      state: "Maharashtra",
-      pincode: "400001",
-    },
-    timeline: [
-      { status: "Order Placed", date: "Jan 20, 2024 11:00 AM", completed: true },
-      { status: "Payment Confirmed", date: "Jan 20, 2024 11:05 AM", completed: true },
-      { status: "Processing", date: "Jan 20, 2024 03:00 PM", completed: true },
-      { status: "Shipped", date: "Jan 21, 2024 10:00 AM", completed: true },
-      { status: "Out for Delivery", date: "Expected Jan 23", completed: false },
-    ],
-  },
-  {
-    id: "ORD-2024-003",
-    date: "2024-01-22",
-    status: "Processing",
-    total: 549,
-    paymentMethod: "UPI",
-    items: [
-      {
-        id: 4,
-        title: "Finance for Beginners",
-        author: "Emily Davis",
-        quantity: 1,
-        price: 549,
-        cover: "https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=100&h=150&fit=crop",
-      },
-    ],
-    shippingAddress: {
-      name: "John Doe",
-      address: "456 Park Avenue",
-      city: "Delhi",
-      state: "Delhi",
-      pincode: "110001",
-    },
-    timeline: [
-      { status: "Order Placed", date: "Jan 22, 2024 04:00 PM", completed: true },
-      { status: "Payment Confirmed", date: "Jan 22, 2024 04:05 PM", completed: true },
-      { status: "Processing", date: "In Progress", completed: false },
-      { status: "Shipped", date: "Pending", completed: false },
-      { status: "Delivered", date: "Pending", completed: false },
-    ],
-  },
-];
+import { useAuthStore } from "@/store/auth-store";
+import { useEffect } from "react";
+import api from "@/lib/api";
+import { ErrorState } from "@/components/ui/error-state";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -159,13 +60,40 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function OrdersPage() {
+  const { user } = useAuthStore();
+  const [orders, setOrders] = useState<any[]>([]);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchOrders = async () => {
+    if (!user?._id && !user?.id) return;
+    const userId = user._id || user.id;
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get(`/users/${userId}/orders`);
+      const ordersData = data.data || data;
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [user]);
 
   const filteredOrders = orders.filter((order) => {
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const id = order.orderNumber || order._id || order.id || "";
+    const status = order.orderStatus || order.status || "";
+    const matchesSearch = id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -207,10 +135,23 @@ export default function OrdersPage() {
       </Card>
 
       {/* Orders List */}
+      {error ? (
+        <ErrorState
+          title="Could not load orders"
+          message="We encountered an issue fetching your orders. Please try again."
+          onRetry={fetchOrders}
+        />
+      ) : loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
       <div className="space-y-4">
         {filteredOrders.map((order, index) => {
-          const StatusIcon = getStatusIcon(order.status);
-          const isExpanded = expandedOrder === order.id;
+          const status = order.orderStatus || order.status || "";
+          const id = order.orderNumber || order._id || order.id;
+          const StatusIcon = getStatusIcon(status);
+          const isExpanded = expandedOrder === id;
 
           return (
             <motion.div
@@ -227,33 +168,33 @@ export default function OrdersPage() {
                         <StatusIcon className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="font-semibold">{order.id}</p>
+                        <p className="font-semibold">{id}</p>
                         <p className="text-sm text-muted-foreground">
-                          Placed on {order.date}
+                          Placed on {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : order.date}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge className={getStatusColor(order.status)}>
-                        {order.status}
+                      <Badge className={getStatusColor(status)}>
+                        {status}
                       </Badge>
-                      <span className="font-semibold">₹{order.total}</span>
+                      <span className="font-semibold">₹{order.totalAmount || order.total}</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-4">
                   {/* Order Items Preview */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {order.items.map((item) => (
+                    {order.items?.map((item: any) => (
                       <img
-                        key={item.id}
-                        src={item.cover}
-                        alt={item.title}
+                        key={item.book?._id || item.id}
+                        src={item.book?.coverImage || item.cover}
+                        alt={item.book?.title || item.title}
                         className="h-16 w-12 rounded object-cover"
                       />
                     ))}
                     <span className="self-center text-sm text-muted-foreground">
-                      {order.items.length} item{order.items.length > 1 ? "s" : ""}
+                      {order.items?.length} item{order.items?.length > 1 ? "s" : ""}
                     </span>
                   </div>
 
@@ -261,7 +202,7 @@ export default function OrdersPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                    onClick={() => setExpandedOrder(isExpanded ? null : id)}
                     className="w-full justify-center gap-2"
                   >
                     {isExpanded ? (
@@ -287,20 +228,20 @@ export default function OrdersPage() {
                       <div>
                         <h4 className="font-semibold mb-3">Order Items</h4>
                         <div className="space-y-3">
-                          {order.items.map((item) => (
+                          {order.items?.map((item: any) => (
                             <div
-                              key={item.id}
+                              key={item.book?._id || item.id}
                               className="flex items-center gap-4 rounded-lg border p-3"
                             >
                               <img
-                                src={item.cover}
-                                alt={item.title}
+                                src={item.book?.coverImage || item.cover}
+                                alt={item.book?.title || item.title}
                                 className="h-20 w-14 rounded object-cover"
                               />
                               <div className="flex-1">
-                                <p className="font-medium">{item.title}</p>
+                                <p className="font-medium">{item.book?.title || item.title}</p>
                                 <p className="text-sm text-muted-foreground">
-                                  by {item.author}
+                                  by {typeof item.book?.author === 'object' ? item.book.author.name : item.author}
                                 </p>
                                 <p className="text-sm">Qty: {item.quantity}</p>
                               </div>
@@ -311,56 +252,60 @@ export default function OrdersPage() {
                       </div>
 
                       {/* Shipping Address */}
-                      <div>
-                        <h4 className="font-semibold mb-2">Shipping Address</h4>
-                        <div className="rounded-lg border p-3 text-sm">
-                          <p className="font-medium">{order.shippingAddress.name}</p>
-                          <p className="text-muted-foreground">
-                            {order.shippingAddress.address}
-                          </p>
-                          <p className="text-muted-foreground">
-                            {order.shippingAddress.city}, {order.shippingAddress.state}{" "}
-                            {order.shippingAddress.pincode}
-                          </p>
+                      {order.shippingAddress && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Shipping Address</h4>
+                          <div className="rounded-lg border p-3 text-sm">
+                            <p className="font-medium">{order.shippingAddress.name}</p>
+                            <p className="text-muted-foreground">
+                              {order.shippingAddress.address}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {order.shippingAddress.city}, {order.shippingAddress.state}{" "}
+                              {order.shippingAddress.pincode}
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Order Timeline */}
-                      <div>
-                        <h4 className="font-semibold mb-3">Order Timeline</h4>
-                        <div className="space-y-3">
-                          {order.timeline.map((step, stepIndex) => (
-                            <div key={stepIndex} className="flex gap-3">
-                              <div className="flex flex-col items-center">
-                                <div
-                                  className={`h-3 w-3 rounded-full ${
-                                    step.completed ? "bg-primary" : "bg-muted"
-                                  }`}
-                                />
-                                {stepIndex < order.timeline.length - 1 && (
+                      {order.timeline && (
+                        <div>
+                          <h4 className="font-semibold mb-3">Order Timeline</h4>
+                          <div className="space-y-3">
+                            {order.timeline.map((step: any, stepIndex: number) => (
+                              <div key={stepIndex} className="flex gap-3">
+                                <div className="flex flex-col items-center">
                                   <div
-                                    className={`w-0.5 flex-1 ${
+                                    className={`h-3 w-3 rounded-full ${
                                       step.completed ? "bg-primary" : "bg-muted"
                                     }`}
                                   />
-                                )}
+                                  {stepIndex < order.timeline.length - 1 && (
+                                    <div
+                                      className={`w-0.5 flex-1 ${
+                                        step.completed ? "bg-primary" : "bg-muted"
+                                      }`}
+                                    />
+                                  )}
+                                </div>
+                                <div className="pb-4">
+                                  <p
+                                    className={`font-medium ${
+                                      !step.completed && "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {step.status}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {step.date}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="pb-4">
-                                <p
-                                  className={`font-medium ${
-                                    !step.completed && "text-muted-foreground"
-                                  }`}
-                                >
-                                  {step.status}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {step.date}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Actions */}
                       <div className="flex flex-wrap gap-3">
@@ -400,6 +345,7 @@ export default function OrdersPage() {
           </Card>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -14,25 +14,36 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Book, Category } from '@/types';
-
-// TODO: Fetch from API
-const mockCategory: (Category & { image: string }) | null = null;
-const mockBooks: Book[] = [];
-
+import api from '@/lib/api';
 export default function CategoryDetailPage() {
   const params = useParams();
-  const [category, setCategory] = useState<typeof mockCategory | null>(null);
+  const [category, setCategory] = useState<(Category & { image: string }) | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setCategory(mockCategory as typeof category);
-      setBooks(mockBooks);
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+    const fetchCategoryData = async () => {
+      try {
+        setLoading(true);
+        const [catRes, booksRes] = await Promise.all([
+          api.get(`/categories/${params.slug}`).catch(() => null),
+          api.get('/books', { params: { category: params.slug } }).catch(() => null)
+        ]);
+        
+        const catData = catRes?.data?.data || catRes?.data;
+        setCategory(catData || null);
+
+        const items = booksRes?.data?.data?.books || booksRes?.data?.data || booksRes?.data || [];
+        setBooks(Array.isArray(items) ? items : []);
+      } catch (err) {
+        console.log("Failed to fetch category data:", err);
+        setCategory(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategoryData();
   }, [params.slug]);
 
   if (loading) {

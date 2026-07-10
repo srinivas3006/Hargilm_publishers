@@ -33,8 +33,8 @@ export function BookCard({
 
   const authorName =
     typeof book.author === "object"
-      ? (book.author as Author).name
-      : "Unknown Author";
+      ? (book.author as Author)?.name || "Unknown Author"
+      : book.author || "Unknown Author";
   const price = book.discountPrice || book.price;
   const hasDiscount = book.discountPrice && book.discountPrice < book.price;
   const discountPercent = hasDiscount
@@ -43,7 +43,7 @@ export function BookCard({
 
   if (variant === "horizontal") {
     return (
-      <Link href={`/books/${book.slug}`}>
+      <Link href={`/books/${book.slug || book._id}`}>
         <motion.div
           whileHover={{ y: -2 }}
           className="flex gap-4 p-4 bg-card rounded-lg border border-border hover:shadow-md transition-shadow"
@@ -96,7 +96,7 @@ export function BookCard({
 
   if (variant === "compact") {
     return (
-      <Link href={`/books/${book.slug}`}>
+      <Link href={`/books/${book.slug || book._id}`}>
         <motion.div whileHover={{ y: -4 }} className="group">
           <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2">
             <Image
@@ -120,7 +120,7 @@ export function BookCard({
   }
 
   return (
-    <Link href={`/books/${book.slug}`}>
+    <Link href={`/books/${book.slug || book._id}`}>
       <motion.div
         whileHover={{ y: -6 }}
         className="group bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/30 shadow-sm hover:shadow-2xl transition-all duration-500"

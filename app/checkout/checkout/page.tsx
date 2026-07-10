@@ -20,6 +20,8 @@ const defaultAddress = {
   email: '',
 };
 
+import { AuthGuard } from '@/components/auth/auth-guard';
+
 export default function CheckoutStepPage() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
@@ -118,6 +120,7 @@ export default function CheckoutStepPage() {
   };
 
   return (
+    <AuthGuard>
     <div className="bg-background min-h-screen py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10">
@@ -362,5 +365,6 @@ export default function CheckoutStepPage() {
         )}
       </AnimatePresence>
     </div>
+    </AuthGuard>
   );
 }

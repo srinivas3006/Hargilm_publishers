@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import api from "@/lib/api";
+import { useAuthStore } from "@/store/auth-store";
+import toast from "react-hot-toast";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   DollarSign,
   TrendingUp,
@@ -158,13 +162,102 @@ const bookEarnings = [
 ];
 
 export default function RoyaltiesPage() {
+  const { user } = useAuthStore();
   const [periodFilter, setPeriodFilter] = useState("all");
+  const [royaltyData, setRoyaltyData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const totalEarnings = earnings.reduce((sum, e) => sum + e.royalty, 0);
-  const pendingPayout = earnings
-    .filter((e) => e.status === "Pending")
-    .reduce((sum, e) => sum + e.royalty, 0);
-  const totalPaid = payouts.reduce((sum, p) => sum + p.amount, 0);
+  const fetchRoyalties = async () => {
+    if (!user?._id && !user?.id) return;
+    const authorId = user._id || user.id;
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get(`/authors/${authorId}/royalties/history`);
+      setRoyaltyData(data.data || data);
+    } catch (err) {
+      console.error("Failed to fetch royalty history:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoyalties();
+  }, [user]);
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load royalties"
+        message="We encountered an issue fetching your royalty history. Please try again."
+        onRetry={fetchRoyalties}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const currentEarnings = royaltyData?.earnings || [];
+  const currentPayouts = royaltyData?.payouts || [];
+  const currentBookEarnings = royaltyData?.bookEarnings || [];
+
+  const totalEarnings = currentEarnings.reduce((sum: number, e: any) => sum + (e.royalty || 0), 0) || 0;
+  const pendingPayout = currentEarnings
+    .filter((e: any) => e.status === "Pending")
+    .reduce((sum: number, e: any) => sum + (e.royalty || 0), 0) || 0;
+  const totalPaid = currentPayouts.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0;
+
+  const handleExport = () => {
+    if (!currentEarnings || currentEarnings.length === 0) {
+      toast.error("No data available to export.");
+      return;
+    }
+
+    try {
+      // 1. Create CSV headers
+      const headers = ["Month", "Books Sold", "Sales", "Gross Revenue (INR)", "Royalty Earned (INR)", "Status"];
+      
+      // 2. Map data to rows
+      const rows = currentEarnings.map((e: any) => [
+        `"${e.month}"`, 
+        e.books || 0, 
+        e.sales || 0, 
+        e.grossRevenue || 0, 
+        e.royalty || 0, 
+        `"${e.status}"`
+      ]);
+
+      // 3. Combine into CSV string
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row: any[]) => row.join(","))
+      ].join("\n");
+
+      // 4. Trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `royalties_report_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Report exported successfully!");
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export report.");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -175,7 +268,7 @@ export default function RoyaltiesPage() {
             Track your earnings and payout history
           </p>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={handleExport}>
           <Download className="h-4 w-4" />
           Export Report
         </Button>
@@ -296,32 +389,42 @@ export default function RoyaltiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bookEarnings.map((book) => (
-                  <TableRow key={book.id}>
-                    <TableCell className="font-medium">{book.title}</TableCell>
-                    <TableCell className="text-right">{book.sales}</TableCell>
-                    <TableCell className="text-right">
-                      ₹{book.revenue.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">{book.royaltyRate}%</TableCell>
-                    <TableCell className="text-right font-semibold text-emerald-600">
-                      ₹{book.royalty.toLocaleString()}
+                {currentBookEarnings.length > 0 ? (
+                  currentBookEarnings.map((book: any) => (
+                    <TableRow key={book.id || book._id}>
+                      <TableCell className="font-medium">{book.title}</TableCell>
+                      <TableCell className="text-right">{book.sales}</TableCell>
+                      <TableCell className="text-right">
+                        ₹{(book.revenue || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">{book.royaltyRate}%</TableCell>
+                      <TableCell className="text-right font-semibold text-emerald-600">
+                        ₹{(book.royalty || 0).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                      No book earnings found.
                     </TableCell>
                   </TableRow>
-                ))}
-                <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold">Total</TableCell>
-                  <TableCell className="text-right font-bold">
-                    {bookEarnings.reduce((sum, b) => sum + b.sales, 0)}
-                  </TableCell>
-                  <TableCell className="text-right font-bold">
-                    ₹{bookEarnings.reduce((sum, b) => sum + b.revenue, 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">-</TableCell>
-                  <TableCell className="text-right font-bold text-emerald-600">
-                    ₹{bookEarnings.reduce((sum, b) => sum + b.royalty, 0).toLocaleString()}
-                  </TableCell>
-                </TableRow>
+                )}
+                {currentBookEarnings.length > 0 && (
+                  <TableRow className="bg-muted/50">
+                    <TableCell className="font-bold">Total</TableCell>
+                    <TableCell className="text-right font-bold">
+                      {currentBookEarnings.reduce((sum: number, b: any) => sum + (b.sales || 0), 0)}
+                    </TableCell>
+                    <TableCell className="text-right font-bold">
+                      ₹{currentBookEarnings.reduce((sum: number, b: any) => sum + (b.revenue || 0), 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">-</TableCell>
+                    <TableCell className="text-right font-bold text-emerald-600">
+                      ₹{currentBookEarnings.reduce((sum: number, b: any) => sum + (b.royalty || 0), 0).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -347,30 +450,38 @@ export default function RoyaltiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {earnings.map((earning) => (
-                  <TableRow key={earning.id}>
-                    <TableCell className="font-medium">{earning.month}</TableCell>
-                    <TableCell className="text-right">{earning.books}</TableCell>
-                    <TableCell className="text-right">{earning.sales}</TableCell>
-                    <TableCell className="text-right">
-                      ₹{earning.grossRevenue.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-emerald-600">
-                      ₹{earning.royalty.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        className={
-                          earning.status === "Paid"
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : "bg-amber-500/10 text-amber-600"
-                        }
-                      >
-                        {earning.status}
-                      </Badge>
+                {currentEarnings.length > 0 ? (
+                  currentEarnings.map((earning: any) => (
+                    <TableRow key={earning.id || earning._id}>
+                      <TableCell className="font-medium">{earning.month}</TableCell>
+                      <TableCell className="text-right">{earning.books}</TableCell>
+                      <TableCell className="text-right">{earning.sales}</TableCell>
+                      <TableCell className="text-right">
+                        ₹{(earning.grossRevenue || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-emerald-600">
+                        ₹{(earning.royalty || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge
+                          className={
+                            earning.status === "Paid"
+                              ? "bg-emerald-500/10 text-emerald-600"
+                              : "bg-amber-500/10 text-amber-600"
+                          }
+                        >
+                          {earning.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                      No monthly earnings recorded yet.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
@@ -395,23 +506,31 @@ export default function RoyaltiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payouts.map((payout) => (
-                  <TableRow key={payout.id}>
-                    <TableCell>
-                      {new Date(payout.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="font-medium">{payout.reference}</TableCell>
-                    <TableCell>{payout.method}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      ₹{payout.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge className="bg-emerald-500/10 text-emerald-600">
-                        {payout.status}
-                      </Badge>
+                {currentPayouts.length > 0 ? (
+                  currentPayouts.map((payout: any) => (
+                    <TableRow key={payout.id || payout._id}>
+                      <TableCell>
+                        {new Date(payout.date || payout.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="font-medium">{payout.reference}</TableCell>
+                      <TableCell>{payout.method}</TableCell>
+                      <TableCell className="text-right font-semibold">
+                        ₹{(payout.amount || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge className="bg-emerald-500/10 text-emerald-600">
+                          {payout.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                      No payouts recorded yet.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>

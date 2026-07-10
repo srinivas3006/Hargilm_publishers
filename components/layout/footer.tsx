@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { siteConfig } from "@/config/site";
 
 const footerLinks = {
   company: [
@@ -38,6 +39,7 @@ const footerLinks = {
     { label: "FAQ", href: "/faq" },
     { label: "Track Order", href: "/track-order" },
     { label: "Returns Policy", href: "/returns" },
+    { label: "Terms of Service", href: "/terms" },
     { label: "Privacy Policy", href: "/privacy" },
   ],
 };
@@ -45,18 +47,18 @@ const footerLinks = {
 const socialLinks = [
   {
     icon: Facebook,
-    href: "https://facebook.com/harglimpublishers",
+    href: siteConfig.social.facebook,
     label: "Facebook",
   },
-  { icon: Twitter, href: "https://twitter.com/harglim", label: "Twitter" },
+  { icon: Twitter, href: siteConfig.social.twitter, label: "Twitter" },
   {
     icon: Instagram,
-    href: "https://instagram.com/harglimpublishers",
+    href: siteConfig.social.instagram,
     label: "Instagram",
   },
   {
     icon: Linkedin,
-    href: "https://linkedin.com/company/harglim",
+    href: siteConfig.social.linkedin,
     label: "LinkedIn",
   },
 ];
@@ -65,6 +67,8 @@ export function Footer() {
   const pathname = usePathname();
   const isHiddenRoute = 
     pathname?.startsWith('/admin') || 
+    pathname?.startsWith('/author') ||
+    pathname?.startsWith('/dashboard') ||
     pathname?.startsWith('/login') ||
     pathname?.startsWith('/register');
 
@@ -108,7 +112,7 @@ export function Footer() {
                 alt="Harglim Publishers"
                 width={40}
                 height={40}
-                className="w-10 h-10 object-contain"
+                className="h-10 w-auto object-contain"
               />
               <span className="font-serif text-xl font-bold">
                 Harglim Publishers
@@ -121,15 +125,15 @@ export function Footer() {
             <div className="space-y-2 text-sm text-white/70">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                <span>123 Publishing Lane, Mumbai, India 400001</span>
+                <span>{siteConfig.contact.address}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
-                <span>+91 98765 43210</span>
+                <span>{siteConfig.contact.phonePrimary}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                <span>contact@harglim.com</span>
+                <span>{siteConfig.contact.email}</span>
               </div>
             </div>
           </div>
@@ -205,10 +209,20 @@ export function Footer() {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-white/70">
-              &copy; {new Date().getFullYear()} Harglim Publishers. All rights
-              reserved.
-            </p>
+            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-sm text-white/70">
+              <p>
+                &copy; {new Date().getFullYear()} Harglim Publishers. All rights reserved.
+              </p>
+              <div className="hidden md:block w-1 h-1 rounded-full bg-white/30" />
+              <div className="flex items-center gap-4">
+                <Link href="/terms" className="hover:text-white transition-colors">
+                  Terms
+                </Link>
+                <Link href="/privacy" className="hover:text-white transition-colors">
+                  Privacy
+                </Link>
+              </div>
+            </div>
             <div className="flex items-center gap-4">
               {socialLinks.map((social) => (
                 <a

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import api from "@/lib/api";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   Users,
   Search,
@@ -39,68 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import toast from "react-hot-toast";
 
-const usersData = [
-  {
-    id: 1,
-    name: "Rahul Sharma",
-    email: "rahul.sharma@example.com",
-    role: "User",
-    orders: 12,
-    spent: 8999,
-    joinDate: "2023-06-15",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Priya Patel",
-    email: "priya.patel@example.com",
-    role: "Author",
-    orders: 3,
-    spent: 2499,
-    joinDate: "2023-08-20",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Amit Kumar",
-    email: "amit.kumar@example.com",
-    role: "User",
-    orders: 8,
-    spent: 5899,
-    joinDate: "2023-09-10",
-    status: "Active",
-  },
-  {
-    id: 4,
-    name: "Sneha Reddy",
-    email: "sneha.reddy@example.com",
-    role: "Author",
-    orders: 5,
-    spent: 3299,
-    joinDate: "2023-10-05",
-    status: "Suspended",
-  },
-  {
-    id: 5,
-    name: "Vikram Singh",
-    email: "vikram.singh@example.com",
-    role: "User",
-    orders: 15,
-    spent: 12499,
-    joinDate: "2023-04-12",
-    status: "Active",
-  },
-  {
-    id: 6,
-    name: "Ananya Gupta",
-    email: "ananya.gupta@example.com",
-    role: "Admin",
-    orders: 0,
-    spent: 0,
-    joinDate: "2023-01-01",
-    status: "Active",
-  },
-];
+
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -127,30 +68,91 @@ const getRoleColor = (role: string) => {
 };
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState(usersData);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const filteredUsers = users.filter((user) => {
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get("/admin/users").catch(() => api.get("/users"));
+      setUsers(data.data || data);
+    } catch (err) {
+      console.error("Failed to fetch admin users:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const filteredUsers = users.filter((user: any) => {
+    const name = user.name || "";
+    const email = user.email || "";
     const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    const matchesStatus = statusFilter === "all" || user.status === statusFilter;
+    const userStatus = user.status || "Active";
+    const matchesStatus = statusFilter === "all" || userStatus === statusFilter;
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const handleSuspend = (id: number) => {
-    setUsers(
-      users.map((u) =>
-        u.id === id
-          ? { ...u, status: u.status === "Active" ? "Suspended" : "Active" }
-          : u
-      )
-    );
-    toast.success("User status updated");
+  const handleSuspend = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === "Active" ? "Suspended" : "Active";
+    try {
+      await api.put(`/admin/users/${id}/status`, { status: newStatus });
+      setUsers(
+        users.map((u: any) =>
+          (u.id || u._id) === id ? { ...u, status: newStatus } : u
+        )
+      );
+      toast.success("User status updated");
+    } catch (err) {
+      console.error("Failed to update user status:", err);
+      toast.error("Failed to update user status");
+    }
   };
+
+  const handleRoleChange = async (id: string, newRole: string) => {
+    try {
+      await api.put(`/admin/users/${id}/role`, { role: newRole });
+      setUsers(
+        users.map((u: any) =>
+          (u.id || u._id) === id ? { ...u, role: newRole } : u
+        )
+      );
+      toast.success(`User role updated to ${newRole}`);
+    } catch (err) {
+      console.error("Failed to update user role:", err);
+      toast.error("Failed to update user role");
+    }
+  };
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load users"
+        message="We encountered an issue fetching the users list. Please try again."
+        onRetry={fetchUsers}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -184,7 +186,7 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {users.filter((u) => u.status === "Active").length}
+                  {users.filter((u: any) => u.status !== "Suspended").length}
                 </p>
                 <p className="text-sm text-muted-foreground">Active</p>
               </div>
@@ -199,7 +201,7 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {users.filter((u) => u.role === "Author").length}
+                  {users.filter((u: any) => u.role === "Author").length}
                 </p>
                 <p className="text-sm text-muted-foreground">Authors</p>
               </div>
@@ -214,7 +216,7 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {users.filter((u) => u.status === "Suspended").length}
+                  {users.filter((u: any) => u.status === "Suspended").length}
                 </p>
                 <p className="text-sm text-muted-foreground">Suspended</p>
               </div>
@@ -280,42 +282,45 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user, index) => (
-                  <motion.tr
-                    key={user.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="border-b"
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted font-medium">
-                          {user.name.charAt(0)}
+                {filteredUsers.map((user: any, index: number) => {
+                  const status = user.status || "Active";
+                  const role = user.role || "User";
+                  return (
+                    <motion.tr
+                      key={user.id || user._id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="border-b"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted font-medium uppercase">
+                            {(user.name || "?").charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {user.email}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">{user.orders}</TableCell>
-                    <TableCell className="text-right">
-                      ₹{user.spent.toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(user.joinDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(user.status)}>
-                        {user.status}
-                      </Badge>
-                    </TableCell>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getRoleColor(role)}>{role}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{user.orders || 0}</TableCell>
+                      <TableCell className="text-right">
+                        ₹{(user.spent || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.createdAt || user.joinDate || Date.now()).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(status)}>
+                          {status}
+                        </Badge>
+                      </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -332,26 +337,40 @@ export default function AdminUsersPage() {
                             <Mail className="mr-2 h-4 w-4" />
                             Send Email
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Shield className="mr-2 h-4 w-4" />
-                            Change Role
-                          </DropdownMenuItem>
+                          {role !== "Admin" && (
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.id || user._id, "Admin")}>
+                              <Shield className="mr-2 h-4 w-4 text-primary" />
+                              Promote to Admin
+                            </DropdownMenuItem>
+                          )}
+                          {role !== "Author" && (
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.id || user._id, "Author")}>
+                              <Shield className="mr-2 h-4 w-4 text-blue-500" />
+                              Promote to Author
+                            </DropdownMenuItem>
+                          )}
+                          {role !== "User" && (
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.id || user._id, "User")}>
+                              <Shield className="mr-2 h-4 w-4 text-muted-foreground" />
+                              Demote to Reader
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             className={
-                              user.status === "Active"
+                              status !== "Suspended"
                                 ? "text-destructive"
                                 : "text-emerald-600"
                             }
-                            onClick={() => handleSuspend(user.id)}
+                            onClick={() => handleSuspend(user.id || user._id, status)}
                           >
                             <Ban className="mr-2 h-4 w-4" />
-                            {user.status === "Active" ? "Suspend" : "Activate"}
+                            {status !== "Suspended" ? "Suspend" : "Activate"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </motion.tr>
-                ))}
+                );})}
               </TableBody>
             </Table>
           </div>

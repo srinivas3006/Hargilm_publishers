@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import api from "@/lib/api";
+import { ErrorState } from "@/components/ui/error-state";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -51,8 +53,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import toast from "react-hot-toast";
 
-// TODO: Fetch from API
-const booksData: any[] = [];
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -68,27 +68,73 @@ const getStatusColor = (status: string) => {
 };
 
 export default function AdminBooksPage() {
-  const [books, setBooks] = useState(booksData);
+  const [books, setBooks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const categories = Array.from(new Set(booksData.map((b) => b.category)));
+  const fetchBooks = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get("/admin/books").catch(() => api.get("/books"));
+      setBooks(data.data || data);
+    } catch (err) {
+      console.error("Failed to fetch admin books:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredBooks = books.filter((book) => {
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const categories = Array.from(new Set(books.map((b: any) => b.category)));
+
+  const filteredBooks = books.filter((book: any) => {
+    const title = book.title || "";
+    const author = book.author?.name || book.authorName || "";
     const matchesSearch =
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase());
+      title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      author.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       categoryFilter === "all" || book.category === categoryFilter;
     const matchesStatus = statusFilter === "all" || book.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const handleDelete = (id: number) => {
-    setBooks(books.filter((b) => b.id !== id));
-    toast.success("Book deleted successfully");
+  const handleDelete = async (id: string) => {
+    try {
+      await api.delete(`/admin/books/${id}`);
+      setBooks(books.filter((b: any) => (b.id || b._id) !== id));
+      toast.success("Book deleted successfully");
+    } catch (err) {
+      console.error("Failed to delete book:", err);
+      toast.error("Failed to delete book");
+    }
   };
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load books"
+        message="We encountered an issue fetching the books inventory. Please try again."
+        onRetry={fetchBooks}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -160,9 +206,9 @@ export default function AdminBooksPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
+                {categories.map((cat: any) => (
+                  <SelectItem key={cat || "unknown"} value={cat || "unknown"}>
+                    {cat || "Unknown"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -201,9 +247,9 @@ export default function AdminBooksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredBooks.map((book, index) => (
+                {filteredBooks.map((book: any, index: number) => (
                   <motion.tr
-                    key={book.id}
+                    key={book.id || book._id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.05 }}
@@ -212,33 +258,33 @@ export default function AdminBooksPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
-                          src={book.cover}
+                          src={book.coverImage || book.cover}
                           alt={book.title}
                           className="h-12 w-9 rounded object-cover"
                         />
                         <div>
                           <p className="font-medium">{book.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            {book.author}
+                            {book.author?.name || book.authorName || "Unknown Author"}
                           </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{book.category}</Badge>
+                      <Badge variant="outline">{book.category || "Uncategorized"}</Badge>
                     </TableCell>
                     <TableCell className="text-right">₹{book.price}</TableCell>
-                    <TableCell className="text-right">{book.stock}</TableCell>
-                    <TableCell className="text-right">{book.sales}</TableCell>
+                    <TableCell className="text-right">{book.stock || 0}</TableCell>
+                    <TableCell className="text-right">{book.sales || 0}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                        {book.rating}
+                        {book.rating || 0}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(book.status)}>
-                        {book.status}
+                        {book.status || "Active"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -250,14 +296,16 @@ export default function AdminBooksPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/books/${book.id}`}>
+                            <Link href={`/books/${book.id || book._id || book.slug}`}>
                               <Eye className="mr-2 h-4 w-4" />
                               View
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/books/${book.id || book._id}/edit`}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </Link>
                           </DropdownMenuItem>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -281,7 +329,7 @@ export default function AdminBooksPage() {
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => handleDelete(book.id)}
+                                  onClick={() => handleDelete(book.id || book._id)}
                                 >
                                   Delete
                                 </AlertDialogAction>

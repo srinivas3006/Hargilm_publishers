@@ -16,63 +16,36 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookCard } from "@/components/books/book-card";
+import { ErrorState } from "@/components/ui/error-state";
 import type { Book } from "@/types";
 import toast from "react-hot-toast";
 import api from "@/lib/api";
 
-// Mock data for demonstration
-// TODO: Fetch from backend API
-const mockFeaturedBooks: Book[] = [];
 
-const testimonials = [
-  {
-    name: "Priya Sharma",
-    book: "The Forgotten Path",
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    quote:
-      "Harglim made my dream of becoming an author come true. The team was incredibly supportive throughout the process.",
-  },
-  {
-    name: "Rahul Mehta",
-    book: "Digital Dreams",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    quote:
-      "Professional team, excellent editing, and beautiful cover design. My book sales exceeded expectations!",
-  },
-  {
-    name: "Anjali Nair",
-    book: "Whispers of the Heart",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-    quote:
-      "The publishing process was smooth and transparent. Highly recommended for first-time authors.",
-  },
-];
+const testimonials: { name: string; book: string; image: string; quote: string }[] = [];
 
-const stats = [
-  { label: "Books Published", value: "500+", icon: BookOpen },
-  { label: "Happy Authors", value: "200+", icon: Users },
-  { label: "Countries Reached", value: "25+", icon: Globe },
-  { label: "Awards Won", value: "15+", icon: Award },
-];
+const stats: { label: string; value: string; icon: any }[] = [];
 
 export default function Home() {
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchBooks = async () => {
+    try {
+      setLoading(true);
+      setError(false);
+      const { data } = await api.get('/books?featured=true&limit=4');
+      setFeaturedBooks(data.data || data || []);
+    } catch (error) {
+      console.error("Failed to fetch featured books:", error);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const { data } = await api.get('/books?featured=true&limit=4');
-        setFeaturedBooks(data.data || []);
-      } catch (error) {
-        console.error("Failed to fetch featured books:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchBooks();
   }, []);
 
@@ -172,6 +145,7 @@ export default function Home() {
       </section>
 
       {/* Stats Section */}
+      {stats.length > 0 && (
       <section className="py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -201,6 +175,7 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* Features Section */}
       <section className="py-24 bg-gradient-to-b from-background via-background to-muted/10">
@@ -305,6 +280,12 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          ) : error ? (
+            <ErrorState 
+              title="Unable to load books" 
+              message="We hit a snag trying to fetch the latest featured books. Please try again."
+              onRetry={fetchBooks}
+            />
           ) : (
             <motion.div
               initial="hidden"
@@ -370,6 +351,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
+      {testimonials.length > 0 && (
       <section className="py-20 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -433,6 +415,7 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* Newsletter */}
       <section className="py-24 bg-background">

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/auth-store";
 import { useState, useEffect } from "react";
+import { ErrorState } from "@/components/ui/error-state";
 import api from "@/lib/api";
 
 const stats = [
@@ -117,36 +118,65 @@ const getStatusColor = (status: string) => {
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [dynamicStats, setDynamicStats] = useState(stats);
-  const [dynamicOrders, setDynamicOrders] = useState(recentOrders);
+  const [dynamicOrders, setDynamicOrders] = useState<any[]>([]);
+  const [recs, setRecs] = useState<any[]>([]);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
   
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user?._id) return;
-      try {
-        const [statsRes, ordersRes] = await Promise.all([
-          api.get(`/users/stats`),
-          api.get(`/users/orders?limit=3&sort=-createdAt`)
+  const fetchData = async () => {
+    if (!user?._id && !user?.id) return;
+    const userId = user._id || user.id;
+    setLoading(true);
+    setError(false);
+    try {
+      const [statsRes, ordersRes, recsRes] = await Promise.all([
+        api.get(`/users/${userId}/stats`),
+        api.get(`/users/${userId}/orders?limit=3&sort=-createdAt`),
+        api.get(`/books?limit=3`)
+      ]);
+      
+      const statsData = statsRes.data?.data || statsRes.data;
+      if (statsData) {
+        setDynamicStats([
+          { ...stats[0], value: statsData.totalOrders?.toString() || "0" },
+          { ...stats[1], value: statsData.totalWishlistItems?.toString() || "0" },
+          { ...stats[2], value: statsData.booksOwned?.toString() || "0" },
+          { ...stats[3], value: `₹${statsData.totalSpent?.toLocaleString() || "0"}` },
         ]);
-        
-        if (statsRes.data?.success) {
-          const d = statsRes.data.data;
-          setDynamicStats([
-            { ...stats[0], value: d.totalOrders?.toString() || "0" },
-            { ...stats[1], value: d.totalWishlistItems?.toString() || "0" },
-            { ...stats[2], value: d.booksOwned?.toString() || "0" },
-            { ...stats[3], value: `₹${d.totalSpent?.toLocaleString() || "0"}` },
-          ]);
-        }
-        
-        if (ordersRes.data?.success) {
-          setDynamicOrders(ordersRes.data.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
       }
-    };
+      
+      const ordersData = ordersRes.data?.data || ordersRes.data;
+      if (ordersData) {
+        setDynamicOrders(Array.isArray(ordersData) ? ordersData : []);
+      }
+
+      const recsData = recsRes.data?.data?.books || recsRes.data?.data || recsRes.data;
+      if (recsData) {
+        setRecs(Array.isArray(recsData) ? recsData : []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch dashboard data:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [user]);
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <ErrorState 
+          title="Unable to load dashboard"
+          message="We couldn't fetch your account details. Please try again."
+          onRetry={fetchData}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -246,26 +276,32 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recommendedBooks.map((book) => (
-                <Link
-                  key={book.id}
-                  href={`/books/${book.id}`}
-                  className="flex items-center gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                >
-                  <img
-                    src={book.cover}
-                    alt={book.title}
-                    className="h-16 w-12 rounded object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{book.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {book.author}
-                    </p>
-                  </div>
-                  <p className="font-semibold text-primary">₹{book.price}</p>
-                </Link>
-              ))}
+              {recs.length > 0 ? (
+                recs.map((book) => (
+                  <Link
+                    key={book._id || book.id}
+                    href={`/books/${book.slug || book.id}`}
+                    className="flex items-center gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                  >
+                    <img
+                      src={book.coverImage || book.cover}
+                      alt={book.title}
+                      className="h-16 w-12 rounded object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{book.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {typeof book.author === 'object' ? book.author?.name : book.author}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-primary">₹{book.discountPrice || book.price}</p>
+                  </Link>
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  No recommendations yet
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

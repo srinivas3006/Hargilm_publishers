@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookCard } from '@/components/books/book-card';
+import { ErrorState } from '@/components/ui/error-state';
 import { useCartStore } from '@/store/cart-store';
 import type { Book, Author } from '@/types';
 import toast from 'react-hot-toast';
@@ -38,40 +39,47 @@ export default function BookDetailPage() {
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const addItem = useCartStore((state) => state.addItem);
 
-  useEffect(() => {
-    const fetchBookData = async () => {
-      setLoading(true);
-      try {
-        const [bookRes, relatedRes, reviewsRes] = await Promise.all([
-          api.get(`/books/${params.slug}`),
-          api.get(`/books/${params.slug}/related?limit=4`),
-          api.get(`/books/${params.slug}/reviews?page=1&limit=5`)
-        ]);
-        
-        if (bookRes.data.status === 'success') {
-          setBook(bookRes.data.data as Book);
-        } else {
-          setBook(null);
-        }
-        
-        if (relatedRes.data.status === 'success') {
-          setRelatedBooks(relatedRes.data.data || []);
-        }
-        
-        if (reviewsRes.data.status === 'success') {
-          setReviews(reviewsRes.data.data || []);
-        }
-      } catch (error) {
-        console.error("Failed to fetch book data", error);
+  const fetchBookData = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [bookRes, relatedRes, reviewsRes] = await Promise.all([
+        api.get(`/books/${params.slug}`),
+        api.get(`/books/${params.slug}/related?limit=4`).catch(() => ({ data: { data: [] } })),
+        api.get(`/books/${params.slug}/reviews?page=1&limit=5`).catch(() => ({ data: { data: [] } }))
+      ]);
+      
+      const bookData = bookRes.data.data || bookRes.data;
+      if (bookData) {
+        setBook(bookData as Book);
+      } else {
         setBook(null);
-      } finally {
-        setLoading(false);
       }
-    };
+      
+      const relatedData = relatedRes.data.data || relatedRes.data;
+      if (relatedData) {
+        setRelatedBooks(Array.isArray(relatedData) ? relatedData : []);
+      }
+      
+      const reviewsData = reviewsRes.data.data || reviewsRes.data;
+      if (reviewsData) {
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      }
+    } catch (err: any) {
+      console.log("Failed to fetch book data:", err?.message || err);
+      setError(true);
+      setBook(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchBookData();
   }, [params.slug]);
 
@@ -93,6 +101,18 @@ export default function BookDetailPage() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-background min-h-screen flex items-center justify-center p-4">
+        <ErrorState 
+          title="Could not load book"
+          message="We couldn't fetch the details for this book right now. Please try again."
+          onRetry={fetchBookData}
+        />
       </div>
     );
   }

@@ -1,27 +1,45 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { BookCard } from '@/components/books/book-card';
+import { ErrorState } from '@/components/ui/error-state';
 import type { Book } from '@/types';
-
-// TODO: Replace with API call results
-const mockBooks: Book[] = [];
+import api from '@/lib/api';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  const results = useMemo(
-    () =>
-      mockBooks.filter((book) =>
-        [book.title, book.description, (typeof book.author === 'object' ? book.author.name : '')]
-          .join(' ')
-          .toLowerCase()
-          .includes(query.toLowerCase())
-      ),
-    [query]
-  );
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setLoading(false);
+      setError(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setError(false);
+      try {
+        const { data } = await api.get('/search', { params: { q: query } });
+        const items = data.data?.books || data.data || data || [];
+        setResults(Array.isArray(items) ? items : []);
+      } catch (err) {
+        console.error("Failed to search books:", err);
+        setError(true);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   return (
     <div className="bg-background min-h-screen py-16">
@@ -51,6 +69,26 @@ export default function SearchPage() {
               <div className="rounded-3xl border border-dashed border-muted p-10 text-center text-muted-foreground">
                 Start typing to search our catalog, or browse all books.
               </div>
+            ) : loading ? (
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 animate-pulse">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i}>
+                    <div className="aspect-[2/3] bg-muted rounded-lg mb-4" />
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <ErrorState 
+                title="Search failed"
+                message="We encountered an error while searching. Please try again."
+                onRetry={() => {
+                  const q = query;
+                  setQuery('');
+                  setTimeout(() => setQuery(q), 0); // Quick hack to re-trigger effect
+                }}
+              />
             ) : results.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-muted p-10 text-center text-muted-foreground">
                 No books match "{query}". Try a different keyword.

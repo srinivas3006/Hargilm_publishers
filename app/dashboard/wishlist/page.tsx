@@ -8,71 +8,54 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/store/cart-store";
+import { useAuthStore } from "@/store/auth-store";
+import { ErrorState } from "@/components/ui/error-state";
 import type { Book } from "@/types";
 import toast from "react-hot-toast";
-
-const wishlistItems = [
-  {
-    id: 1,
-    title: "The Art of Programming",
-    author: "John Smith",
-    price: 499,
-    originalPrice: 699,
-    rating: 4.5,
-    reviews: 128,
-    cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200&h=300&fit=crop",
-    inStock: true,
-    category: "Technology",
-  },
-  {
-    id: 2,
-    title: "Business Strategy 101",
-    author: "Sarah Johnson",
-    price: 399,
-    originalPrice: 599,
-    rating: 4.2,
-    reviews: 95,
-    cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&h=300&fit=crop",
-    inStock: true,
-    category: "Business",
-  },
-  {
-    id: 3,
-    title: "Creative Writing Masterclass",
-    author: "Michael Brown",
-    price: 349,
-    originalPrice: 449,
-    rating: 4.8,
-    reviews: 234,
-    cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=200&h=300&fit=crop",
-    inStock: false,
-    category: "Literature",
-  },
-  {
-    id: 4,
-    title: "Finance for Beginners",
-    author: "Emily Davis",
-    price: 549,
-    originalPrice: null,
-    rating: 4.0,
-    reviews: 67,
-    cover: "https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=200&h=300&fit=crop",
-    inStock: true,
-    category: "Finance",
-  },
-];
-
+import api from "@/lib/api";
+import { useEffect } from "react";
 export default function WishlistPage() {
-  const [items, setItems] = useState(wishlistItems);
+  const { user } = useAuthStore();
+  const [items, setItems] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const { addItem } = useCartStore();
 
-  const removeFromWishlist = (id: number) => {
-    setItems(items.filter((item) => item.id !== id));
-    toast.success("Removed from wishlist");
+  const fetchWishlist = async () => {
+    if (!user?._id && !user?.id) return;
+    const userId = user._id || user.id;
+    setLoading(true);
+    setError(false);
+    try {
+      const { data } = await api.get(`/users/${userId}/wishlist`);
+      const wishlistData = data.data || data;
+      setItems(Array.isArray(wishlistData) ? wishlistData : []);
+    } catch (err) {
+      console.error("Failed to fetch wishlist:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAddToCart = (item: typeof wishlistItems[0]) => {
+  useEffect(() => {
+    fetchWishlist();
+  }, [user]);
+
+  const removeFromWishlist = async (id: string) => {
+    if (!user?._id && !user?.id) return;
+    const userId = user._id || user.id;
+    try {
+      await api.delete(`/users/${userId}/wishlist/${id}`);
+      setItems(items.filter((item) => (item._id || item.id) !== id));
+      toast.success("Removed from wishlist");
+    } catch (err) {
+      toast.error("Failed to remove from wishlist");
+    }
+  };
+
+  const handleAddToCart = (item: any) => {
     if (!item.inStock) {
       toast.error("Item is out of stock");
       return;
@@ -116,7 +99,17 @@ export default function WishlistPage() {
         </div>
       </div>
 
-      {items.length > 0 ? (
+      {error ? (
+        <ErrorState
+          title="Could not load wishlist"
+          message="We encountered an error loading your wishlist."
+          onRetry={fetchWishlist}
+        />
+      ) : loading ? (
+        <div className="flex justify-center items-center h-48">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : items.length > 0 ? (
         <div
           className={
             viewMode === "grid"
@@ -135,39 +128,39 @@ export default function WishlistPage() {
                 <Card className="overflow-hidden group">
                   <div className="relative aspect-[2/3]">
                     <img
-                      src={item.cover}
+                      src={item.coverImage || item.cover}
                       alt={item.title}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
-                    {!item.inStock && (
+                    {item.stock <= 0 && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                         <Badge variant="secondary">Out of Stock</Badge>
                       </div>
                     )}
-                    {item.originalPrice && (
+                    {item.discountPrice && item.discountPrice < item.price && (
                       <Badge className="absolute top-2 left-2 bg-destructive">
-                        {Math.round((1 - item.price / item.originalPrice) * 100)}% OFF
+                        {Math.round((1 - item.discountPrice / item.price) * 100)}% OFF
                       </Badge>
                     )}
                     <Button
                       variant="ghost"
                       size="icon"
                       className="absolute top-2 right-2 bg-background/80 hover:bg-background text-destructive"
-                      onClick={() => removeFromWishlist(item.id)}
+                      onClick={() => removeFromWishlist(item._id || item.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                   <CardContent className="p-4">
                     <Badge variant="outline" className="mb-2">
-                      {item.category}
+                      {typeof item.category === 'object' ? item.category?.name : item.category}
                     </Badge>
-                    <Link href={`/books/${item.id}`}>
+                    <Link href={`/books/${item.slug || item.id}`}>
                       <h3 className="font-semibold hover:text-primary transition-colors line-clamp-1">
                         {item.title}
                       </h3>
                     </Link>
-                    <p className="text-sm text-muted-foreground">{item.author}</p>
+                    <p className="text-sm text-muted-foreground">{typeof item.author === 'object' ? item.author?.name : item.author}</p>
                     <div className="flex items-center gap-1 mt-2">
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                       <span className="text-sm font-medium">{item.rating}</span>
@@ -176,16 +169,16 @@ export default function WishlistPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
-                      <span className="text-lg font-bold">₹{item.price}</span>
-                      {item.originalPrice && (
+                      <span className="text-lg font-bold">₹{item.discountPrice || item.price}</span>
+                      {item.discountPrice && item.discountPrice < item.price && (
                         <span className="text-sm text-muted-foreground line-through">
-                          ₹{item.originalPrice}
+                          ₹{item.price}
                         </span>
                       )}
                     </div>
                     <Button
                       className="w-full mt-3 gap-2"
-                      disabled={!item.inStock}
+                      disabled={item.stock <= 0}
                       onClick={() => handleAddToCart(item)}
                     >
                       <ShoppingCart className="h-4 w-4" />
@@ -198,11 +191,11 @@ export default function WishlistPage() {
                   <CardContent className="flex gap-4 p-4">
                     <div className="relative w-20 h-28 flex-shrink-0">
                       <img
-                        src={item.cover}
+                        src={item.coverImage || item.cover}
                         alt={item.title}
                         className="h-full w-full object-cover rounded"
                       />
-                      {!item.inStock && (
+                      {item.stock <= 0 && (
                         <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded">
                           <span className="text-xs font-medium">Out of Stock</span>
                         </div>
@@ -212,20 +205,20 @@ export default function WishlistPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <Badge variant="outline" className="mb-1">
-                            {item.category}
+                            {typeof item.category === 'object' ? item.category?.name : item.category}
                           </Badge>
-                          <Link href={`/books/${item.id}`}>
+                          <Link href={`/books/${item.slug || item.id}`}>
                             <h3 className="font-semibold hover:text-primary transition-colors">
                               {item.title}
                             </h3>
                           </Link>
-                          <p className="text-sm text-muted-foreground">{item.author}</p>
+                          <p className="text-sm text-muted-foreground">{typeof item.author === 'object' ? item.author?.name : item.author}</p>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="text-destructive"
-                          onClick={() => removeFromWishlist(item.id)}
+                          onClick={() => removeFromWishlist(item._id || item.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -239,17 +232,17 @@ export default function WishlistPage() {
                       </div>
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold">₹{item.price}</span>
-                          {item.originalPrice && (
+                          <span className="text-lg font-bold">₹{item.discountPrice || item.price}</span>
+                          {item.discountPrice && item.discountPrice < item.price && (
                             <span className="text-sm text-muted-foreground line-through">
-                              ₹{item.originalPrice}
+                              ₹{item.price}
                             </span>
                           )}
                         </div>
                         <Button
                           size="sm"
                           className="gap-2"
-                          disabled={!item.inStock}
+                          disabled={item.stock <= 0}
                           onClick={() => handleAddToCart(item)}
                         >
                           <ShoppingCart className="h-4 w-4" />

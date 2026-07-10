@@ -6,20 +6,29 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen } from 'lucide-react';
 import type { Category } from '@/types';
-
-// TODO: Fetch from API
-const mockCategories: (Category & { image: string })[] = [];
-
+import api from '@/lib/api';
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<typeof mockCategories>([]);
+  const [categories, setCategories] = useState<(Category & { image: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setCategories(mockCategories);
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        const { data } = await api.get('/categories');
+        const items = data.data?.categories || data.data || data || [];
+        setCategories(Array.isArray(items) ? items : []);
+      } catch (err) {
+        console.log('Failed to fetch categories:', err);
+        setError(true);
+        setCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
   }, []);
 
   const fadeInUp = {
@@ -65,6 +74,16 @@ export default function CategoriesPage() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-semibold mb-2">Oops!</h2>
+            <p className="text-muted-foreground">Failed to load categories. Please try again later.</p>
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-semibold mb-2">No Categories Found</h2>
+            <p className="text-muted-foreground">We couldn't find any categories at the moment.</p>
+          </div>
         ) : (
           <motion.div
             initial="hidden"
@@ -74,11 +93,11 @@ export default function CategoriesPage() {
           >
             {categories.map((category) => (
               <motion.div key={category._id} variants={fadeInUp}>
-                <Link href={`/categories/${category.slug}`}>
+                <Link href={`/categories/${category.slug || category._id}`}>
                   <div className="group relative overflow-hidden rounded-xl bg-card border border-border hover:shadow-xl transition-all">
-                    <div className="relative aspect-[3/2] overflow-hidden">
+                    <div className="relative aspect-[3/2] overflow-hidden bg-muted">
                       <Image
-                        src={category.image}
+                        src={category.image || '/images/placeholder-category.jpg'}
                         alt={category.name}
                         fill
                         className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -92,7 +111,7 @@ export default function CategoriesPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 text-sm">
                             <BookOpen className="h-4 w-4" />
-                            {category.bookCount} Books
+                            {category.bookCount || 0} Books
                           </div>
                           <span className="flex items-center gap-1 text-sm font-medium group-hover:gap-2 transition-all">
                             Explore <ArrowRight className="h-4 w-4" />

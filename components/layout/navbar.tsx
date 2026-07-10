@@ -103,7 +103,7 @@ export function Navbar() {
               alt="Harglim Publishers"
               width={40}
               height={40}
-              className="w-10 h-10 object-contain"
+              className="h-10 w-auto object-contain"
             />
             <span className="font-serif text-xl font-bold text-foreground">
               Harglim Publishers
@@ -257,7 +257,7 @@ export function Navbar() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="lg:hidden border-t border-border overflow-hidden"
+              className="lg:hidden border-t border-border overflow-hidden bg-background"
             >
               <div className="py-4 space-y-1">
                 {navLinks.map((link) => (
