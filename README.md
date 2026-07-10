@@ -1,33 +1,34 @@
-# Hargilm Publishers 📚
+# Harglim Publishers 📚
 
-Welcome to the **Hargilm Publishers** platform—a next-generation digital publishing and e-commerce ecosystem built for modern readers, authors, and administrators. 
+Welcome to the **Harglim Publishers** platform—a next-generation digital publishing and e-commerce ecosystem built for modern readers, authors, and administrators. 
 
 This platform seamlessly connects authors with their audiences through a robust online bookstore, while providing dedicated portals for manuscript submissions, royalty tracking, and system administration.
 
 ---
 
-## 🌟 Key Features & Site Preview
+## 🌟 Key Features & Portals
 
-The application is structured into interconnected portals, providing specialized tools for every user type.
+The application is structured into interconnected portals, featuring strict **Role-Based Access Control (RBAC)** to ensure maximum security.
 
-### 📖 The Book Store (Public & Customers)
+### 📖 The Book Store (Public & Readers)
 A beautifully designed, fast, and SEO-optimized storefront for book discovery and purchasing.
+- **Advanced SEO (JSON-LD):** Implements professional-grade Schema.org structured data, canonical URLs, and dynamic sitemaps so Google can display Rich Snippets for books and author profiles.
 - **Dynamic Catalog:** Browse books with advanced filtering by category, format, and price (`/books`).
-- **Rich Details:** Deep dives into individual books (`/books/[slug]`) and author profiles (`/authors/[id]`).
-- **Seamless Checkout:** A fluid, state-managed shopping cart and checkout pipeline (`/checkout/*`).
-- **Customer Dashboard:** A personalized space for users to track orders, manage their digital library, and save wishlists (`/dashboard/*`).
+- **Seamless Checkout Pipeline:** State-managed shopping cart ready for payment gateway integration (`/checkout/*`).
+- **Reader Dashboard:** A secure space for users to track orders, manage their digital library, and save wishlists (`/dashboard/*`).
 
-### ✍️ The Author Portal
-A dedicated workspace designed to empower writers.
-- **Manuscript Management:** Submit and track the status of new manuscripts (`/author/manuscripts/new`).
-- **Analytics & Royalties:** Real-time dashboards tracking sales performance and royalty payouts (`/author/analytics`, `/author/royalties`).
-- **Portfolio Management:** Manage published titles and update author profiles (`/author/books`, `/author/settings`).
+### ✍️ The Author Ecosystem
+A dedicated workspace designed to empower writers, protected by the `Author` role.
+- **Manuscript Portal:** Submit and track the status of new manuscripts (`/author/manuscripts/new`). Upon admin approval, readers are automatically upgraded to authors!
+- **Analytics & Royalties:** Dashboards tracking sales performance and royalty payouts (`/author/analytics`).
+- **Portfolio Management:** Manage published titles and update author profiles (`/author/books`).
 
-### ⚙️ The Admin Portal
-Powerful internal tools to manage the entire platform ecosystem.
-- **Catalog Control:** Add, edit, and categorize the global book inventory (`/admin/books`).
-- **Fulfillment:** Track platform-wide orders and update shipping statuses (`/admin/orders`).
-- **User Management:** Oversee customer and author accounts, permissions, and roles (`/admin/users`).
+### ⚙️ The Admin Command Center
+A powerful, entirely secured CMS portal for platform administrators (`/admin`).
+- **Inventory CMS:** Add, edit, and categorize the global book inventory using Cloudinary-ready `multipart/form-data` forms (`/admin/books/new`).
+- **Order Fulfillment:** Track platform-wide physical orders and transition their statuses from Processing to Shipped to Delivered (`/admin/orders`).
+- **User Role Management:** Instantly promote standard Readers to Authors or grant Admin privileges through the visual dashboard (`/admin/users`).
+- **Strict Security:** Enforced by Next.js middleware and `AuthGuard` components to prevent unauthorized access.
 
 ---
 
@@ -36,16 +37,12 @@ Powerful internal tools to manage the entire platform ecosystem.
 Built with a focus on high performance, type safety, and exceptional user experience.
 
 - **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) v4 & [Radix UI](https://www.radix-ui.com/) primitives for accessible components
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand) (Global state) & [React Hook Form](https://react-hook-form.com/)
+- **Bundler:** Turbopack enabled for ultra-fast local development server speeds.
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) v4 & [Shadcn UI](https://ui.shadcn.com/) (Radix UI primitives).
+- **State Management:** [Zustand](https://github.com/pmndrs/zustand) for global states (Auth, Cart).
+- **API Integration:** Custom Axios instances with JWT interceptors.
 - **Animations:** [Framer Motion](https://www.framer.com/motion/)
-- **Validation:** [Zod](https://zod.dev/)
 - **Icons:** [Lucide React](https://lucide.dev/)
-
-### Performance Highlights
-- **Static Site Generation (SSG):** 90% of pages are pre-rendered at build time for near-instant load speeds and optimal SEO.
-- **Turbopack:** Ultra-fast local development and sub-10 second production builds.
-- **Suspense Boundaries:** Intelligent data fetching utilizing React Suspense to prevent rendering bottlenecks.
 
 ---
 
@@ -68,7 +65,7 @@ Built with a focus on high performance, type safety, and exceptional user experi
    npm install
    ```
 
-3. Start the development server:
+3. Start the Turbopack development server:
    ```bash
    npm run dev
    ```
