@@ -33,18 +33,18 @@ const values = [
 
 const team = [
   {
-    name: 'Rajesh Kumar',
+    name: 'Saiteja Sunkarapally',
     role: 'Founder & CEO',
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop',
   },
   {
-    name: 'Meera Iyer',
-    role: 'Editorial Director',
+    name: 'Ganesh Ganagani',
+    role: 'Actor & Backend Developer',
     image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop',
   },
   {
-    name: 'Amit Sharma',
-    role: 'Creative Director',
+    name: 'Srinivas Nelapatla',
+    role: 'Frontend Developer',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop',
   },
   {
