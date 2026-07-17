@@ -1,42 +1,65 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { User } from '@/types';
+import { persist, createJSONStorage } from 'zustand/middleware';
+
+export interface User {
+  _id: string;
+  id?: string;
+  name: string;
+  email: string;
+  role: 'visitor' | 'reader' | 'author' | 'admin';
+  profileImage?: string;
+  bio?: string;
+  emailVerified?: boolean;
+  isActive?: boolean;
+}
 
 interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
   login: (user: User, token: string) => void;
   logout: () => void;
-  setLoading: (loading: boolean) => void;
+  setUser: (user: User) => void;
+  setLoading: (isLoading: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set: any): AuthState => ({
       user: null,
       token: null,
       isAuthenticated: false,
-      isLoading: true,
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      setToken: (token) => set({ token }),
-      login: (user, token) => set({ user, token, isAuthenticated: true, isLoading: false }),
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
-      setLoading: (isLoading) => set({ isLoading }),
+      isLoading: false,
+      
+      login: (user: User, token: string) => 
+        set({ 
+          user, 
+          token, 
+          isAuthenticated: true 
+        }),
+        
+      logout: () => 
+        set({ 
+          user: null, 
+          token: null, 
+          isAuthenticated: false 
+        }),
+        
+      setUser: (user: User) => 
+        set({ user }),
+        
+      setLoading: (isLoading: boolean) => 
+        set({ isLoading }),
     }),
     {
-      name: 'harglim-auth',
-      partialize: (state) => ({ 
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state: AuthState) => ({ 
+        user: state.user, 
         token: state.token, 
-        user: state.user,
         isAuthenticated: state.isAuthenticated 
       }),
-      onRehydrateStorage: () => (state) => {
-        state?.setLoading(false);
-      },
     }
   )
 );

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useSpring } from "framer-motion";
 import {
   Menu,
   X,
@@ -17,6 +17,7 @@ import {
   PenTool,
 } from "lucide-react";
 import Image from "next/image";
+import logo from "@/public/logo.webp";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -62,6 +63,13 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
@@ -90,19 +98,23 @@ export function Navbar() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? "bg-background/95 backdrop-blur-md shadow-sm border-b border-border"
-          : "bg-background",
+          ? "bg-background/80 backdrop-blur-xl shadow-md border-b border-border/50"
+          : "bg-background/60 backdrop-blur-md border-b border-transparent",
       )}
     >
+      {/* Scroll Progress Bar */}
+      <motion.div
+        className="absolute top-0 left-0 right-0 h-[2px] origin-left bg-primary z-50"
+        style={{ scaleX }}
+      />
+      
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/logo.svg"
+              src={logo}
               alt="Harglim Publishers"
-              width={40}
-              height={40}
               className="h-10 w-auto object-contain"
             />
             <span className="font-serif text-xl font-bold text-foreground">

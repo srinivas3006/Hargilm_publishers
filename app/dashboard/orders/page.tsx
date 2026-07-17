@@ -13,6 +13,7 @@ import {
   Eye,
   Download,
   Filter,
+  XCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { useEffect } from "react";
 import api from "@/lib/api";
 import { ErrorState } from "@/components/ui/error-state";
+import toast from "react-hot-toast";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -82,6 +84,18 @@ export default function OrdersPage() {
       setError(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm("Are you sure you want to cancel this order?")) return;
+    
+    try {
+      await api.delete(`/orders/${orderId}`);
+      toast.success("Order cancelled successfully");
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to cancel order");
     }
   };
 
@@ -317,6 +331,17 @@ export default function OrdersPage() {
                           <Button size="sm" className="gap-2">
                             <Eye className="h-4 w-4" />
                             Write Review
+                          </Button>
+                        )}
+                        {(status === "Pending" || status === "Processing" || status === "Confirmed") && (
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="gap-2"
+                            onClick={() => handleCancelOrder(order._id || order.id)}
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Cancel Order
                           </Button>
                         )}
                       </div>

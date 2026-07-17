@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -30,21 +30,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// TODO: Fetch from API
-const books: any[] = [];
+import api from "@/lib/api";
+import { useAuthStore } from "@/store/auth-store";
+import type { Book } from "@/types";
 
 export default function AuthorBooksPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [books, setBooks] = useState<any[]>([]);
+  const { user } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        if (!user) return;
+        const { data } = await api.get('/books', { params: { author: user._id || user.id } });
+        // The backend might return data directly or nested in data.data
+        const fetchedBooks = data.data || data || [];
+        setBooks(Array.isArray(fetchedBooks) ? fetchedBooks : []);
+      } catch (error) {
+        console.error("Failed to fetch author books", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchBooks();
+  }, [user]);
 
   const filteredBooks = books.filter((book) =>
-    book.title.toLowerCase().includes(searchQuery.toLowerCase())
+    book.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalSales = books.reduce((sum, book) => sum + book.sales, 0);
-  const totalRevenue = books.reduce((sum, book) => sum + book.revenue, 0);
+  const totalSales = books.reduce((sum, book) => sum + (book.totalSales || 0), 0);
+  const totalRevenue = books.reduce((sum, book) => sum + ((book.totalSales || 0) * (book.price || 0)), 0);
   const avgRating =
-    books.length > 0 ? books.reduce((sum, book) => sum + book.rating, 0) / books.length : 0;
+    books.length > 0 ? books.reduce((sum, book) => sum + (book.rating || 0), 0) / books.length : 0;
 
   return (
     <div className="space-y-6">
@@ -150,7 +170,7 @@ export default function AuthorBooksPage() {
               <TableBody>
                 {filteredBooks.map((book, index) => (
                   <motion.tr
-                    key={book.id}
+                    key={book._id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -159,32 +179,32 @@ export default function AuthorBooksPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
-                          src={book.cover}
+                          src={book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800"}
                           alt={book.title}
                           className="h-12 w-9 rounded object-cover"
                         />
                         <div>
                           <p className="font-medium">{book.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            Published {new Date(book.publishDate).toLocaleDateString()}
+                            Published {new Date(book.createdAt || Date.now()).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{book.category}</Badge>
+                      <Badge variant="outline">{typeof book.category === 'object' ? book.category.name : book.category}</Badge>
                     </TableCell>
                     <TableCell>₹{book.price}</TableCell>
-                    <TableCell>{book.sales}</TableCell>
+                    <TableCell>{book.totalSales || 0}</TableCell>
                     <TableCell className="font-semibold text-emerald-600">
-                      ₹{book.revenue.toLocaleString()}
+                      ₹{((book.totalSales || 0) * (book.price || 0)).toLocaleString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                        <span>{book.rating}</span>
+                        <span>{book.rating || 0}</span>
                         <span className="text-muted-foreground">
-                          ({book.reviews})
+                          ({book.totalReviews || 0})
                         </span>
                       </div>
                     </TableCell>
@@ -197,7 +217,7 @@ export default function AuthorBooksPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/books/${book.id}`}>
+                            <Link href={`/books/${book.slug || book._id}`}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Book
                             </Link>

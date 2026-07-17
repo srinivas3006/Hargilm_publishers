@@ -37,7 +37,7 @@ export default function CategoryDetailPage() {
         const items = booksRes?.data?.data?.books || booksRes?.data?.data || booksRes?.data || [];
         setBooks(Array.isArray(items) ? items : []);
       } catch (err) {
-        console.log("Failed to fetch category data:", err);
+        console.error("Failed to fetch category data:", err);
         setCategory(null);
       } finally {
         setLoading(false);

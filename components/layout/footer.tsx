@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import logo from "@/public/logo.webp";
 import { usePathname } from "next/navigation";
 import {
   Facebook,
@@ -76,31 +77,6 @@ export function Footer() {
 
   return (
     <footer className="bg-black text-white">
-      {/* Newsletter Section */}
-      <div className="border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="text-xl font-semibold mb-2">
-                Subscribe to our Newsletter
-              </h3>
-              <p className="text-white/70">
-                Get updates on new releases, author interviews, and special
-                offers.
-              </p>
-            </div>
-            <form className="flex gap-2 w-full md:w-auto">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 w-full md:w-64"
-              />
-              <Button variant="secondary">Subscribe</Button>
-            </form>
-          </div>
-        </div>
-      </div>
-
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
@@ -108,10 +84,8 @@ export function Footer() {
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Image
-                src="/logo.svg"
+                src={logo}
                 alt="Harglim Publishers"
-                width={40}
-                height={40}
                 className="h-10 w-auto object-contain"
               />
               <span className="font-serif text-xl font-bold">

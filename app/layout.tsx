@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/footer';
 import { MainContainer } from '@/components/layout/main-container';
 import { Providers } from './providers';
 import { siteConfig } from '@/config/site';
+import { NoiseOverlay } from '@/components/ui/noise-overlay';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -72,7 +73,7 @@ export default function RootLayout({
     '@type': 'Organization',
     name: siteConfig.name,
     url: siteConfig.url,
-    logo: `${siteConfig.url}/logo.svg`,
+    logo: `${siteConfig.url}/logo.webp`,
     description: siteConfig.description,
     sameAs: [
       siteConfig.social.facebook,
@@ -112,6 +113,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         <Providers>
+          <NoiseOverlay />
           <Navbar />
           <MainContainer>{children}</MainContainer>
           <Footer />

@@ -16,8 +16,8 @@ import {
   Menu,
   BookOpen,
   X,
-  Shield,
   Tag,
+  UserPlus,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ const sidebarLinks = [
   { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+  { href: "/admin/author-applications", label: "Author Applications", icon: UserPlus },
   { href: "/admin/manuscripts", label: "Manuscripts", icon: FileText },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/settings", label: "Settings", icon: Settings },
@@ -74,7 +75,7 @@ export default function AdminLayout({
           <div className="flex h-16 items-center justify-between border-b px-4">
             <Link href="/admin" className="flex items-center gap-2">
               <Image
-                src="/logo.svg"
+                src="/logo.webp"
                 alt="Harglim Admin"
                 width={32}
                 height={32}

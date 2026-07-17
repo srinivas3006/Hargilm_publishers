@@ -16,6 +16,7 @@ import {
   X,
   CreditCard,
   BookOpen,
+  PenTool,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,24 @@ export default function DashboardLayout({
                   </li>
                 );
               })}
+              
+              {user?.role === "reader" && (
+                <li className="pt-4 mt-4 border-t border-border/50">
+                  <Link
+                    href="/dashboard/become-author"
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      pathname === "/dashboard/become-author"
+                        ? "bg-secondary text-secondary-foreground"
+                        : "text-muted-foreground hover:bg-secondary/10 hover:text-secondary"
+                    )}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <PenTool className="h-5 w-5" />
+                    Become an Author
+                  </Link>
+                </li>
+              )}
             </ul>
           </nav>
 

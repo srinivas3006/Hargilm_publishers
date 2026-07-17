@@ -178,10 +178,10 @@ export default function CartPage() {
                 <span>Subtotal</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              {/* <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Tax (5%)</span>
                 <span>₹{tax.toFixed(2)}</span>
-              </div>
+              </div> */}
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Shipping</span>
                 <span>{shipping === 0 ? "Free" : `₹${shipping}`}</span>

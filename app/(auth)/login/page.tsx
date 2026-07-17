@@ -81,7 +81,7 @@ export default function LoginPage() {
           <div className="text-center mb-6">
             <Link href="/" className="inline-flex items-center gap-2 mb-4">
               <Image
-                src="/logo.svg"
+                src="/logo.webp"
                 alt="Harglim"
                 width={40}
                 height={40}

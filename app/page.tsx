@@ -17,9 +17,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { BookCard } from "@/components/books/book-card";
 import { ErrorState } from "@/components/ui/error-state";
-import type { Book } from "@/types";
 import toast from "react-hot-toast";
 import api from "@/lib/api";
+import { HeroCarousel } from "@/components/books/hero-carousel";
+import { FeaturedCarousel } from "@/components/books/featured-carousel";
+import type { Book } from "@/types";
+import { BookCardSkeleton } from "@/components/books/book-card-skeleton";
 
 
 const testimonials: { name: string; book: string; image: string; quote: string }[] = [];
@@ -35,7 +38,7 @@ export default function Home() {
     try {
       setLoading(true);
       setError(false);
-      const { data } = await api.get('/books?featured=true&limit=4');
+      const { data } = await api.get('/books?featured=true&limit=8');
       setFeaturedBooks(data.data || data || []);
     } catch (error) {
       console.error("Failed to fetch featured books:", error);
@@ -65,75 +68,16 @@ export default function Home() {
   return (
     <div className="bg-background">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary via-primary/95 to-primary/85 text-primary-foreground overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl -mr-48 -mt-48" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl -ml-48 -mb-48" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28 md:py-40 lg:py-48">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="max-w-3xl mx-auto text-center"
-          >
-            <motion.div variants={fadeInUp} className="mb-8">
-              <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 text-sm font-semibold backdrop-blur-md border border-white/25 shadow-lg">
-                <Sparkles className="h-4 w-4" />
-                Where Stories Come to Life
-              </span>
-            </motion.div>
-
-            <motion.h1
-              variants={fadeInUp}
-              className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-8 leading-tight tracking-tight"
-            >
-              Discover Your Next{" "}
-              <span className="text-secondary">Great Read</span>
-            </motion.h1>
-
-            <motion.p
-              variants={fadeInUp}
-              className="text-lg md:text-xl mb-12 text-primary-foreground/95 max-w-2xl mx-auto font-light leading-relaxed"
-            >
-              Join thousands of readers discovering extraordinary books from
-              talented authors worldwide. Publish your story or find your next
-              favorite book.
-            </motion.p>
-
-            <motion.div
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-            >
-              <Link href="/books">
-                <Button
-                  size="lg"
-                  className="text-base px-10 h-14 font-bold bg-white text-primary hover:bg-primary-foreground shadow-xl hover:shadow-2xl transition-all"
-                >
-                  Browse Books
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/publish">
-                <Button
-                  size="lg"
-                  className="text-base px-10 h-14 font-bold bg-transparent border-2 border-white/40 text-white hover:bg-white/10 hover:border-white/60 transition-all backdrop-blur-sm shadow-lg"
-                >
-                  Publish Your Book
-                </Button>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </div>
-
+      <section className="relative bg-primary text-primary-foreground">
+        <HeroCarousel books={featuredBooks.slice(0, 3)} />
+        
         {/* Wave Divider */}
-        <div className="absolute bottom-0 left-0 right-0">
+        <div className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none">
           <svg
             viewBox="0 0 1440 120"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-auto"
+            className="w-full h-12 md:h-20 lg:h-28"
             preserveAspectRatio="none"
           >
             <path
@@ -273,11 +217,7 @@ export default function Home() {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="aspect-[2/3] bg-muted rounded-lg mb-4" />
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-muted rounded w-1/2" />
-                </div>
+                <div key={i}><BookCardSkeleton /></div>
               ))}
             </div>
           ) : error ? (
@@ -291,14 +231,9 @@ export default function Home() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              variants={staggerContainer}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+              variants={fadeInUp}
             >
-              {featuredBooks.map((book) => (
-                <motion.div key={book._id} variants={fadeInUp}>
-                  <BookCard book={book} />
-                </motion.div>
-              ))}
+              <FeaturedCarousel books={featuredBooks} />
             </motion.div>
           )}
         </div>

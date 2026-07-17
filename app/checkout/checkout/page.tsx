@@ -14,8 +14,8 @@ const defaultAddress = {
   addressLine1: '',
   addressLine2: '',
   city: '',
-  state: '',
-  pincode: '',
+  postalCode: '',
+  country: 'India',
   phone: '',
   email: '',
 };
@@ -50,7 +50,7 @@ export default function CheckoutStepPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!address.fullName || !address.addressLine1 || !address.city || !address.state || !address.pincode || !address.phone || !address.email) {
+    if (!address.fullName || !address.addressLine1 || !address.city || !address.postalCode || !address.country || !address.phone || !address.email) {
       return;
     }
 
@@ -68,7 +68,7 @@ export default function CheckoutStepPage() {
     try {
       // Map cart items for backend
       const formattedItems = items.map(item => ({
-        bookId: item.book._id,
+        book: item.book._id,
         quantity: item.quantity
       }));
 
@@ -79,12 +79,13 @@ export default function CheckoutStepPage() {
           addressLine1: address.addressLine1,
           addressLine2: address.addressLine2,
           city: address.city,
-          postalCode: address.pincode,
-          country: address.state, // Or 'India'
-        }
+          postalCode: address.postalCode,
+          country: address.country,
+        },
+        paymentMethod: 'UPI'
       };
 
-      const { data } = await api.post('/orders/checkout', payload);
+      const { data } = await api.post('/orders', payload);
       
       if (data.status === 'success') {
         const { order, payment } = data.data;
@@ -173,8 +174,8 @@ export default function CheckoutStepPage() {
             <div className="grid gap-4 sm:grid-cols-3">
               {[
                 { name: 'city', label: 'City' },
-                { name: 'state', label: 'State' },
-                { name: 'pincode', label: 'Pincode' },
+                { name: 'postalCode', label: 'Postal Code' },
+                { name: 'country', label: 'Country' },
               ].map((field) => (
                 <label key={field.name} className="space-y-2">
                   <span className="text-sm font-medium">{field.label}</span>
@@ -254,10 +255,10 @@ export default function CheckoutStepPage() {
                 <span>Subtotal</span>
                 <span>₹{subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              {/* <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Tax</span>
                 <span>₹{tax.toFixed(2)}</span>
-              </div>
+              </div> */}
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Shipping</span>
                 <span>{shipping === 0 ? 'Free' : `₹${shipping.toFixed(2)}`}</span>

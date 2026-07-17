@@ -10,6 +10,7 @@ const nextConfig = {
     buildActivity: false,
     appIsrStatus: false,
   },
+  // Trigger config reload
 }
 
 export default nextConfig

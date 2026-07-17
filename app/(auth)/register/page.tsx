@@ -10,13 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import toast from "react-hot-toast";
 import api from "@/lib/api";
 
@@ -27,7 +20,6 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    accountType: "reader",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -58,7 +50,7 @@ export default function RegisterPage() {
         name: formData.name.trim(),
         email: formData.email,
         password: formData.password,
-        role: formData.accountType, // e.g., "user" or "author" or "reader"
+        role: "reader",
       });
 
       toast.success("Account created successfully! Please log in.", {
@@ -109,7 +101,7 @@ export default function RegisterPage() {
           <div className="text-center mb-6">
             <Link href="/" className="inline-flex items-center gap-2 mb-4">
               <Image
-                src="/logo.svg"
+                src="/logo.webp"
                 alt="Harglim"
                 width={40}
                 height={40}
@@ -164,23 +156,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="accountType">Account Type</Label>
-              <Select
-                value={formData.accountType}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, accountType: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select account type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="reader">Reader</SelectItem>
-                  <SelectItem value="author">Author</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
 
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>

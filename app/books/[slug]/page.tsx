@@ -71,7 +71,7 @@ export default function BookDetailPage() {
         setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       }
     } catch (err: any) {
-      console.log("Failed to fetch book data:", err?.message || err);
+      console.error("Failed to fetch book data:", err?.message || err);
       setError(true);
       setBook(null);
     } finally {
@@ -201,7 +201,7 @@ export default function BookDetailPage() {
               </div>
               {book.galleryImages && book.galleryImages.length > 1 && (
                 <div className="flex gap-2">
-                  {book.galleryImages.map((img, idx) => (
+                  {book.galleryImages?.map((img: string, idx: number) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImage(idx)}
@@ -243,7 +243,7 @@ export default function BookDetailPage() {
                     key={i}
                     className={cn(
                       'h-5 w-5',
-                      i < Math.round(book.rating)
+                      i < Math.round(book.rating || 0)
                         ? 'fill-secondary text-secondary'
                         : 'text-muted'
                     )}

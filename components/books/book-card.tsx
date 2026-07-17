@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Star, ShoppingCart, Heart, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,34 @@ export function BookCard({
   showActions = true,
 }: BookCardProps) {
   const addItem = useCartStore((state) => state.addItem);
+
+  // 3D Tilt & Glare hooks
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
+  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
+  
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["15deg", "-15deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-15deg", "15deg"]);
+  const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["100%", "0%"]);
+  const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["100%", "0%"]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -68,7 +96,7 @@ export function BookCard({
                   key={i}
                   className={cn(
                     "h-3 w-3",
-                    i < Math.round(book.rating)
+                    i < Math.round(book.rating || 0)
                       ? "fill-secondary text-secondary"
                       : "text-muted",
                   )}
@@ -120,10 +148,14 @@ export function BookCard({
   }
 
   return (
-    <Link href={`/books/${book.slug || book._id}`}>
+    <Link href={`/books/${book.slug || book._id}`} className="block" style={{ perspective: 1500 }}>
       <motion.div
-        whileHover={{ y: -6 }}
-        className="group bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/30 shadow-sm hover:shadow-2xl transition-all duration-500"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+        whileHover={{ y: -8, scale: 1.02 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        className="group bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/50 shadow-md hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-primary/10 transition-all duration-300"
       >
         {/* Cover Image */}
         <div className="relative aspect-[2/3] overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
@@ -135,8 +167,21 @@ export function BookCard({
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           />
 
+          {/* Dynamic Glare Overlay */}
+          <motion.div
+            className="absolute inset-0 z-20 pointer-events-none mix-blend-overlay opacity-0 group-hover:opacity-40 transition-opacity duration-300"
+            style={{
+              background: "radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, transparent 60%)",
+              left: glareX,
+              top: glareY,
+              transform: "translate(-50%, -50%)",
+              width: "200%",
+              height: "200%"
+            }}
+          />
+
           {/* Overlay Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
@@ -209,7 +254,7 @@ export function BookCard({
                 key={i}
                 className={cn(
                   "h-4 w-4",
-                  i < Math.round(book.rating)
+                  i < Math.round(book.rating || 0)
                     ? "fill-primary text-primary"
                     : "text-muted",
                 )}

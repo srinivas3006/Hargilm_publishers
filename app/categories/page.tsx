@@ -21,7 +21,7 @@ export default function CategoriesPage() {
         const items = data.data?.categories || data.data || data || [];
         setCategories(Array.isArray(items) ? items : []);
       } catch (err) {
-        console.log('Failed to fetch categories:', err);
+        console.error('Failed to fetch categories:', err);
         setError(true);
         setCategories([]);
       } finally {
