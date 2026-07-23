@@ -98,26 +98,26 @@ export function Navbar() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? "bg-background/80 backdrop-blur-xl shadow-md border-b border-border/50"
-          : "bg-background/60 backdrop-blur-md border-b border-transparent",
+          ? "bg-background/80 backdrop-blur-2xl shadow-sm border-b border-primary/10"
+          : "bg-background/40 backdrop-blur-sm border-b border-transparent",
       )}
     >
       {/* Scroll Progress Bar */}
       <motion.div
-        className="absolute top-0 left-0 right-0 h-[2px] origin-left bg-primary z-50"
+        className="absolute top-0 left-0 right-0 h-[2px] origin-left bg-gold-gradient z-50"
         style={{ scaleX }}
       />
       
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 group">
             <Image
               src={logo}
               alt="Harglim Publishers"
-              className="h-10 w-auto object-contain"
+              className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
             />
-            <span className="font-serif text-xl font-bold text-foreground">
+            <span className="font-serif text-2xl font-bold text-gold-gradient">
               Harglim Publishers
             </span>
           </Link>

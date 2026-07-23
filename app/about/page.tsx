@@ -7,10 +7,9 @@ import { BookOpen, Users, Globe, Award, ArrowRight, Target, Heart, Sparkles } fr
 import { Button } from '@/components/ui/button';
 
 const stats = [
-  { label: 'Books Published', value: '500+', icon: BookOpen },
-  { label: 'Happy Authors', value: '200+', icon: Users },
-  { label: 'Countries Reached', value: '25+', icon: Globe },
-  { label: 'Awards Won', value: '15+', icon: Award },
+  { label: 'Books Published', value: '30+', icon: BookOpen },
+  { label: 'Happy Authors', value: '25+', icon: Users },
+  { label: 'Countries Reached', value: '5+', icon: Globe },
 ];
 
 const values = [
@@ -33,25 +32,10 @@ const values = [
 
 const team = [
   {
-    name: 'Saiteja Sunkarapally',
+    name: 'Sunkarapally Sai Teja',
     role: 'Founder & CEO',
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop',
-  },
-  {
-    name: 'Ganesh Ganagani',
-    role: 'Actor & Backend Developer',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop',
-  },
-  {
-    name: 'Srinivas Nelapatla',
-    role: 'Frontend Developer',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop',
-  },
-  {
-    name: 'Priya Nair',
-    role: 'Marketing Head',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop',
-  },
+  }
 ];
 
 export default function AboutPage() {
@@ -98,14 +82,14 @@ export default function AboutPage() {
       </section>
 
       {/* Stats */}
-      <section className="py-16 bg-background border-b border-border">
+      <section className="py-20 bg-background border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
             {stats.map((stat, index) => (
               <motion.div key={index} variants={fadeInUp} className="text-center">
@@ -125,6 +109,16 @@ export default function AboutPage() {
       {/* Our Story */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-16 text-center max-w-4xl mx-auto"
+          >
+            <p className="text-lg md:text-xl text-muted-foreground">
+              Harglim Publishers was born from the belief that no dream of becoming an author should be left unrealized. We exist to empower beginner and emerging writers who often face challenges in finding publishing opportunities. By providing professional guidance and end-to-end publishing services, we help transform manuscripts into published books and dreams into reality.
+            </p>
+          </motion.div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -136,21 +130,20 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Harglim was founded in 2015 with a simple yet powerful vision: to make quality
-                  publishing accessible to every aspiring author in India. What started as a small
-                  team of book lovers has grown into a full-fledged publishing house with a catalog
-                  of over 500 titles.
+                  Founded in 2025, Harglim Publishers was born from a simple yet powerful belief: every
+                  aspiring author deserves an opportunity to become a published author.
                 </p>
                 <p>
-                  Our name &ldquo;Harglim&rdquo; is derived from an ancient word meaning &ldquo;keeper of stories,&rdquo;
-                  reflecting our commitment to preserving and sharing the rich tapestry of human
-                  experiences through literature.
+                  We recognised that many talented writers, especially first-time authors, struggle to find
+                  trustworthy and affordable publishing support. Despite having inspiring stories and valuable
+                  ideas, countless manuscripts remain unpublished because the path to publishing often feels
+                  confusing, expensive, or out of reach. We provide end-to-end publishing solutions that
+                  empower authors to confidently share their work with the world.
                 </p>
                 <p>
-                  Today, we work with authors across genres, from debut writers to established
-                  names, helping them craft, publish, and market their books. Our state-of-the-art
-                  facilities and experienced team ensure that every book we publish meets the
-                  highest standards of quality.
+                  Today, Harglim Publishers continues to grow as a trusted partner for emerging and established
+                  writers alike. Every book we publish represents a dream fulfilled, a voice amplified, and a story
+                  brought to life.
                 </p>
               </div>
             </motion.div>
@@ -226,10 +219,10 @@ export default function AboutPage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">
-              Meet Our Team
+              Meet Our Founder
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              The passionate people behind Harglim&apos;s success
+              The passionate visionary behind Harglim&apos;s success
             </p>
           </motion.div>
 
@@ -238,11 +231,11 @@ export default function AboutPage() {
             whileInView="visible"
             viewport={{ once: true }}
             variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
+            className="flex justify-center"
           >
             {team.map((member, index) => (
               <motion.div key={index} variants={fadeInUp} className="text-center">
-                <div className="relative w-32 h-32 mx-auto mb-4">
+                <div className="relative w-20 h-20 mx-auto mb-4">
                   <Image
                     src={member.image}
                     alt={member.name}

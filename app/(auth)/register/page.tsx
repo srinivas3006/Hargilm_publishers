@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, User, BookOpen } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, BookOpen, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,7 +92,16 @@ export default function RegisterPage() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 overflow-y-auto relative">
+        <Button 
+          variant="ghost" 
+          onClick={() => router.back()} 
+          className="absolute top-4 left-4 md:top-8 md:left-8 gap-2 hover:bg-muted"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

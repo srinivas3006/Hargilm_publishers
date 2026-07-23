@@ -10,7 +10,7 @@ const nextConfig = {
     buildActivity: false,
     appIsrStatus: false,
   },
-  // Trigger config reload
+  // Trigger config reload to remove dev indicator
 }
 
 export default nextConfig

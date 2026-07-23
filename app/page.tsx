@@ -67,7 +67,34 @@ export default function Home() {
 
   return (
     <div className="bg-background">
-      {/* Hero Section */}
+      {/* Static Hero Section */}
+      <section className="relative bg-primary text-primary-foreground">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 md:pt-32 md:pb-16 lg:pt-40 lg:pb-20 text-center flex flex-col justify-center">
+          <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-4xl mx-auto">
+            <motion.h1 variants={fadeInUp} className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-8 leading-tight tracking-tight text-white whitespace-pre-line">
+              You write, we print.{"\n"}<span className="text-gold-gradient">You dream, we publish</span>
+            </motion.h1>
+            <motion.p variants={fadeInUp} className="text-lg md:text-xl text-primary-foreground/90 mb-10 max-w-3xl mx-auto font-light leading-relaxed">
+              Explore inspiring books from talented authors across multiple genres, or publish your own masterpiece with Harglim Publishers. We make reading enjoyable and publishing effortless.
+            </motion.p>
+            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center">
+               <Link href="/books">
+                  <Button size="lg" className="text-base px-8 h-14 font-bold bg-white text-primary hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all rounded-full">
+                    Browse Books
+                  </Button>
+               </Link>
+               <Link href="/publish">
+                  <Button size="lg" className="text-base px-8 h-14 font-bold bg-transparent border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 shadow-xl hover:shadow-2xl transition-all rounded-full">
+                    Publish Your Book
+                  </Button>
+               </Link>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Hero Carousel Section */}
+      {featuredBooks.length > 0 && (
       <section className="relative bg-primary text-primary-foreground">
         <HeroCarousel books={featuredBooks.slice(0, 3)} />
         
@@ -87,6 +114,7 @@ export default function Home() {
           </svg>
         </div>
       </section>
+      )}
 
       {/* Stats Section */}
       {stats.length > 0 && (
@@ -254,7 +282,7 @@ export default function Home() {
             variants={fadeInUp}
             className="text-center"
           >
-            <h2 className="text-5xl md:text-6xl font-serif font-bold mb-8 leading-tight">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-8 leading-tight">
               Ready to Publish Your Book?
             </h2>
             <p className="text-xl text-primary-foreground/95 mb-12 max-w-3xl mx-auto leading-relaxed">
@@ -352,6 +380,71 @@ export default function Home() {
       </section>
       )}
 
+      {/* FAQ Preview Section */}
+      <section className="py-24 bg-background">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary mb-4">
+              Have Questions?
+            </h2>
+            <p className="text-muted-foreground mb-8">
+              Check our frequently asked questions for quick answers.
+            </p>
+            <Link href="/faq">
+              <Button variant="outline" className="px-8 font-semibold">
+                View FAQ
+              </Button>
+            </Link>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="space-y-6"
+          >
+            {[
+              {
+                q: "What should I include in my book proposal?",
+                a: "A strong proposal includes a query letter, a synopsis, a chapter outline, your author biography, and the first three chapters of your manuscript."
+              },
+              {
+                q: "How long does the review process take?",
+                a: "Our editorial team reviews proposals within 8 to 12 weeks. If we are interested in moving forward, we will contact you or your agent directly."
+              },
+              {
+                q: "Are your books available as both print and digital copies?",
+                a: "Yes, we publish our titles in paperback, hardcover, and multiple e-book formats (including EPUB and PDF)."
+              },
+              {
+                q: "Where can I buy your published books?",
+                a: "You can purchase our books through all major online retailers like Amazon, Kindle, Kobo, Apple Books, +12 international platforms. You can also order directly on our Company Website."
+              },
+              {
+                q: "Do you offer international shipping for physical books?",
+                a: "Yes, we ship worldwide. Shipping rates and delivery times depend on your location. You can calculate your shipping cost at checkout."
+              },
+              {
+                q: "How do I request permission to use an excerpt from one of your books?",
+                a: "Please submit a request through our Permissions Portal. Provide the title, author, ISBN, and the specific text you wish to use."
+              }
+            ].map((faq, index) => (
+              <motion.div key={index} variants={fadeInUp} className="text-left">
+                <h3 className="font-bold text-foreground mb-2">Q: {faq.q}</h3>
+                <p className="text-muted-foreground">A: {faq.a}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* Newsletter */}
       <section className="py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -362,7 +455,7 @@ export default function Home() {
             variants={fadeInUp}
             className="bg-gradient-to-br from-card via-card to-card/50 rounded-3xl border border-border hover:border-primary/50 hover:shadow-2xl transition-all p-10 md:p-16 text-center"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold text-foreground mb-6">
               Stay Updated
             </h2>
             <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">

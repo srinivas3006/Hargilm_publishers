@@ -3,17 +3,17 @@ export const siteConfig = {
   description: "Empowering authors and delighting readers since 2020. We bring stories to life with professional publishing services.",
   url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   contact: {
-    email: "contact@harglim.com",
-    supportEmail: "support@harglim.com",
-    authorsEmail: "authors@harglim.com",
-    phonePrimary: "+91 98765 43210",
-    phoneSecondary: "+91 87654 32109",
-    address: "123 Publishing Lane, Mumbai, India 400001",
-    addressLine1: "123 Publishing Lane",
-    addressLine2: "Andheri East, Mumbai 400069",
+    email: "harglimpublication@gmail.com",
+    supportEmail: "harglim.support@gmail.com",
+    authorsEmail: "harglimpublication@gmail.com",
+    phonePrimary: "+91 9392346914",
+    phoneSecondary: "",
+    address: "GSP Towers, Beside ESI Hospital Metro Station, Metro pillar no: 1008, Opposite TIMS, 500038, SR Nagar, Hyderabad, Telangana, India.",
+    addressLine1: "GSP Towers, Beside ESI Hospital Metro Station, Metro pillar no: 1008",
+    addressLine2: "Opposite TIMS, 500038, SR Nagar, Hyderabad, Telangana, India.",
     workingHours: {
-      weekdays: "Mon - Fri: 9:00 AM - 6:00 PM",
-      weekends: "Sat: 10:00 AM - 4:00 PM"
+      weekdays: "Mon - Sun: 9:00 AM - 10:00 PM",
+      weekends: ""
     }
   },
   social: {

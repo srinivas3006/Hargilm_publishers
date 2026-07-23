@@ -53,15 +53,7 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
 
   // If no books, fallback to the original static hero (or a loading state)
   if (!books || books.length === 0) {
-    return (
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28 md:py-40 lg:py-48 text-center min-h-[70vh] flex flex-col justify-center">
-        <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-3xl mx-auto">
-          <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-8 leading-tight tracking-tight text-white">
-            Discover Your Next <span className="text-secondary">Great Read</span>
-          </motion.h1>
-        </motion.div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -69,7 +61,7 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
       <div className="flex touch-pan-y">
         {books.map((book, index) => (
           <div key={book._id || index} className="flex-[0_0_100%] min-w-0 relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 lg:py-40 flex flex-col md:flex-row items-center gap-12 lg:gap-24 relative z-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-28 md:py-20 lg:py-24 flex flex-col md:flex-row items-center gap-12 lg:gap-24 relative z-10">
               
               {/* Text Content */}
               <motion.div 
@@ -80,13 +72,13 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
                 className="flex-1 text-center md:text-left text-white"
               >
                 <motion.div variants={fadeInUp} className="mb-6">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 text-xs md:text-sm font-semibold backdrop-blur-md border border-white/25 shadow-lg uppercase tracking-wider text-primary-foreground">
-                    <Sparkles className="h-4 w-4" />
+                   <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-xs md:text-sm font-semibold backdrop-blur-md border border-white/20 shadow-lg uppercase tracking-wider text-primary-foreground">
+                    <Sparkles className="h-4 w-4 text-yellow-300" />
                     Trending Now
                   </span>
                 </motion.div>
                 
-                <motion.h1 variants={fadeInUp} className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 leading-tight tracking-tight line-clamp-2">
+                <motion.h1 variants={fadeInUp} className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-6 leading-tight tracking-tight line-clamp-2">
                   {book.title || "Discover Your Next Great Read"}
                 </motion.h1>
                 
@@ -97,7 +89,7 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
                 <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                   <Link href={`/books/${book.slug || book._id}`}>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button size="lg" className="text-base px-8 h-14 font-bold bg-white text-primary hover:bg-primary-foreground shadow-xl hover:shadow-2xl transition-all">
+                      <Button size="lg" className="text-base px-8 h-12 font-bold bg-white text-primary hover:bg-primary-foreground shadow-xl hover:shadow-2xl transition-all rounded-full">
                         Read Now
                         <ArrowRight className="ml-2 h-5 w-5" />
                       </Button>
@@ -111,9 +103,9 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
                 initial={{ opacity: 0, scale: 0.9, rotateY: -15 }}
                 whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
                 transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
-                className="flex-1 relative perspective-1000 w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto"
+                className="flex-1 relative perspective-1000 w-full max-w-[240px] sm:max-w-xs md:max-w-sm lg:max-w-md mx-auto"
               >
-                <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black/40 ring-1 ring-white/20 transform-style-3d group">
+                <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 ring-1 ring-white/30 transform-style-3d group">
                   <Image 
                     src={book.coverImage || "/images/placeholder-book.jpg"} 
                     alt={book.title} 
@@ -122,22 +114,22 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
                     priority={index === 0}
                     sizes="(max-width: 768px) 100vw, 50vw"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60" />
                   {/* Subtle glare effect */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 transform -skew-x-12 translate-x-full group-hover:-translate-x-full" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 transform -skew-x-12 translate-x-full group-hover:-translate-x-full" />
                 </div>
               </motion.div>
             </div>
             
             {/* Slide Background blur */}
-            <motion.div className="absolute inset-0 z-0" style={{ y: backgroundY }}>
+            <motion.div className="absolute inset-0 z-0">
                <Image 
                  src={book.coverImage || "/images/placeholder-book.jpg"} 
                  alt="" 
                  fill 
-                 className="object-cover opacity-20 blur-3xl scale-[1.3] transform-gpu"
+                 className="object-cover opacity-30 blur-3xl scale-110 transform-gpu"
                />
-               <div className="absolute inset-0 bg-primary/80 mix-blend-multiply" />
+               <div className="absolute inset-0 bg-gradient-to-b from-primary/95 to-primary/80 mix-blend-multiply" />
             </motion.div>
           </div>
         ))}
