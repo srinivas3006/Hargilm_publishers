@@ -35,22 +35,22 @@ const team = [
   {
     name: 'Saiteja Sunkarapally',
     role: 'Founder & CEO',
-    image: '',
+    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop',
   },
   {
     name: 'Ganesh Ganagani',
     role: 'Actor & Backend Developer',
-    image: '',
+    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop',
   },
   {
     name: 'Srinivas Nelapatla',
     role: 'Frontend Developer',
-    image: '',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop',
   },
   {
     name: 'Priya Nair',
     role: 'Marketing Head',
-    image: '',
+    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop',
   },
 ];
 
@@ -243,18 +243,12 @@ export default function AboutPage() {
             {team.map((member, index) => (
               <motion.div key={index} variants={fadeInUp} className="text-center">
                 <div className="relative w-32 h-32 mx-auto mb-4">
-                  {member.image ? (
-                    <Image
-                      src={member.image}
-                      alt={member.name}
-                      fill
-                      className="object-cover rounded-full ring-4 ring-muted"
-                    />
-                  ) : (
-                    <div className="w-full h-full rounded-full ring-4 ring-muted bg-muted flex items-center justify-center">
-                      <Users className="w-12 h-12 text-muted-foreground/50" />
-                    </div>
-                  )}
+                  <Image
+                    src={member.image}
+                    alt={member.name}
+                    fill
+                    className="object-cover rounded-full ring-4 ring-muted"
+                  />
                 </div>
                 <h3 className="font-semibold text-foreground">{member.name}</h3>
                 <p className="text-sm text-muted-foreground">{member.role}</p>

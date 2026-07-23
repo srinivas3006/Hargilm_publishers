@@ -46,7 +46,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const itemCount = useCartStore((state) => state.itemCount());
+  const itemCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
   const isHydrated = useHydration();
 
   // Hide Navbar only on admin and auth routes
