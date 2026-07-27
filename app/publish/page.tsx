@@ -83,19 +83,43 @@ const publishingSteps = [
 export default function PublishPage() {
   const [packages, setPackages] = useState<any[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(true);
+  const [siteContent, setSiteContent] = useState<any>(null);
 
   useEffect(() => {
-    const fetchPackages = async () => {
+    const fetchData = async () => {
+      setLoadingPackages(true);
       try {
-        const { data } = await api.get('/publish-packages');
-        setPackages(data.data || data);
+        const [pkgRes, contentRes] = await Promise.allSettled([
+          api.get('/publish-packages'),
+          api.get('/content')
+        ]);
+
+        let loadedPackages = [];
+        if (pkgRes.status === 'fulfilled') {
+          loadedPackages = pkgRes.value.data.data || pkgRes.value.data;
+        }
+
+        if (contentRes.status === 'fulfilled') {
+          const content = contentRes.value.data;
+          setSiteContent(content);
+          // If packages are defined in the CMS, use them instead of the DB
+          if (content.packagesJson) {
+            try {
+              loadedPackages = JSON.parse(content.packagesJson);
+            } catch (e) {
+              console.error("Failed to parse packages JSON from CMS", e);
+            }
+          }
+        }
+        
+        setPackages(loadedPackages);
       } catch (error) {
-        console.error("Failed to fetch publishing packages:", error);
+        console.error("Failed to fetch publish data:", error);
       } finally {
         setLoadingPackages(false);
       }
     };
-    fetchPackages();
+    fetchData();
   }, []);
 
   const fadeInUp = {
@@ -130,16 +154,15 @@ export default function PublishPage() {
             </motion.div>
             <motion.h1
               variants={fadeInUp}
-              className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-6"
+              className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-6 whitespace-pre-line"
             >
-              Publish Your Book <span className="text-secondary">With Us</span>
+              {siteContent?.publishTitle || "Publish Your Book With Us"}
             </motion.h1>
             <motion.p
               variants={fadeInUp}
-              className="text-lg md:text-xl text-primary-foreground/90 mb-8"
+              className="text-lg md:text-xl text-primary-foreground/90 mb-8 whitespace-pre-line"
             >
-              Transform your manuscript into a professionally published book. We handle everything
-              from editing to distribution, so you can focus on what you do best - writing.
+              {siteContent?.publishSubtitle || "Transform your manuscript into a professionally published book. We handle everything from editing to distribution, so you can focus on what you do best - writing."}
             </motion.p>
             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/author/manuscripts/new">

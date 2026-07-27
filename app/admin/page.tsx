@@ -86,8 +86,8 @@ export default function AdminDashboard() {
     try {
       // Trying to fetch stats and analytics
       const [statsRes, analyticsRes] = await Promise.all([
-        api.get("/admin/stats").catch(() => ({ data: {} })),
-        api.get("/admin/analytics").catch(() => ({ data: {} })),
+        api.get("/admin/stats"),
+        api.get("/admin/analytics"),
       ]);
       const stats = statsRes.data?.data || statsRes.data;
       const analytics = analyticsRes.data?.data || analyticsRes.data;

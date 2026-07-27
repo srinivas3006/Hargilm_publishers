@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import toast from "react-hot-toast";
 
 export default function EditBookPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,6 +39,10 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
     stock: "0",
     isbn: "",
     status: "Active",
+    isFeatured: false,
+    isBestseller: false,
+    isNewRelease: false,
+    royaltyPercentage: "",
   });
 
   useEffect(() => {
@@ -48,14 +53,18 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
         
         setFormData({
           title: book.title || "",
-          authorName: book.authorName || book.author?.name || "",
+          authorName: typeof book.author === 'object' ? book.author?.name || "" : book.author || "",
           description: book.description || "",
-          category: book.category || "",
+          category: typeof book.category === 'object' ? book.category?.name || "" : book.category || "",
           price: book.price?.toString() || "",
           discountPrice: book.discountPrice?.toString() || "",
           stock: book.stock?.toString() || "0",
           isbn: book.isbn || "",
           status: book.status || "Active",
+          isFeatured: book.isFeatured || false,
+          isBestseller: book.isBestseller || false,
+          isNewRelease: book.isNewRelease || false,
+          royaltyPercentage: book.royaltyPercentage?.toString() || "",
         });
       } catch (err) {
         console.error("Failed to fetch book details:", err);
@@ -85,7 +94,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
     try {
       const submitData = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        submitData.append(key, value);
+        submitData.append(key, String(value));
       });
       
       if (imageFile) {
@@ -257,8 +266,67 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
 
+            <div className="space-y-4 border rounded-xl p-4 bg-muted/20">
+              <h3 className="font-semibold text-lg">Display & Marketing Flags</h3>
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="isFeatured" className="flex flex-col space-y-1">
+                    <span>Feature on Home Screen</span>
+                    <span className="font-normal text-[0.8rem] text-muted-foreground">Show in hero carousel</span>
+                  </Label>
+                  <Switch
+                    id="isFeatured"
+                    checked={formData.isFeatured}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="isBestseller" className="flex flex-col space-y-1">
+                    <span>Bestseller</span>
+                    <span className="font-normal text-[0.8rem] text-muted-foreground">Add bestseller badge</span>
+                  </Label>
+                  <Switch
+                    id="isBestseller"
+                    checked={formData.isBestseller}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isBestseller: checked }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="isNewRelease" className="flex flex-col space-y-1">
+                    <span>New Release</span>
+                    <span className="font-normal text-[0.8rem] text-muted-foreground">Add new release badge</span>
+                  </Label>
+                  <Switch
+                    id="isNewRelease"
+                    checked={formData.isNewRelease}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNewRelease: checked }))}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4 border rounded-xl p-4 bg-muted/20">
+              <h3 className="font-semibold text-lg">Author Financials</h3>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="royaltyPercentage">Royalty Percentage (%)</Label>
+                  <Input
+                    id="royaltyPercentage"
+                    name="royaltyPercentage"
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="e.g. 40"
+                    value={formData.royaltyPercentage}
+                    onChange={handleInputChange}
+                  />
+                  <p className="text-xs text-muted-foreground">Custom royalty rate for this specific book. Overrides standard rates.</p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label>Update Cover Image</Label>
+              <Label>Cover Image (Upload New)</Label>
               <div className="flex items-center justify-center w-full">
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">

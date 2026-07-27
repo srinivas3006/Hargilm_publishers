@@ -16,6 +16,7 @@ import {
   X,
   BookOpen,
   PenTool,
+  Store,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -117,8 +118,17 @@ export default function AuthorLayout({
             </ul>
           </nav>
 
-          {/* Logout */}
-          <div className="border-t p-4">
+          {/* Bottom Actions */}
+          <div className="border-t p-4 space-y-2">
+            <Link href="/" passHref>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-muted-foreground hover:text-primary"
+              >
+                <Store className="h-5 w-5" />
+                Back to Store
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"

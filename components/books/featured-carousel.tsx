@@ -48,7 +48,7 @@ export function FeaturedCarousel({ books }: FeaturedCarouselProps) {
       <div className="overflow-hidden py-8 -my-8 px-4 -mx-4" ref={emblaRef}>
         <div className="flex gap-6">
           {books.map((book) => (
-            <div key={book._id} className="flex-[0_0_85%] sm:flex-[0_0_45%] lg:flex-[0_0_30%] xl:flex-[0_0_23%] min-w-0">
+            <div key={book._id} className="flex-[0_0_65%] sm:flex-[0_0_40%] md:flex-[0_0_30%] lg:flex-[0_0_22%] xl:flex-[0_0_18%] min-w-0">
               <BookCard book={book} />
             </div>
           ))}

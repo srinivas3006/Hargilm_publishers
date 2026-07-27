@@ -32,18 +32,28 @@ export default function AuthorDetailPage() {
     setError(false);
     try {
       const [authorRes, booksRes] = await Promise.all([
-        api.get(`/authors/${params.id}`),
+        api.get(`/authors/${params.id}`)
+          .catch(() => api.get(`/users/${params.id}`))
+          .catch(async () => {
+            const listRes = await api.get('/authors');
+            const items = listRes.data?.data?.authors || listRes.data?.data || listRes.data || [];
+            const found = Array.isArray(items) ? items.find((a: any) => (a.id || a._id) === params.id) : null;
+            if (found) return { data: { data: found } };
+            throw new Error("Author not found");
+          }),
         api.get(`/authors/${params.id}/books`)
+          .catch(() => api.get('/books', { params: { author: params.id } }))
+          .catch(() => ({ data: { data: [] } }))
       ]);
       
-      const authorData = authorRes.data.data || authorRes.data;
+      const authorData = authorRes.data?.data || authorRes.data;
       if (authorData) {
         setAuthor(authorData as Author);
       } else {
         setAuthor(null);
       }
       
-      const booksData = booksRes.data.data || booksRes.data;
+      const booksData = booksRes.data?.data || booksRes.data;
       if (booksData) {
         setBooks(Array.isArray(booksData) ? booksData : []);
       }
@@ -186,7 +196,7 @@ export default function AuthorDetailPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
           >
             {books.map((book) => (
               <BookCard key={book._id} book={book} />

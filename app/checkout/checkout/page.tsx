@@ -87,11 +87,12 @@ export default function CheckoutStepPage() {
 
       const { data } = await api.post('/orders', payload);
       
-      if (data.status === 'success') {
-        const { order, payment } = data.data;
-        setCurrentOrderId(order._id);
+      if (data.success || data.status === 'success') {
+        const responseData = data.data || data;
+        const { order, payment } = responseData;
+        setCurrentOrderId(order._id || order.id);
         setCurrentOrderNumber(order.orderNumber);
-        setQrCodeDataUrl(payment.qrCodeDataUrl);
+        setQrCodeDataUrl(payment?.qrCodeDataUrl || '');
         setShowUpiModal(true);
       }
     } catch (error: any) {

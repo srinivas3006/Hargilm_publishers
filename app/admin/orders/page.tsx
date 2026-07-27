@@ -40,6 +40,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import toast from "react-hot-toast";
 
 
@@ -80,12 +87,13 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/orders").catch(() => api.get("/orders"));
+      const { data } = await api.get("/admin/orders");
       setOrders(data.data || data);
     } catch (err) {
       console.error("Failed to fetch admin orders:", err);
@@ -126,6 +134,82 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleExportOrders = () => {
+    if (!orders.length) {
+      toast.error("No orders to export");
+      return;
+    }
+    
+    const headers = ["Order ID", "Customer Name", "Email", "Total Amount", "Status", "Date"];
+    const csvRows = [headers.join(",")];
+    
+    orders.forEach((order: any) => {
+      const orderId = order.orderNumber || order.id || order._id;
+      const customer = order.customerName || order.user?.name || "Guest";
+      const email = order.email || order.user?.email || "-";
+      const amount = order.totalAmount || order.amount || 0;
+      const date = new Date(order.createdAt || order.date).toLocaleDateString();
+      
+      const row = [
+        `"${orderId}"`,
+        `"${customer}"`,
+        `"${email}"`,
+        amount,
+        `"${order.status}"`,
+        `"${date}"`
+      ];
+      csvRows.push(row.join(","));
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Orders exported successfully!");
+  };
+
+  const handleDownloadInvoice = (order: any) => {
+    const orderId = order.orderNumber || order.id || order._id;
+    const customer = order.customerName || order.user?.name || "Guest";
+    const email = order.email || order.user?.email || "-";
+    const amount = order.totalAmount || order.amount || 0;
+    const date = new Date(order.createdAt || order.date).toLocaleDateString();
+    
+    const invoiceText = `
+INVOICE
+-----------------------------
+Order ID: ${orderId}
+Date: ${date}
+
+Billed To:
+Name: ${customer}
+Email: ${email}
+
+-----------------------------
+Total Amount: ₹${amount.toLocaleString()}
+Payment Method: ${order.paymentMethod || "UPI"}
+Status: ${order.status}
+-----------------------------
+Thank you for shopping with Hargilm Publishers!
+    `.trim();
+    
+    const blob = new Blob([invoiceText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Invoice_${orderId}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success(`Invoice downloaded for order ${orderId}`);
+  };
+
   if (error) {
     return (
       <ErrorState
@@ -153,7 +237,7 @@ export default function AdminOrdersPage() {
             Manage and track customer orders
           </p>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={handleExportOrders}>
           <Download className="h-4 w-4" />
           Export Orders
         </Button>
@@ -282,7 +366,7 @@ export default function AdminOrdersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSelectedOrder(order)}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
@@ -312,7 +396,7 @@ export default function AdminOrdersPage() {
                                   Cancel Order
                                 </DropdownMenuItem>
                               )}
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownloadInvoice(order)}>
                               <Download className="mr-2 h-4 w-4" />
                               Download Invoice
                             </DropdownMenuItem>
@@ -327,6 +411,73 @@ export default function AdminOrdersPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+            <DialogDescription className="sr-only">Detailed view of the selected order including items, customer info, and total amount.</DialogDescription>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Order ID</p>
+                  <p className="font-medium">{selectedOrder.orderNumber || selectedOrder.id || selectedOrder._id}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Date</p>
+                  <p className="font-medium">{new Date(selectedOrder.createdAt || selectedOrder.date).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Customer</p>
+                  <p className="font-medium">{selectedOrder.customerName || selectedOrder.user?.name || "Guest"}</p>
+                  <p>{selectedOrder.email || selectedOrder.user?.email}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Payment Method</p>
+                  <p className="font-medium">{selectedOrder.paymentMethod || "UPI"}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-3">Items</h3>
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Book</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="text-center">Qty</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Array.isArray(selectedOrder.items) && selectedOrder.items.map((item: any, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell>
+                            <p className="font-medium">{item.bookTitle || item.book?.title || "Unknown Book"}</p>
+                          </TableCell>
+                          <TableCell className="text-right">₹{item.price}</TableCell>
+                          <TableCell className="text-center">{item.quantity}</TableCell>
+                          <TableCell className="text-right">₹{(item.price * item.quantity).toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t">
+                <div className="text-right space-y-1">
+                  <p className="text-sm text-muted-foreground">Total Amount</p>
+                  <p className="text-2xl font-bold">₹{(selectedOrder.totalAmount || selectedOrder.amount || 0).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

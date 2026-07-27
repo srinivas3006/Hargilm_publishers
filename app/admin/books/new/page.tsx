@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import toast from "react-hot-toast";
 
 export default function AddBookPage() {
@@ -34,6 +35,10 @@ export default function AddBookPage() {
     stock: "0",
     isbn: "",
     status: "Active",
+    isFeatured: false,
+    isBestseller: false,
+    isNewRelease: false,
+    royaltyPercentage: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -55,9 +60,9 @@ export default function AddBookPage() {
       // Since backend uses Cloudinary, we must send multipart/form-data
       const submitData = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        submitData.append(key, value);
+        submitData.append(key, String(value));
       });
-      
+
       if (imageFile) {
         submitData.append("coverImage", imageFile);
       }
@@ -225,6 +230,65 @@ export default function AddBookPage() {
               </div>
             </div>
 
+            <div className="space-y-4 border rounded-xl p-4 bg-muted/20">
+              <h3 className="font-semibold text-lg">Display & Marketing Flags</h3>
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="isFeatured" className="flex flex-col space-y-1">
+                    <span>Feature on Home Screen</span>
+                    <span className="font-normal text-[0.8rem] text-muted-foreground">Show in hero carousel</span>
+                  </Label>
+                  <Switch
+                    id="isFeatured"
+                    checked={formData.isFeatured}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="isBestseller" className="flex flex-col space-y-1">
+                    <span>Bestseller</span>
+                    <span className="font-normal text-[0.8rem] text-muted-foreground">Add bestseller badge</span>
+                  </Label>
+                  <Switch
+                    id="isBestseller"
+                    checked={formData.isBestseller}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isBestseller: checked }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="isNewRelease" className="flex flex-col space-y-1">
+                    <span>New Release</span>
+                    <span className="font-normal text-[0.8rem] text-muted-foreground">Add new release badge</span>
+                  </Label>
+                  <Switch
+                    id="isNewRelease"
+                    checked={formData.isNewRelease}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNewRelease: checked }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 border rounded-xl p-4 bg-muted/20">
+              <h3 className="font-semibold text-lg">Author Financials</h3>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="royaltyPercentage">Royalty Percentage (%)</Label>
+                  <Input
+                    id="royaltyPercentage"
+                    name="royaltyPercentage"
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="e.g. 40"
+                    value={formData.royaltyPercentage}
+                    onChange={handleInputChange}
+                  />
+                  <p className="text-xs text-muted-foreground">Custom royalty rate for this specific book. Overrides standard rates.</p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Cover Image (Upload)</Label>
               <div className="flex items-center justify-center w-full">
@@ -247,7 +311,7 @@ export default function AddBookPage() {
                 </label>
               </div>
             </div>
-            
+
             <div className="flex justify-end pt-4">
               <Button type="submit" disabled={loading} size="lg" className="w-full sm:w-auto">
                 {loading ? "Creating..." : (

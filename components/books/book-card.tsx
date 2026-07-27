@@ -76,12 +76,15 @@ export function BookCard({
           whileHover={{ y: -2 }}
           className="flex gap-4 p-4 bg-card rounded-lg border border-border hover:shadow-md transition-shadow"
         >
-          <div className="relative w-24 h-36 flex-shrink-0">
+          <div className="relative w-24 h-36 flex-shrink-0 rounded-r-md rounded-l-sm overflow-hidden shadow-md ring-1 ring-border/20 group-hover:shadow-lg transition-all">
+            {/* Book Spine Effect */}
+            <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-black/20 to-transparent z-10 mix-blend-multiply pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
             <Image
               src={book.coverImage || "/images/placeholder-book.jpg"}
               alt={book.title}
               fill
-              className="object-cover rounded-md"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="96px"
             />
           </div>
@@ -126,12 +129,15 @@ export function BookCard({
     return (
       <Link href={`/books/${book.slug || book._id}`}>
         <motion.div whileHover={{ y: -4 }} className="group">
-          <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2">
+          <div className="relative aspect-[2/3] rounded-r-md rounded-l-sm overflow-hidden mb-2 shadow-md ring-1 ring-border/20 group-hover:shadow-lg transition-all">
+            {/* Book Spine Effect */}
+            <div className="absolute inset-y-0 left-0 w-[4%] bg-gradient-to-r from-black/20 to-transparent z-10 mix-blend-multiply pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
             <Image
               src={book.coverImage || "/images/placeholder-book.jpg"}
               alt={book.title}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
             />
           </div>
@@ -148,17 +154,20 @@ export function BookCard({
   }
 
   return (
-    <Link href={`/books/${book.slug || book._id}`} className="block" style={{ perspective: 1500 }}>
+    <Link href={`/books/${book.slug || book._id}`} className="block h-full" style={{ perspective: 1500 }}>
       <motion.div
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
         whileHover={{ y: -8, scale: 1.02 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className="group bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/50 shadow-md hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-primary/10 transition-all duration-300"
+        className="group bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/50 shadow-md hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full"
       >
         {/* Cover Image */}
-        <div className="relative aspect-[2/3] overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
+        <div className="relative aspect-[2/3] overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 border-b border-border/50">
+          {/* Book Spine Effect */}
+          <div className="absolute inset-y-0 left-0 w-[4%] bg-gradient-to-r from-black/30 to-transparent z-10 mix-blend-multiply pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
           <Image
             src={book.coverImage || "/images/placeholder-book.jpg"}
             alt={book.title}
@@ -239,7 +248,7 @@ export function BookCard({
         </div>
 
         {/* Content */}
-        <div className="p-5 bg-gradient-to-b from-card to-card/50">
+        <div className="p-5 bg-gradient-to-b from-card to-card/50 flex flex-col flex-grow">
           <h3 className="font-serif font-bold text-lg text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors duration-300">
             {book.title}
           </h3>
@@ -266,7 +275,7 @@ export function BookCard({
           </div>
 
           {/* Price */}
-          <div className="flex items-center justify-between pt-3 border-t border-border/30">
+          <div className="flex items-center justify-between pt-3 border-t border-border/30 mt-auto">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-primary">
                 ₹{price.toLocaleString()}

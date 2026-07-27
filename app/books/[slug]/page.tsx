@@ -179,8 +179,11 @@ export default function BookDetailPage() {
             animate={{ opacity: 1, x: 0 }}
             className="lg:w-2/5"
           >
-            <div className="sticky top-24">
-              <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-4 shadow-lg">
+            <div className="sticky top-24 mx-auto w-4/5 sm:w-2/3 lg:w-full max-w-[400px]">
+              <div className="relative aspect-[2/3] rounded-r-2xl rounded-l-sm overflow-hidden mb-4 shadow-2xl ring-1 ring-border/20 group">
+                {/* Book Spine Effect */}
+                <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-black/20 to-transparent z-10 mix-blend-multiply pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
                 <Image
                   src={book.galleryImages?.[selectedImage] || book.coverImage}
                   alt={book.title}
@@ -431,7 +434,7 @@ export default function BookDetailPage() {
         {/* Related Books */}
         <section className="mt-16">
           <h2 className="text-2xl font-serif font-bold text-foreground mb-6">You May Also Like</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {relatedBooks.map((relatedBook) => (
               <BookCard key={relatedBook._id} book={relatedBook} />
             ))}

@@ -79,7 +79,7 @@ export default function AdminBooksPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/books").catch(() => api.get("/books"));
+      const { data } = await api.get("/books");
       setBooks(data.data || data);
     } catch (err) {
       console.error("Failed to fetch admin books:", err);
@@ -93,7 +93,10 @@ export default function AdminBooksPage() {
     fetchBooks();
   }, []);
 
-  const categories = Array.from(new Set(books.map((b: any) => b.category)));
+  const getCategoryName = (category: any) => 
+    typeof category === "object" && category !== null ? category.name : category;
+
+  const categories = Array.from(new Set(books.map((b: any) => getCategoryName(b.category)))).filter(Boolean);
 
   const filteredBooks = books.filter((book: any) => {
     const title = book.title || "";
@@ -102,7 +105,7 @@ export default function AdminBooksPage() {
       title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       author.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
-      categoryFilter === "all" || book.category === categoryFilter;
+      categoryFilter === "all" || getCategoryName(book.category) === categoryFilter;
     const matchesStatus = statusFilter === "all" || book.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -206,11 +209,14 @@ export default function AdminBooksPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((cat: any) => (
-                  <SelectItem key={cat || "unknown"} value={cat || "unknown"}>
-                    {cat || "Unknown"}
-                  </SelectItem>
-                ))}
+                {categories.map((cat: any) => {
+                  const catString = String(cat);
+                  return (
+                    <SelectItem key={catString} value={catString}>
+                      {catString}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -271,7 +277,7 @@ export default function AdminBooksPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{book.category || "Uncategorized"}</Badge>
+                      <Badge variant="outline">{getCategoryName(book.category) || "Uncategorized"}</Badge>
                     </TableCell>
                     <TableCell className="text-right">₹{book.price}</TableCell>
                     <TableCell className="text-right">{book.stock || 0}</TableCell>

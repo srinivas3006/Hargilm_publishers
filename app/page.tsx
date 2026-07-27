@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -27,21 +27,80 @@ import { BookCardSkeleton } from "@/components/books/book-card-skeleton";
 
 const testimonials: { name: string; book: string; image: string; quote: string }[] = [];
 
-const stats: { label: string; value: string; icon: any }[] = [];
+const stats = [
+  { label: "Books Published", value: 30, suffix: "+", icon: BookOpen },
+  { label: "Happy Authors", value: 25, suffix: "+", icon: Users },
+  { label: "Countries Reached", value: 5, suffix: "+", icon: Globe },
+];
+
+function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (inView && ref.current) {
+      let start = 0;
+      const end = value;
+      const duration = 2000;
+      let startTime: number | null = null;
+      const step = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const current = Math.floor(progress * end);
+        if (ref.current) ref.current.innerText = current.toString() + suffix;
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        } else {
+          if (ref.current) ref.current.innerText = end.toString() + suffix;
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+  }, [inView, value, suffix]);
+
+  return <span ref={ref}>0{suffix}</span>;
+}
 
 export default function Home() {
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [siteContent, setSiteContent] = useState<any>(null);
 
   const fetchBooks = async () => {
     try {
       setLoading(true);
       setError(false);
-      const { data } = await api.get('/books?featured=true&limit=8');
-      setFeaturedBooks(data.data || data || []);
+      
+      const [booksRes, contentRes] = await Promise.allSettled([
+        api.get('/books?featured=true&limit=8'),
+        api.get('/content')
+      ]);
+
+      if (booksRes.status === 'fulfilled') {
+        const data = booksRes.value.data;
+        setFeaturedBooks(data.data || data || []);
+      }
+      
+      if (contentRes.status === 'fulfilled') {
+        setSiteContent(contentRes.value.data);
+      }
     } catch (error) {
-      console.error("Failed to fetch featured books:", error);
+      console.error("Failed to fetch home page data:", error);
       setError(true);
     } finally {
       setLoading(false);
@@ -72,10 +131,10 @@ export default function Home() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 md:pt-32 md:pb-16 lg:pt-40 lg:pb-20 text-center flex flex-col justify-center">
           <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-4xl mx-auto">
             <motion.h1 variants={fadeInUp} className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-8 leading-tight tracking-tight text-white whitespace-pre-line">
-              You write, we print.{"\n"}<span className="text-gold-gradient">You dream, we publish</span>
+              {siteContent?.homeTitle || "You write, we print.\nYou dream, we publish"}
             </motion.h1>
             <motion.p variants={fadeInUp} className="text-lg md:text-xl text-primary-foreground/90 mb-10 max-w-3xl mx-auto font-light leading-relaxed">
-              Explore inspiring books from talented authors across multiple genres, or publish your own masterpiece with Harglim Publishers. We make reading enjoyable and publishing effortless.
+              {siteContent?.homeSubtitle || "Explore inspiring books from talented authors across multiple genres, or publish your own masterpiece with Harglim Publishers. We make reading enjoyable and publishing effortless."}
             </motion.p>
             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center">
                <Link href="/books">
@@ -116,38 +175,7 @@ export default function Home() {
       </section>
       )}
 
-      {/* Stats Section */}
-      {stats.length > 0 && (
-      <section className="py-16 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                className="text-center"
-              >
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-4">
-                  <stat.icon className="h-7 w-7 text-primary" />
-                </div>
-                <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-      )}
+      {/* Stats Section moved below features */}
 
       {/* Features Section */}
       <section className="py-24 bg-gradient-to-b from-background via-background to-muted/10">
@@ -215,6 +243,37 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Stats Section */}
+      <section className="py-20 bg-background border-t border-border/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-8"
+          >
+            {stats.map((stat, index) => (
+              <motion.div
+                key={index}
+                variants={fadeInUp}
+                className="text-center flex flex-col items-center"
+              >
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-6 shadow-sm">
+                  <stat.icon className="h-8 w-8 text-foreground" strokeWidth={1.5} />
+                </div>
+                <div className="text-5xl md:text-6xl font-bold text-foreground mb-3 tracking-tight">
+                  <AnimatedCounter value={stat.value as number} suffix={stat.suffix} />
+                </div>
+                <div className="text-lg text-muted-foreground font-medium">
+                  {stat.label}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* Featured Books */}
       <section className="py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -243,7 +302,7 @@ export default function Home() {
           </motion.div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i}><BookCardSkeleton /></div>
               ))}

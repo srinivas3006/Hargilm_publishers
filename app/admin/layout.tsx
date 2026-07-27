@@ -16,8 +16,10 @@ import {
   Menu,
   BookOpen,
   X,
-  Tag,
   UserPlus,
+  Store,
+  DollarSign,
+  Globe,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -28,13 +30,12 @@ import { AuthGuard } from "@/components/auth/auth-guard";
 const sidebarLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/books", label: "Books", icon: BookOpen },
-  { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/author-applications", label: "Author Applications", icon: UserPlus },
   { href: "/admin/manuscripts", label: "Manuscripts", icon: FileText },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/royalties", label: "Royalties", icon: DollarSign },
+  { href: "/admin/content", label: "Site Content", icon: Globe },
 ];
 
 export default function AdminLayout({
@@ -134,8 +135,17 @@ export default function AdminLayout({
             </ul>
           </nav>
 
-          {/* Logout */}
-          <div className="border-t p-4">
+          {/* Bottom Actions */}
+          <div className="border-t p-4 space-y-2">
+            <Link href="/" passHref>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-muted-foreground hover:text-primary"
+              >
+                <Store className="h-5 w-5" />
+                Back to Store
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"

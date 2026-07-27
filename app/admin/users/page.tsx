@@ -79,7 +79,7 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/users").catch(() => api.get("/users"));
+      const { data } = await api.get("/admin/users");
       setUsers(data.data || data);
     } catch (err) {
       console.error("Failed to fetch admin users:", err);
@@ -108,7 +108,7 @@ export default function AdminUsersPage() {
   const handleSuspend = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "Active" ? "Suspended" : "Active";
     try {
-      await api.put(`/admin/users/${id}/status`, { status: newStatus });
+      await api.put(`/admin/users/${id}`, { status: newStatus });
       setUsers(
         users.map((u: any) =>
           (u.id || u._id) === id ? { ...u, status: newStatus } : u
@@ -123,7 +123,7 @@ export default function AdminUsersPage() {
 
   const handleRoleChange = async (id: string, newRole: string) => {
     try {
-      await api.put(`/admin/users/${id}/role`, { role: newRole });
+      await api.put(`/admin/users/${id}`, { role: newRole });
       setUsers(
         users.map((u: any) =>
           (u.id || u._id) === id ? { ...u, role: newRole } : u
@@ -329,11 +329,13 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Profile
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          {role === "Author" && (
+                            <DropdownMenuItem onClick={() => window.open(`/authors/${user.id || user._id}`, "_blank")}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Author Profile
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => window.location.href = `mailto:${user.email}`}>
                             <Mail className="mr-2 h-4 w-4" />
                             Send Email
                           </DropdownMenuItem>

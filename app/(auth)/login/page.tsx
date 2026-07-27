@@ -52,15 +52,13 @@ export default function LoginPage() {
         token
       );
       
-      toast.success("Welcome back! Redirecting to your dashboard.", {
+      toast.success("Welcome back!", {
         duration: 2000,
         position: "top-center",
       });
 
       setTimeout(() => {
-        if (user.role === "admin") router.replace("/admin");
-        else if (user.role === "author") router.replace("/author");
-        else router.replace("/dashboard");
+        router.replace("/");
       }, 300);
     } catch (error) {
       toast.error("Invalid email or password");

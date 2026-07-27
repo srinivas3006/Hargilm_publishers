@@ -14,6 +14,7 @@ import {
   XCircle,
   Clock,
   Download,
+  BookOpen,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,8 +44,8 @@ import {
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-const getStatusColor = (status: string) => {
-  switch (status?.toLowerCase()) {
+const getStatusColor = (status: any) => {
+  switch (String(status || "").toLowerCase()) {
     case "approved":
     case "published":
       return "bg-emerald-500/10 text-emerald-600";
@@ -58,8 +59,8 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getStatusIcon = (status: string) => {
-  switch (status?.toLowerCase()) {
+const getStatusIcon = (status: any) => {
+  switch (String(status || "").toLowerCase()) {
     case "approved":
     case "published":
       return CheckCircle;
@@ -85,7 +86,20 @@ export default function AdminManuscriptsPage() {
     setError(false);
     try {
       const { data } = await api.get("/admin/publish-requests");
-      setManuscripts(data.data || data);
+      let fetchedManuscripts = [];
+      if (Array.isArray(data)) {
+        fetchedManuscripts = data;
+      } else if (data && Array.isArray(data.data)) {
+        fetchedManuscripts = data.data;
+      } else if (data && Array.isArray(data.requests)) {
+        fetchedManuscripts = data.requests;
+      } else if (data && Array.isArray(data.publishRequests)) {
+        fetchedManuscripts = data.publishRequests;
+      } else if (data && typeof data === 'object') {
+        const arrayProp = Object.values(data).find(val => Array.isArray(val));
+        if (arrayProp) fetchedManuscripts = arrayProp as any[];
+      }
+      setManuscripts(fetchedManuscripts);
     } catch (err) {
       console.error("Failed to fetch admin manuscripts:", err);
       setError(true);
@@ -98,9 +112,10 @@ export default function AdminManuscriptsPage() {
     fetchManuscripts();
   }, []);
 
-  const filteredManuscripts = manuscripts.filter((manuscript: any) => {
-    const title = manuscript.title || "";
-    const author = manuscript.authorName || manuscript.author?.name || "";
+  const safeManuscripts = Array.isArray(manuscripts) ? manuscripts : [];
+  const filteredManuscripts = safeManuscripts.filter((manuscript: any) => {
+    const title = String(manuscript?.title || "");
+    const author = String(manuscript?.authorName || manuscript?.author?.name || "");
     const matchesSearch =
       title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       author.toLowerCase().includes(searchQuery.toLowerCase());
@@ -215,10 +230,12 @@ export default function AdminManuscriptsPage() {
                           {manuscript.authorName || manuscript.author?.name || "Unknown"}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{manuscript.category || "Uncategorized"}</Badge>
+                          <Badge variant="outline">
+                            {typeof manuscript.category === 'object' ? manuscript.category?.name : (manuscript.category || "Uncategorized")}
+                          </Badge>
                         </TableCell>
                         <TableCell>
-                          {manuscript.package?.name || manuscript.packageId || "None"}
+                          {manuscript.package?.name || (typeof manuscript.packageId === 'object' ? manuscript.packageId?.name : manuscript.packageId) || "None"}
                         </TableCell>
                         <TableCell>
                           {new Date(manuscript.createdAt || manuscript.submittedDate || Date.now()).toLocaleDateString()}
@@ -269,6 +286,14 @@ export default function AdminManuscriptsPage() {
                                     Reject Request
                                   </DropdownMenuItem>
                                 </>
+                              )}
+                              {manuscript.status === "approved" && (
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/books/new?title=${encodeURIComponent(manuscript.title)}&author=${encodeURIComponent(manuscript.authorName || manuscript.author?.name || "")}`}>
+                                    <BookOpen className="mr-2 h-4 w-4" />
+                                    Publish as Book
+                                  </Link>
+                                </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
