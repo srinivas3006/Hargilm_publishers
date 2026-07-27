@@ -95,7 +95,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center p-4 lg:p-8 overflow-y-auto relative">
         <Button 
           variant="ghost" 
-          onClick={() => router.back()} 
+          onClick={() => router.push("/")} 
           className="absolute top-4 left-4 md:top-8 md:left-8 gap-2 hover:bg-muted"
         >
           <ArrowLeft className="h-4 w-4" />
