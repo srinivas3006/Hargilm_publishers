@@ -46,127 +46,127 @@ export default function AuthorLayout({
 
   return (
     <AuthGuard requiredRole="author">
-    <div className="flex bg-muted/30 min-h-[calc(100vh-4rem)]">
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      <div className="flex bg-muted/30 min-h-[calc(100vh-4rem)]">
+        {/* Mobile Sidebar Overlay */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 transform bg-card border-r transition-transform duration-300 lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="flex h-full flex-col">
-          {/* Mobile Close Button */}
-          <div className="flex items-center justify-end p-2 lg:hidden">
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 transform bg-card border-r transition-transform duration-300 lg:translate-x-0",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          )}
+        >
+          <div className="flex h-full flex-col">
+            {/* Mobile Close Button */}
+            <div className="flex items-center justify-end p-2 lg:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Author Info */}
+            <div className="border-b p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-semibold">
+                  {user?.name?.charAt(0) || "A"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{user?.name || "Author"}</p>
+                  <p className="text-sm text-muted-foreground">Verified Author</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 overflow-y-auto p-4">
+              <ul className="space-y-1">
+                {sidebarLinks.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <link.icon className="h-5 w-5" />
+                        {link.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+
+            {/* Bottom Actions */}
+            <div className="border-t p-4 space-y-2">
+              <Link href="/" passHref>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 text-muted-foreground hover:text-primary"
+                >
+                  <Store className="h-5 w-5" />
+                  Back to Store
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  logout();
+                  window.location.href = "/";
+                }}
+              >
+                <LogOut className="h-5 w-5" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1 lg:pl-64 flex flex-col min-h-[calc(100vh-4rem)]">
+          {/* Mobile Header */}
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 lg:hidden">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => setSidebarOpen(true)}
             >
-              <X className="h-5 w-5" />
+              <Menu className="h-5 w-5" />
             </Button>
-          </div>
+            <span className="font-semibold">Author Portal</span>
+          </header>
 
-          {/* Author Info */}
-          <div className="border-b p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-semibold">
-                {user?.name?.charAt(0) || "A"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{user?.name || "Author"}</p>
-                <p className="text-sm text-muted-foreground">Verified Author</p>
-              </div>
-            </div>
-          </div>
+          {/* Page Content */}
+          <main className="flex-1 p-4 lg:p-8">{children}</main>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4">
-            <ul className="space-y-1">
-              {sidebarLinks.map((link) => {
-                const isActive = pathname === link.href;
-                return (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <link.icon className="h-5 w-5" />
-                      {link.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-
-          {/* Bottom Actions */}
-          <div className="border-t p-4 space-y-2">
-            <Link href="/" passHref>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 text-muted-foreground hover:text-primary"
-              >
-                <Store className="h-5 w-5" />
-                Back to Store
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
-              onClick={() => {
-                logout();
-                window.location.href = "/";
-              }}
-            >
-              <LogOut className="h-5 w-5" />
-              Sign Out
-            </Button>
-          </div>
+          {/* Author Footer */}
+          <footer className="border-t p-4 text-center text-sm text-muted-foreground bg-card">
+            &copy; {new Date().getFullYear()} Harglim Publishers. Author Portal.
+          </footer>
         </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 lg:pl-64 flex flex-col min-h-[calc(100vh-4rem)]">
-        {/* Mobile Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <span className="font-semibold">Author Portal</span>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
-
-        {/* Author Footer */}
-        <footer className="border-t p-4 text-center text-sm text-muted-foreground bg-card">
-          &copy; {new Date().getFullYear()} Harglim Publishers. Author Portal.
-        </footer>
       </div>
-    </div>
     </AuthGuard>
   );
 }

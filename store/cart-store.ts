@@ -39,7 +39,7 @@ interface CartState {
 }
 
 const SHIPPING_THRESHOLD = 499;
-const SHIPPING_FEE = 40;
+const SHIPPING_FEE = 50;
 const TAX_RATE = 0.05; // 5% GST
 
 export const useCartStore = create<CartState>()(
@@ -91,7 +91,7 @@ export const useCartStore = create<CartState>()(
       
       getTax: () => {
         const subtotal = get().getSubtotal();
-        return subtotal * TAX_RATE;
+        return parseFloat((subtotal * TAX_RATE).toFixed(2));
       },
       
       getShipping: () => {
@@ -101,7 +101,8 @@ export const useCartStore = create<CartState>()(
       },
       
       getTotal: () => {
-        return get().getSubtotal() + get().getTax() + get().getShipping();
+        const totalAmount = get().getSubtotal() + get().getTax() + get().getShipping();
+        return parseFloat(totalAmount.toFixed(2));
       },
       
       itemCount: () => {

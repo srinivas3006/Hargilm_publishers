@@ -269,25 +269,7 @@ export default function AddBookPage() {
               </div>
             </div>
 
-            <div className="space-y-4 border rounded-xl p-4 bg-muted/20">
-              <h3 className="font-semibold text-lg">Author Financials</h3>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="royaltyPercentage">Royalty Percentage (%)</Label>
-                  <Input
-                    id="royaltyPercentage"
-                    name="royaltyPercentage"
-                    type="number"
-                    min="0"
-                    max="100"
-                    placeholder="e.g. 40"
-                    value={formData.royaltyPercentage}
-                    onChange={handleInputChange}
-                  />
-                  <p className="text-xs text-muted-foreground">Custom royalty rate for this specific book. Overrides standard rates.</p>
-                </div>
-              </div>
-            </div>
+
 
             <div className="space-y-2">
               <Label>Cover Image (Upload)</Label>

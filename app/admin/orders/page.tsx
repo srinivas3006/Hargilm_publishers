@@ -52,30 +52,34 @@ import toast from "react-hot-toast";
 
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Completed":
+  switch (status?.toUpperCase()) {
+    case "COMPLETED":
       return "bg-emerald-500/10 text-emerald-600";
-    case "Processing":
+    case "PROCESSING":
       return "bg-amber-500/10 text-amber-600";
-    case "Shipped":
+    case "SHIPPED":
       return "bg-blue-500/10 text-blue-600";
-    case "Cancelled":
+    case "CANCELLED":
       return "bg-red-500/10 text-red-600";
+    case "PENDING":
+      return "bg-yellow-500/10 text-yellow-600";
     default:
       return "bg-muted text-muted-foreground";
   }
 };
 
 const getStatusIcon = (status: string) => {
-  switch (status) {
-    case "Completed":
+  switch (status?.toUpperCase()) {
+    case "COMPLETED":
       return CheckCircle;
-    case "Processing":
+    case "PROCESSING":
       return Package;
-    case "Shipped":
+    case "SHIPPED":
       return Truck;
-    case "Cancelled":
+    case "CANCELLED":
       return XCircle;
+    case "PENDING":
+      return Package;
     default:
       return Package;
   }
@@ -83,6 +87,7 @@ const getStatusIcon = (status: string) => {
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
+  const [booksMap, setBooksMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -93,8 +98,26 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/orders");
-      setOrders(data.data || data);
+      const [ordersRes, booksRes] = await Promise.allSettled([
+        api.get("/admin/orders"),
+        api.get("/books?limit=100")
+      ]);
+
+      if (ordersRes.status === "fulfilled") {
+        setOrders(ordersRes.value.data?.data || ordersRes.value.data || []);
+      }
+
+      if (booksRes.status === "fulfilled") {
+        const booksList = booksRes.value.data?.data?.books || booksRes.value.data?.data || booksRes.value.data || [];
+        if (Array.isArray(booksList)) {
+          const map: Record<string, string> = {};
+          booksList.forEach((b: any) => {
+            if (b._id) map[b._id] = b.title;
+            if (b.id) map[b.id] = b.title;
+          });
+          setBooksMap(map);
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch admin orders:", err);
       setError(true);
@@ -107,27 +130,52 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, []);
 
+  const getOrderAmount = (o: any) => {
+    if (!o) return 0;
+    if (typeof o.totalPrice === 'number' && o.totalPrice > 0) return o.totalPrice;
+    if (typeof o.totalAmount === 'number' && o.totalAmount > 0) return o.totalAmount;
+    if (typeof o.amount === 'number' && o.amount > 0) return o.amount;
+
+    // Fallback calculation: subtotal (or sum of items) + tax + shipping
+    const itemsSum = Array.isArray(o.items)
+      ? o.items.reduce((sum: number, item: any) => sum + ((item.price || 0) * (item.quantity || 1)), 0)
+      : 0;
+
+    const subtotal = typeof o.subtotal === 'number' && o.subtotal > 0 ? o.subtotal : itemsSum;
+    if (subtotal <= 0) return 0;
+
+    const tax = typeof o.tax === 'number' ? o.tax : (subtotal * 0.05);
+    const shipping = typeof o.shippingPrice === 'number' ? o.shippingPrice : (typeof o.shippingFee === 'number' ? o.shippingFee : 50);
+
+    return Math.round((subtotal + tax + shipping) * 100) / 100;
+  };
+
   const filteredOrders = orders.filter((order: any) => {
     const orderId = order.orderNumber || order.id || order._id || "";
     const customer = order.customerName || order.user?.name || "Guest";
     const matchesSearch =
       orderId.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || order.status?.toUpperCase() === statusFilter.toUpperCase();
     return matchesSearch && matchesStatus;
   });
 
   const totalRevenue = orders
-    .filter((o: any) => o.status !== "Cancelled")
-    .reduce((sum: number, o: any) => sum + (o.totalAmount || o.amount || 0), 0);
+    .filter((o: any) => o.status?.toUpperCase() !== "CANCELLED")
+    .reduce((sum: number, o: any) => sum + getOrderAmount(o), 0);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      await api.put(`/admin/orders/${id}/status`, { status: newStatus });
+      const upperStatus = newStatus.toUpperCase();
+      await api
+        .put(`/admin/orders/${id}/status`, { status: upperStatus })
+        .catch(() => api.put(`/orders/${id}`, { status: upperStatus }))
+        .catch(() => api.put(`/admin/orders/${id}`, { status: upperStatus }));
+
       setOrders(
-        orders.map((o: any) => ((o.id || o._id) === id ? { ...o, status: newStatus } : o))
+        orders.map((o: any) => ((o.id || o._id) === id ? { ...o, status: upperStatus } : o))
       );
-      toast.success(`Order status updated to ${newStatus}`);
+      toast.success(`Order status updated to ${upperStatus}`);
     } catch (err) {
       console.error("Failed to update order status:", err);
       toast.error("Failed to update order status");
@@ -147,7 +195,7 @@ export default function AdminOrdersPage() {
       const orderId = order.orderNumber || order.id || order._id;
       const customer = order.customerName || order.user?.name || "Guest";
       const email = order.email || order.user?.email || "-";
-      const amount = order.totalAmount || order.amount || 0;
+      const amount = getOrderAmount(order);
       const date = new Date(order.createdAt || order.date).toLocaleDateString();
       
       const row = [
@@ -177,7 +225,7 @@ export default function AdminOrdersPage() {
     const orderId = order.orderNumber || order.id || order._id;
     const customer = order.customerName || order.user?.name || "Guest";
     const email = order.email || order.user?.email || "-";
-    const amount = order.totalAmount || order.amount || 0;
+    const amount = getOrderAmount(order);
     const date = new Date(order.createdAt || order.date).toLocaleDateString();
     
     const invoiceText = `
@@ -297,6 +345,7 @@ Thank you for shopping with Hargilm Publishers!
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
                 <SelectItem value="Processing">Processing</SelectItem>
                 <SelectItem value="Shipped">Shipped</SelectItem>
                 <SelectItem value="Completed">Completed</SelectItem>
@@ -346,7 +395,7 @@ Thank you for shopping with Hargilm Publishers!
                       </TableCell>
                       <TableCell className="text-center">{order.items?.length || order.items || 0}</TableCell>
                       <TableCell className="text-right font-semibold">
-                        ₹{(order.totalAmount || order.amount || 0).toLocaleString()}
+                        ₹{(getOrderAmount(order)).toLocaleString()}
                       </TableCell>
                       <TableCell>{order.paymentMethod || "UPI"}</TableCell>
                       <TableCell>
@@ -370,7 +419,15 @@ Thank you for shopping with Hargilm Publishers!
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            {order.status === "Processing" && (
+                            {order.status?.toUpperCase() === "PENDING" && (
+                              <DropdownMenuItem
+                                onClick={() => updateStatus(order.id || order._id, "Processing")}
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
+                                Approve Payment (Process)
+                              </DropdownMenuItem>
+                            )}
+                            {order.status?.toUpperCase() === "PROCESSING" && (
                               <DropdownMenuItem
                                 onClick={() => updateStatus(order.id || order._id, "Shipped")}
                               >
@@ -378,7 +435,7 @@ Thank you for shopping with Hargilm Publishers!
                                 Mark as Shipped
                               </DropdownMenuItem>
                             )}
-                            {order.status === "Shipped" && (
+                            {order.status?.toUpperCase() === "SHIPPED" && (
                               <DropdownMenuItem
                                 onClick={() => updateStatus(order.id || order._id, "Completed")}
                               >
@@ -386,8 +443,8 @@ Thank you for shopping with Hargilm Publishers!
                                 Mark as Completed
                               </DropdownMenuItem>
                             )}
-                            {order.status !== "Cancelled" &&
-                              order.status !== "Completed" && (
+                            {order.status?.toUpperCase() !== "CANCELLED" &&
+                              order.status?.toUpperCase() !== "COMPLETED" && (
                                 <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => updateStatus(order.id || order._id, "Cancelled")}
@@ -431,47 +488,94 @@ Thank you for shopping with Hargilm Publishers!
                 </div>
                 <div>
                   <p className="text-muted-foreground">Customer</p>
-                  <p className="font-medium">{selectedOrder.customerName || selectedOrder.user?.name || "Guest"}</p>
-                  <p>{selectedOrder.email || selectedOrder.user?.email}</p>
+                  <p className="font-medium">{selectedOrder.shippingAddress?.fullName || selectedOrder.customerName || selectedOrder.user?.name || "Guest"}</p>
+                  <p className="text-xs text-muted-foreground">{selectedOrder.email || selectedOrder.user?.email}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Payment Method</p>
-                  <p className="font-medium">{selectedOrder.paymentMethod || "UPI"}</p>
+                  <p className="text-muted-foreground">Payment Method & Status</p>
+                  <p className="font-medium">{selectedOrder.paymentMethod || "UPI"} • {selectedOrder.status}</p>
                 </div>
               </div>
 
+              {selectedOrder.shippingAddress && (
+                <div>
+                  <h3 className="font-semibold mb-2">Shipping Address</h3>
+                  <div className="text-sm bg-muted/30 p-4 rounded-md space-y-1">
+                    <p className="font-semibold text-foreground">
+                      {selectedOrder.shippingAddress.fullName || selectedOrder.customerName || selectedOrder.user?.name}
+                    </p>
+                    <p>
+                      {selectedOrder.shippingAddress.addressLine1 || selectedOrder.shippingAddress.address}
+                      {selectedOrder.shippingAddress.addressLine2 ? `, ${selectedOrder.shippingAddress.addressLine2}` : ""}
+                    </p>
+                    <p>
+                      {[
+                        selectedOrder.shippingAddress.city,
+                        selectedOrder.shippingAddress.state,
+                        selectedOrder.shippingAddress.postalCode || selectedOrder.shippingAddress.pincode,
+                        selectedOrder.shippingAddress.country
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div>
-                <h3 className="font-semibold mb-3">Items</h3>
-                <div className="border rounded-md">
+                <h3 className="font-semibold mb-3">Ordered Items</h3>
+                <div className="border rounded-md overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Book</TableHead>
+                        <TableHead>Book Title</TableHead>
                         <TableHead className="text-right">Price</TableHead>
                         <TableHead className="text-center">Qty</TableHead>
                         <TableHead className="text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {Array.isArray(selectedOrder.items) && selectedOrder.items.map((item: any, i: number) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <p className="font-medium">{item.bookTitle || item.book?.title || "Unknown Book"}</p>
-                          </TableCell>
-                          <TableCell className="text-right">₹{item.price}</TableCell>
-                          <TableCell className="text-center">{item.quantity}</TableCell>
-                          <TableCell className="text-right">₹{(item.price * item.quantity).toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
+                      {Array.isArray(selectedOrder.items) && selectedOrder.items.map((item: any, i: number) => {
+                        const bookId = typeof item.book === 'string' ? item.book : item.book?._id;
+                        const bookTitle = item.bookTitle || item.book?.title || (bookId && booksMap[bookId]) || "Book (" + (bookId?.substring(0, 8) || (i + 1)) + ")";
+                        const price = item.price || 0;
+                        const qty = item.quantity || 1;
+                        return (
+                          <TableRow key={i}>
+                            <TableCell>
+                              <p className="font-medium text-foreground">{bookTitle}</p>
+                            </TableCell>
+                            <TableCell className="text-right">₹{price}</TableCell>
+                            <TableCell className="text-center">{qty}</TableCell>
+                            <TableCell className="text-right font-medium">₹{(price * qty).toLocaleString()}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
               </div>
 
-              <div className="flex justify-end pt-4 border-t">
-                <div className="text-right space-y-1">
-                  <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-2xl font-bold">₹{(selectedOrder.totalAmount || selectedOrder.amount || 0).toLocaleString()}</p>
+              <div className="border-t pt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>₹{selectedOrder.subtotal ?? (selectedOrder.items?.reduce((s: number, item: any) => s + (item.price * item.quantity), 0) || 0)}</span>
+                </div>
+                {selectedOrder.tax > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">GST (5%)</span>
+                    <span>₹{selectedOrder.tax}</span>
+                  </div>
+                )}
+                {selectedOrder.shippingPrice > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Shipping Fee</span>
+                    <span>₹{selectedOrder.shippingPrice}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-lg font-bold border-t pt-2 text-foreground">
+                  <span>Total Amount</span>
+                  <span className="text-emerald-600">₹{getOrderAmount(selectedOrder).toLocaleString()}</span>
                 </div>
               </div>
             </div>

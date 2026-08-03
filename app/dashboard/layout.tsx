@@ -32,7 +32,6 @@ const sidebarLinks = [
   { href: "/dashboard/library", label: "My Library", icon: BookOpen },
   { href: "/dashboard/payments", label: "Payment History", icon: CreditCard },
   { href: "/dashboard/profile", label: "Profile", icon: User },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({

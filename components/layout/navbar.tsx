@@ -54,7 +54,8 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const itemCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
+  const rawItemCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
+  const itemCount = (isAuthenticated && user) ? rawItemCount : 0;
   const isHydrated = useHydration();
 
   // Hide Navbar only on admin and auth routes
@@ -95,6 +96,7 @@ export function Navbar() {
   };
 
   const handleLogout = () => {
+    useCartStore.getState().clearCart();
     logout();
     window.location.href = "/";
   };
@@ -159,11 +161,11 @@ export function Navbar() {
             </Link>
 
             {/* Cart */}
-            <Link href="/checkout/cart">
+            <Link href={isAuthenticated ? "/checkout/cart" : "/login"}>
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-5 w-5" />
-                {isHydrated && itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                {isAuthenticated && user && isHydrated && itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium">
                     {itemCount > 9 ? "9+" : itemCount}
                   </span>
                 )}
@@ -222,11 +224,11 @@ export function Navbar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link
-                      href="/dashboard/settings"
+                      href="/dashboard/profile"
                       className="flex items-center gap-2"
                     >
-                      <Settings className="h-4 w-4" />
-                      Settings
+                      <User className="h-4 w-4" />
+                      Profile
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

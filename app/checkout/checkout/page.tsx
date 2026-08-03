@@ -39,6 +39,8 @@ export default function CheckoutStepPage() {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [currentOrderId, setCurrentOrderId] = useState('');
   const [currentOrderNumber, setCurrentOrderNumber] = useState('');
+  const [backendOrder, setBackendOrder] = useState<any>(null);
+  const [backendPayment, setBackendPayment] = useState<any>(null);
   const [utr, setUtr] = useState('');
 
   useEffect(() => {
@@ -90,6 +92,8 @@ export default function CheckoutStepPage() {
       if (data.success || data.status === 'success') {
         const responseData = data.data || data;
         const { order, payment } = responseData;
+        setBackendOrder(order);
+        setBackendPayment(payment);
         setCurrentOrderId(order._id || order.id);
         setCurrentOrderNumber(order.orderNumber);
         setQrCodeDataUrl(payment?.qrCodeDataUrl || '');
@@ -254,22 +258,26 @@ export default function CheckoutStepPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Subtotal</span>
-                <span>₹{subtotal.toFixed(2)}</span>
+                <span>₹{(backendOrder?.subtotal ?? subtotal).toFixed(2)}</span>
               </div>
-              {/* <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Tax</span>
-                <span>₹{tax.toFixed(2)}</span>
-              </div> */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>GST Tax (5%)</span>
+                <span>₹{(backendOrder?.tax ?? tax).toFixed(2)}</span>
+              </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Shipping</span>
-                <span>{shipping === 0 ? 'Free' : `₹${shipping.toFixed(2)}`}</span>
+                <span>
+                  {(backendOrder?.shippingPrice ?? shipping) === 0
+                    ? 'Free'
+                    : `₹${(backendOrder?.shippingPrice ?? shipping).toFixed(2)}`}
+                </span>
               </div>
             </div>
 
             <div className="border-t border-border pt-4">
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Order Total</span>
-                <span>₹{total.toFixed(2)}</span>
+                <span>₹{(backendOrder?.totalPrice ?? backendPayment?.amount ?? total).toFixed(2)}</span>
               </div>
             </div>
 
@@ -277,9 +285,9 @@ export default function CheckoutStepPage() {
               <p className="text-sm font-medium">Items</p>
               <div className="mt-3 space-y-3">
                 {items.map((item) => (
-                  <div key={item.book._id} className="flex items-center justify-between gap-3">
+                  <div key={item.book._id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="truncate">{item.book.title}</span>
-                    <span>×{item.quantity}</span>
+                    <span className="text-muted-foreground">×{item.quantity}</span>
                   </div>
                 ))}
               </div>
@@ -318,7 +326,7 @@ export default function CheckoutStepPage() {
                   </div>
                   <h3 className="text-xl font-bold mb-2">Scan to Pay</h3>
                   <p className="text-muted-foreground mb-6">
-                    Amount: <span className="font-bold text-foreground">₹{total.toFixed(2)}</span>
+                    Amount: <span className="font-bold text-foreground">₹{(backendOrder?.totalPrice ?? backendPayment?.amount ?? total).toFixed(2)}</span>
                   </p>
                   
                   <div className="aspect-square bg-white w-48 mx-auto rounded-xl border-2 border-dashed border-border flex items-center justify-center mb-6 overflow-hidden">

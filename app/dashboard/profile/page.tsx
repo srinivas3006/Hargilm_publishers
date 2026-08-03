@@ -31,17 +31,22 @@ export default function ProfilePage() {
   });
 
   const fetchProfile = async () => {
-    if (!user?._id && !user?.id) return;
-    const userId = user._id || user.id;
     setIsFetching(true);
     setError(false);
+
     try {
-      const { data } = await api.get(`/users/${userId}`);
-      const userData = data.data || data;
+      const userId = user?._id || user?.id;
+      // Try GET /users/:id first, then GET /auth/me or GET /users/me
+      const res = await api
+        .get(`/users/${userId}`)
+        .catch(() => api.get('/auth/me'))
+        .catch(() => api.get('/users/me'));
+
+      const userData = res.data?.data || res.data?.user || res.data;
       if (userData) {
         setFormData({
-          name: userData.name || "",
-          email: userData.email || "",
+          name: userData.name || user?.name || "",
+          email: userData.email || user?.email || "",
           phone: userData.phone || "",
           bio: userData.bio || "",
           address: userData.address || "",
@@ -49,10 +54,25 @@ export default function ProfilePage() {
           state: userData.state || "",
           pincode: userData.pincode || "",
         });
+      } else if (user) {
+        // Fallback to Zustand auth store
+        setFormData((prev) => ({
+          ...prev,
+          name: user.name || prev.name,
+          email: user.email || prev.email,
+        }));
       }
     } catch (err) {
-      console.error("Failed to fetch profile", err);
-      setError(true);
+      console.warn("Could not fetch remote profile details, using session data:", err);
+      if (user) {
+        setFormData((prev) => ({
+          ...prev,
+          name: user.name || prev.name,
+          email: user.email || prev.email,
+        }));
+      } else {
+        setError(true);
+      }
     } finally {
       setIsFetching(false);
     }
@@ -70,12 +90,15 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?._id && !user?.id) return;
-    const userId = user._id || user.id;
+    const userId = user?._id || user?.id;
 
     setIsLoading(true);
     try {
-      await api.put(`/users/${userId}`, formData);
+      await api
+        .put(`/users/${userId}`, formData)
+        .catch(() => api.put('/users/me', formData))
+        .catch(() => api.put('/auth/me', formData));
+
       toast.success("Profile updated successfully");
     } catch (err) {
       console.error("Failed to update profile", err);

@@ -192,7 +192,11 @@ export default function AuthorBooksPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{typeof book.category === 'object' ? book.category.name : book.category}</Badge>
+                      <Badge variant="outline">
+                        {book.category && typeof book.category === 'object' 
+                          ? book.category.name 
+                          : (typeof book.category === 'string' ? book.category : "General")}
+                      </Badge>
                     </TableCell>
                     <TableCell>₹{book.price}</TableCell>
                     <TableCell>{book.totalSales || 0}</TableCell>

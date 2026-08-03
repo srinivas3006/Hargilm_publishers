@@ -129,34 +129,39 @@ export default function DashboardPage() {
     setLoading(true);
     setError(false);
     try {
-      const [statsRes, ordersRes, recsRes] = await Promise.all([
-        api.get(`/users/${userId}/stats`),
+      const [statsRes, ordersRes, recsRes] = await Promise.allSettled([
+        api.get(`/users/${userId}/stats`).catch(() => api.get('/users/me/stats')),
         api.get(`/users/${userId}/orders?limit=3&sort=-createdAt`),
         api.get(`/books?limit=3`)
       ]);
       
-      const statsData = statsRes.data?.data || statsRes.data;
-      if (statsData) {
-        setDynamicStats([
-          { ...stats[0], value: statsData.totalOrders?.toString() || "0" },
-          { ...stats[1], value: statsData.totalWishlistItems?.toString() || "0" },
-          { ...stats[2], value: statsData.booksOwned?.toString() || "0" },
-          { ...stats[3], value: `₹${statsData.totalSpent?.toLocaleString() || "0"}` },
-        ]);
+      if (statsRes.status === 'fulfilled') {
+        const statsData = statsRes.value.data?.data || statsRes.value.data;
+        if (statsData) {
+          setDynamicStats([
+            { ...stats[0], value: statsData.totalOrders?.toString() || "0" },
+            { ...stats[1], value: statsData.totalWishlistItems?.toString() || "0" },
+            { ...stats[2], value: statsData.booksOwned?.toString() || "0" },
+            { ...stats[3], value: `₹${statsData.totalSpent?.toLocaleString() || "0"}` },
+          ]);
+        }
       }
       
-      const ordersData = ordersRes.data?.data || ordersRes.data;
-      if (ordersData) {
-        setDynamicOrders(Array.isArray(ordersData) ? ordersData : []);
+      if (ordersRes.status === 'fulfilled') {
+        const ordersData = ordersRes.value.data?.data || ordersRes.value.data;
+        if (ordersData) {
+          setDynamicOrders(Array.isArray(ordersData) ? ordersData : []);
+        }
       }
 
-      const recsData = recsRes.data?.data?.books || recsRes.data?.data || recsRes.data;
-      if (recsData) {
-        setRecs(Array.isArray(recsData) ? recsData : []);
+      if (recsRes.status === 'fulfilled') {
+        const recsData = recsRes.value.data?.data?.books || recsRes.value.data?.data || recsRes.value.data;
+        if (recsData) {
+          setRecs(Array.isArray(recsData) ? recsData : []);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
-      setError(true);
     } finally {
       setLoading(false);
     }

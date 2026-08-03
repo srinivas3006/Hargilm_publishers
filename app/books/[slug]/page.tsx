@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Minus,
   Plus,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookCard } from '@/components/books/book-card';
 import { ErrorState } from '@/components/ui/error-state';
 import { useCartStore } from '@/store/cart-store';
+import { useAuthStore } from '@/store/auth-store';
 import type { Book, Author } from '@/types';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
@@ -35,6 +38,7 @@ import api from '@/lib/api';
 
 export default function BookDetailPage() {
   const params = useParams();
+  const { user } = useAuthStore();
   const [book, setBook] = useState<Book | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -42,7 +46,74 @@ export default function BookDetailPage() {
   const [error, setError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  
+  // Review state
+  const [newRating, setNewRating] = useState<number>(5);
+  const [newComment, setNewComment] = useState<string>('');
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+
   const addItem = useCartStore((state) => state.addItem);
+
+  const fetchReviews = async () => {
+    try {
+      const res = await api.get(`/books/${params.slug}/reviews?page=1&limit=20`);
+      const reviewsData = res.data.data || res.data;
+      if (reviewsData) {
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch reviews:", e);
+    }
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!newComment.trim()) return;
+    setSubmittingReview(true);
+    try {
+      if (editingReviewId) {
+        // PUT /api/books/{slug}/reviews/{reviewId}
+        await api.put(`/books/${params.slug}/reviews/${editingReviewId}`, {
+          rating: newRating,
+          comment: newComment,
+        });
+        toast.success("Review updated successfully!");
+      } else {
+        // POST /api/books/{slug}/reviews
+        await api.post(`/books/${params.slug}/reviews`, {
+          rating: newRating,
+          comment: newComment,
+        });
+        toast.success("Review posted successfully!");
+      }
+      setNewComment('');
+      setNewRating(5);
+      setEditingReviewId(null);
+      await fetchReviews();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to submit review");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleEditClick = (review: any) => {
+    setEditingReviewId(review._id || review.id);
+    setNewRating(review.rating || 5);
+    setNewComment(review.comment || '');
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm("Are you sure you want to delete your review?")) return;
+    try {
+      // DELETE /api/books/{slug}/reviews/{reviewId}
+      await api.delete(`/books/${params.slug}/reviews/${reviewId}`);
+      toast.success("Review deleted!");
+      await fetchReviews();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete review");
+    }
+  };
 
   const fetchBookData = async () => {
     setLoading(true);
@@ -396,35 +467,143 @@ export default function BookDetailPage() {
               </TabsContent>
               <TabsContent value="reviews" className="mt-4">
                 <div className="space-y-6">
-                  {reviews.map((review) => (
-                    <div key={review.id} className="border-b border-border pb-6 last:border-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{review.user}</span>
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
+                  {/* Write / Edit Review Section */}
+                  {user ? (
+                    <div className="bg-muted/20 border border-border p-5 rounded-xl space-y-4">
+                      <h4 className="font-semibold text-foreground text-base">
+                        {editingReviewId ? "Edit Your Review" : "Write a Review"}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">Rating:</span>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setNewRating(star)}
+                              className="focus:outline-none"
+                            >
                               <Star
-                                key={i}
                                 className={cn(
-                                  'h-4 w-4',
-                                  i < review.rating
-                                    ? 'fill-secondary text-secondary'
-                                    : 'text-muted'
+                                  "h-6 w-6 transition-colors",
+                                  star <= newRating
+                                    ? "fill-secondary text-secondary"
+                                    : "text-muted hover:text-secondary/50"
                                 )}
                               />
-                            ))}
-                          </div>
+                            </button>
+                          ))}
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(review.date).toLocaleDateString()}
-                        </span>
                       </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
-                      <button className="text-sm text-primary mt-2">
-                        Helpful ({review.helpful})
-                      </button>
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Share your thoughts about this book..."
+                        className="w-full min-h-[90px] p-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                      <div className="flex items-center gap-3 justify-end">
+                        {editingReviewId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingReviewId(null);
+                              setNewComment("");
+                              setNewRating(5);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          disabled={submittingReview || !newComment.trim()}
+                          onClick={handleReviewSubmit}
+                        >
+                          {submittingReview
+                            ? "Submitting..."
+                            : editingReviewId
+                            ? "Update Review"
+                            : "Post Review"}
+                        </Button>
+                      </div>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="bg-muted/20 border border-border p-4 rounded-xl text-center">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Want to leave a review for this book?
+                      </p>
+                      <Link href="/login">
+                        <Button variant="outline" size="sm">
+                          Log In to Write a Review
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* Reviews List */}
+                  {reviews.length === 0 ? (
+                    <p className="text-muted-foreground text-sm py-4 text-center">
+                      No reviews yet. Be the first to review this book!
+                    </p>
+                  ) : (
+                    reviews.map((review: any) => {
+                      const reviewUser = review.user || {};
+                      const reviewUserId = reviewUser._id || reviewUser.id || review.userId;
+                      const isMyReview = user && (user._id === reviewUserId || user.id === reviewUserId);
+
+                      return (
+                        <div key={review._id || review.id} className="border-b border-border pb-6 last:border-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-foreground">
+                                {reviewUser.name || review.userName || "Anonymous Reader"}
+                              </span>
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={cn(
+                                      'h-4 w-4',
+                                      i < (review.rating || 5)
+                                        ? 'fill-secondary text-secondary'
+                                        : 'text-muted'
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-muted-foreground">
+                                {review.createdAt || review.date
+                                  ? new Date(review.createdAt || review.date).toLocaleDateString()
+                                  : "Recently"}
+                              </span>
+                              {isMyReview && (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => handleEditClick(review)}
+                                    className="p-1 hover:text-primary transition-colors text-muted-foreground"
+                                    title="Edit Review"
+                                  >
+                                    <Edit3 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteReview(review._id || review.id)}
+                                    className="p-1 hover:text-red-600 transition-colors text-muted-foreground"
+                                    title="Delete Review"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-muted-foreground text-sm">{review.comment}</p>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </TabsContent>
             </Tabs>

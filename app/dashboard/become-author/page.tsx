@@ -20,11 +20,21 @@ export default function BecomeAuthorPage() {
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
   const [formData, setFormData] = useState({
-    penName: "",
-    bio: "",
-    portfolioUrl: "",
-    experience: "",
+    fullName: user?.name || "",
+    email: user?.email || "",
+    phone: "",
   });
+
+  // Automatically prefill if user details load after render
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: prev.fullName || user.name || "",
+        email: prev.email || user.email || "",
+      }));
+    }
+  }, [user]);
 
   // Check if they already have an application
   useEffect(() => {
@@ -45,17 +55,23 @@ export default function BecomeAuthorPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.fullName.trim() || !formData.email.trim() || !formData.phone.trim()) {
+      toast.error("Please fill in your Full Name, Email Address, and Phone Number.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       await api.post('/author-applications', {
-        penName: formData.penName,
-        bio: formData.bio,
-        portfolioUrl: formData.portfolioUrl,
-        experience: formData.experience,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        penName: formData.fullName, // backward compatibility
       });
 
-      toast.success("Application submitted successfully! We will review it shortly.");
+      toast.success("Application submitted successfully! Our admin team will review it shortly.");
       setApplicationStatus("pending");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to submit application.");
@@ -79,7 +95,7 @@ export default function BecomeAuthorPage() {
         <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mb-6">
           <CheckCircle2 className="h-8 w-8" />
         </div>
-        <h1 className="text-3xl font-serif font-bold text-foreground mb-4">You are already an Author!</h1>
+        <h1 className="text-3xl font-serif font-bold text-foreground mb-4">You are an Author!</h1>
         <p className="text-muted-foreground mb-8">
           Congratulations! You have full access to the author dashboard and publishing tools.
         </p>
@@ -103,7 +119,7 @@ export default function BecomeAuthorPage() {
         </div>
         <h1 className="text-3xl font-serif font-bold text-foreground mb-4">Application Under Review</h1>
         <p className="text-muted-foreground mb-6">
-          Thank you for applying to become an author at Harglim Publishers. Our administrative team is currently reviewing your application. You will be notified once a decision is made.
+          Thank you for applying to become an author at Harglim Publishers. Our administrative team is currently reviewing your details and will approve your request shortly.
         </p>
         <Button variant="outline" onClick={() => router.push("/dashboard")}>
           Return to Dashboard
@@ -114,12 +130,11 @@ export default function BecomeAuthorPage() {
 
   // Application Form
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
+    <div className="max-w-2xl mx-auto">
+      <div className="mb-8 text-center sm:text-left">
         <h1 className="text-3xl font-serif font-bold text-foreground mb-2">Become an Author</h1>
         <p className="text-muted-foreground">
-          Join our community of talented writers. Share your stories with the world and earn royalties.
-          Please fill out the application below. All fields are optional, but we encourage you to provide your best work!
+          Join our community of published writers. Enter your contact details below to send an upgrade request to the administrator.
         </p>
       </div>
 
@@ -129,75 +144,68 @@ export default function BecomeAuthorPage() {
         className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden"
       >
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
+          {/* Full Name */}
           <div className="space-y-2">
-            <Label htmlFor="penName">Pen Name (Optional)</Label>
+            <Label htmlFor="fullName">Full Name</Label>
             <div className="relative">
               <UserCircle className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
-                id="penName"
-                placeholder="How you want to be known"
+                id="fullName"
+                type="text"
+                placeholder="Enter your full name"
                 className="pl-10"
-                value={formData.penName}
-                onChange={(e) => setFormData({ ...formData, penName: e.target.value })}
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                required
               />
             </div>
-            <p className="text-xs text-muted-foreground">Leave blank to use your real name.</p>
           </div>
 
+          {/* Email Address */}
           <div className="space-y-2">
-            <Label htmlFor="bio">Author Bio (Optional)</Label>
-            <Textarea
-              id="bio"
-              placeholder="Tell us a little about yourself, your writing style, and the genres you love."
-              className="min-h-[100px] resize-none"
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="portfolioUrl">Writing Sample / Portfolio Link (Optional)</Label>
+            <Label htmlFor="email">Email Address</Label>
             <div className="relative">
-              <LinkIcon className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+              <UserCircle className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
-                id="portfolioUrl"
-                type="url"
-                placeholder="https://your-website.com or Google Docs link"
+                id="email"
+                type="email"
+                placeholder="your.email@example.com"
                 className="pl-10"
-                value={formData.portfolioUrl}
-                onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
               />
             </div>
-            <p className="text-xs text-muted-foreground">Link to your best piece of writing.</p>
           </div>
 
+          {/* Phone Number */}
           <div className="space-y-2">
-            <Label htmlFor="experience">Previous Experience (Optional)</Label>
-            <Textarea
-              id="experience"
-              placeholder="Have you published anything before? If so, tell us where!"
-              className="min-h-[80px] resize-none"
-              value={formData.experience}
-              onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="e.g. +91 9876543210"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              required
             />
           </div>
 
           <div className="pt-4 border-t border-border/30">
             <Button
               type="submit"
-              className="w-full sm:w-auto px-8"
-              size="lg"
+              className="w-full sm:w-auto px-8 h-11 font-medium"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Submitting Application...
+                  Submitting...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <PenTool className="h-4 w-4" />
-                  Submit Application
+                  Submit Request
                 </span>
               )}
             </Button>

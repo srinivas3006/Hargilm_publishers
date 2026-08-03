@@ -329,34 +329,10 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {role === "Author" && (
-                            <DropdownMenuItem onClick={() => window.open(`/authors/${user.id || user._id}`, "_blank")}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Author Profile
-                            </DropdownMenuItem>
-                          )}
                           <DropdownMenuItem onClick={() => window.location.href = `mailto:${user.email}`}>
                             <Mail className="mr-2 h-4 w-4" />
                             Send Email
                           </DropdownMenuItem>
-                          {role !== "Admin" && (
-                            <DropdownMenuItem onClick={() => handleRoleChange(user.id || user._id, "Admin")}>
-                              <Shield className="mr-2 h-4 w-4 text-primary" />
-                              Promote to Admin
-                            </DropdownMenuItem>
-                          )}
-                          {role !== "Author" && (
-                            <DropdownMenuItem onClick={() => handleRoleChange(user.id || user._id, "Author")}>
-                              <Shield className="mr-2 h-4 w-4 text-blue-500" />
-                              Promote to Author
-                            </DropdownMenuItem>
-                          )}
-                          {role !== "User" && (
-                            <DropdownMenuItem onClick={() => handleRoleChange(user.id || user._id, "User")}>
-                              <Shield className="mr-2 h-4 w-4 text-muted-foreground" />
-                              Demote to Reader
-                            </DropdownMenuItem>
-                          )}
                           <DropdownMenuItem
                             className={
                               status !== "Suspended"

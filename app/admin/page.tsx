@@ -84,14 +84,46 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(false);
     try {
-      // Trying to fetch stats and analytics
-      const [statsRes, analyticsRes] = await Promise.all([
+      const [statsRes, analyticsRes, booksRes, usersRes, ordersRes, manuscriptsRes] = await Promise.allSettled([
         api.get("/admin/stats"),
         api.get("/admin/analytics"),
+        api.get("/books?limit=100"),
+        api.get("/admin/users"),
+        api.get("/admin/orders"),
+        api.get("/admin/manuscripts?status=pending")
       ]);
-      const stats = statsRes.data?.data || statsRes.data;
-      const analytics = analyticsRes.data?.data || analyticsRes.data;
-      setDashboardData({ ...stats, ...analytics });
+
+      let stats = statsRes.status === "fulfilled" ? (statsRes.value.data?.data || statsRes.value.data) : {};
+      let analytics = analyticsRes.status === "fulfilled" ? (analyticsRes.value.data?.data || analyticsRes.value.data) : {};
+
+      const booksList = booksRes.status === "fulfilled" ? (booksRes.value.data?.data?.books || booksRes.value.data?.data || booksRes.value.data || []) : [];
+      const usersList = usersRes.status === "fulfilled" ? (usersRes.value.data?.data || usersRes.value.data || []) : [];
+      const ordersList = ordersRes.status === "fulfilled" ? (ordersRes.value.data?.data || ordersRes.value.data || []) : [];
+      const manuscriptsList = manuscriptsRes.status === "fulfilled" ? (manuscriptsRes.value.data?.data || manuscriptsRes.value.data || []) : [];
+
+      const totalBooks = stats.totalBooks || (Array.isArray(booksList) ? booksList.length : 0);
+      const totalUsers = stats.totalUsers || (Array.isArray(usersList) ? usersList.length : 0);
+      const totalOrders = stats.totalOrders || (Array.isArray(ordersList) ? ordersList.length : 0);
+
+      const calculatedRevenue = Array.isArray(ordersList)
+        ? ordersList
+            .filter((o: any) => o.status?.toUpperCase() !== "CANCELLED")
+            .reduce((sum: number, o: any) => sum + (o.totalPrice ?? o.totalAmount ?? o.amount ?? (o.subtotal ? o.subtotal + (o.tax || 0) + (o.shippingPrice || 50) : 0)), 0)
+        : 0;
+
+      const totalRevenue = stats.totalRevenue || calculatedRevenue;
+
+      setDashboardData({
+        ...stats,
+        ...analytics,
+        totalBooks,
+        totalUsers,
+        totalOrders,
+        totalRevenue,
+        recentOrders: Array.isArray(ordersList) ? ordersList.slice(0, 5) : [],
+        pendingManuscripts: Array.isArray(manuscriptsList) ? manuscriptsList.slice(0, 5) : [],
+        topBooks: Array.isArray(booksList) ? booksList.slice(0, 3) : [],
+      });
     } catch (err) {
       console.error("Failed to fetch admin dashboard data:", err);
       setError(true);
