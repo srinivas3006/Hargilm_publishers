@@ -38,10 +38,14 @@ export function GoogleLoginButton({
 
   // Read environment Google Client ID with a fallback for dev/demo mode
   const rawClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+  const cleanClientId = rawClientId
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "")
+    .trim();
   const clientId =
-    rawClientId && !rawClientId.includes("CHANGE_ME")
-      ? rawClientId
-      : "1083945938472-demo.apps.googleusercontent.com";
+    cleanClientId && !cleanClientId.includes("CHANGE_ME")
+      ? cleanClientId
+      : "13886691041-flfn7g4qteies5jul4efud04v826oc3q.apps.googleusercontent.com";
 
   // 1. Dynamically load Google Identity Services SDK script
   useEffect(() => {
