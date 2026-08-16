@@ -38,9 +38,9 @@ import { BookCardSkeleton } from "@/components/books/book-card-skeleton";
 import { useSiteContent } from "@/context/site-content-context";
 
 const trustBadges = [
-  { label: "10,000+ Readers", sub: "Active Book Club Members", icon: Star, color: "text-[#D4AF37]" },
-  { label: "500+ Books Published", sub: "Across Diverse Genres", icon: BookOpen, color: "text-emerald-400" },
-  { label: "Global Reach", sub: "Authors & Shipping Worldwide", icon: Globe, color: "text-blue-400" },
+  { label: "30+", sub: "Books Published", icon: BookOpen, color: "text-[#D4AF37]" },
+  { label: "25+", sub: "Happy Authors", icon: Users, color: "text-emerald-400" },
+  { label: "5+", sub: "Countries Reached", icon: Globe, color: "text-blue-400" },
 ];
 
 const whyChooseBlocks = [
@@ -194,7 +194,7 @@ export default function Home() {
               {/* Top Tag Pill */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-serif font-bold tracking-wide shadow-sm">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>India&apos;s Leading Editorial Publishing House</span>
+                <span>Professional Book Publishing &amp; Distribution House</span>
               </div>
 
               {/* Main Headline */}
