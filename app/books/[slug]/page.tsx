@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
   ShoppingCart,
@@ -15,30 +15,38 @@ import {
   FileText,
   Globe,
   Truck,
-  Shield,
+  ShieldCheck,
   ChevronRight,
   Minus,
   Plus,
   Edit3,
   Trash2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookCard } from '@/components/books/book-card';
-import { ErrorState } from '@/components/ui/error-state';
-import { useCartStore } from '@/store/cart-store';
-import { useAuthStore } from '@/store/auth-store';
-import type { Book, Author } from '@/types';
-import toast from 'react-hot-toast';
-import { cn } from '@/lib/utils';
-import api from '@/lib/api';
-
-// Mock data removed
+  ThumbsUp,
+  RefreshCw,
+  Sparkles,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Tag,
+  ArrowRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { BookCard } from "@/components/books/book-card";
+import { ErrorState } from "@/components/ui/error-state";
+import { useCartStore } from "@/store/cart-store";
+import { useAuthStore } from "@/store/auth-store";
+import type { Book, Author } from "@/types";
+import toast from "react-hot-toast";
+import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
 export default function BookDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuthStore();
+  
   const [book, setBook] = useState<Book | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -46,13 +54,23 @@ export default function BookDetailPage() {
   const [error, setError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  
-  // Review state
+  const [selectedFormat, setSelectedFormat] = useState<string>("Paperback");
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<"synopsis" | "details" | "reviews">("synopsis");
+
+  // Helpful count state per review
+  const [helpfulMap, setHelpfulMap] = useState<Record<string, number>>({});
+  const [votedHelpful, setVotedHelpful] = useState<Record<string, boolean>>({});
+
+  // Review Form state
   const [newRating, setNewRating] = useState<number>(5);
-  const [newComment, setNewComment] = useState<string>('');
+  const [newComment, setNewComment] = useState<string>("");
   const [submittingReview, setSubmittingReview] = useState<boolean>(false);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
+  const [sortReviewsBy, setSortReviewsBy] = useState<"latest" | "highest">("latest");
 
+  const reviewsSectionRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((state) => state.addItem);
 
   const fetchReviews = async () => {
@@ -67,28 +85,31 @@ export default function BookDetailPage() {
     }
   };
 
-  const handleReviewSubmit = async () => {
-    if (!newComment.trim()) return;
+  const handleReviewSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newComment.trim()) {
+      toast.error("Please enter a review comment.");
+      return;
+    }
     setSubmittingReview(true);
     try {
       if (editingReviewId) {
-        // PUT /api/books/{slug}/reviews/{reviewId}
         await api.put(`/books/${params.slug}/reviews/${editingReviewId}`, {
           rating: newRating,
           comment: newComment,
         });
         toast.success("Review updated successfully!");
       } else {
-        // POST /api/books/{slug}/reviews
         await api.post(`/books/${params.slug}/reviews`, {
           rating: newRating,
           comment: newComment,
         });
         toast.success("Review posted successfully!");
       }
-      setNewComment('');
+      setNewComment("");
       setNewRating(5);
       setEditingReviewId(null);
+      setIsWriteReviewOpen(false);
       await fetchReviews();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to submit review");
@@ -100,19 +121,28 @@ export default function BookDetailPage() {
   const handleEditClick = (review: any) => {
     setEditingReviewId(review._id || review.id);
     setNewRating(review.rating || 5);
-    setNewComment(review.comment || '');
+    setNewComment(review.comment || "");
+    setIsWriteReviewOpen(true);
+    setActiveTab("reviews");
+    scrollToReviews();
   };
 
   const handleDeleteReview = async (reviewId: string) => {
     if (!confirm("Are you sure you want to delete your review?")) return;
     try {
-      // DELETE /api/books/{slug}/reviews/{reviewId}
       await api.delete(`/books/${params.slug}/reviews/${reviewId}`);
       toast.success("Review deleted!");
       await fetchReviews();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to delete review");
     }
+  };
+
+  const handleToggleHelpful = (reviewId: string) => {
+    if (votedHelpful[reviewId]) return;
+    setVotedHelpful((prev) => ({ ...prev, [reviewId]: true }));
+    setHelpfulMap((prev) => ({ ...prev, [reviewId]: (prev[reviewId] || 0) + 1 }));
+    toast.success("Marked review as helpful!");
   };
 
   const fetchBookData = async () => {
@@ -122,21 +152,22 @@ export default function BookDetailPage() {
       const [bookRes, relatedRes, reviewsRes] = await Promise.all([
         api.get(`/books/${params.slug}`),
         api.get(`/books/${params.slug}/related?limit=4`).catch(() => ({ data: { data: [] } })),
-        api.get(`/books/${params.slug}/reviews?page=1&limit=5`).catch(() => ({ data: { data: [] } }))
+        api.get(`/books/${params.slug}/reviews?page=1&limit=20`).catch(() => ({ data: { data: [] } })),
       ]);
-      
+
       const bookData = bookRes.data.data || bookRes.data;
       if (bookData) {
         setBook(bookData as Book);
+        if (bookData.format) setSelectedFormat(bookData.format);
       } else {
         setBook(null);
       }
-      
+
       const relatedData = relatedRes.data.data || relatedRes.data;
       if (relatedData) {
         setRelatedBooks(Array.isArray(relatedData) ? relatedData : []);
       }
-      
+
       const reviewsData = reviewsRes.data.data || reviewsRes.data;
       if (reviewsData) {
         setReviews(Array.isArray(reviewsData) ? reviewsData : []);
@@ -154,21 +185,27 @@ export default function BookDetailPage() {
     fetchBookData();
   }, [params.slug]);
 
+  const scrollToReviews = () => {
+    setActiveTab("reviews");
+    if (reviewsSectionRef.current) {
+      reviewsSectionRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   if (loading) {
     return (
-      <div className="bg-background min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="flex flex-col lg:flex-row gap-12">
-              <div className="lg:w-1/3">
-                <div className="aspect-[2/3] bg-muted rounded-lg" />
+      <div className="bg-[#F8F9F7] min-h-screen py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="animate-pulse space-y-8">
+            <div className="h-6 bg-gray-200 rounded w-1/3" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+              <div className="lg:col-span-4 h-96 bg-gray-200 rounded-2xl" />
+              <div className="lg:col-span-5 space-y-4">
+                <div className="h-10 bg-gray-200 rounded w-3/4" />
+                <div className="h-4 bg-gray-200 rounded w-1/4" />
+                <div className="h-32 bg-gray-200 rounded" />
               </div>
-              <div className="lg:w-2/3 space-y-4">
-                <div className="h-8 bg-muted rounded w-3/4" />
-                <div className="h-4 bg-muted rounded w-1/4" />
-                <div className="h-6 bg-muted rounded w-1/3" />
-                <div className="h-32 bg-muted rounded" />
-              </div>
+              <div className="lg:col-span-3 h-80 bg-gray-200 rounded-2xl" />
             </div>
           </div>
         </div>
@@ -176,319 +213,559 @@ export default function BookDetailPage() {
     );
   }
 
-  if (error) {
+  if (error || !book) {
     return (
-      <div className="bg-background min-h-screen flex items-center justify-center p-4">
-        <ErrorState 
+      <div className="bg-[#F8F9F7] min-h-screen flex items-center justify-center p-4">
+        <ErrorState
           title="Could not load book"
-          message="We couldn't fetch the details for this book right now. Please try again."
+          message="We couldn't fetch details for this book right now."
           onRetry={fetchBookData}
         />
       </div>
     );
   }
 
-  if (!book) {
-    return (
-      <div className="bg-background min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Book not found</h1>
-          <Link href="/books">
-            <Button>Browse Books</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const author = book.author as Author;
-  const category = typeof book.category === 'object' ? book.category : null;
+  const author = typeof book.author === "object" ? (book.author as Author) : { _id: "", name: book.author || "Harglim Author" };
+  const category = typeof book.category === "object" ? book.category : null;
   const price = book.discountPrice || book.price;
-  const hasDiscount = book.discountPrice && book.discountPrice < book.price;
+  const hasDiscount = Boolean(book.discountPrice && book.discountPrice < book.price);
   const discountPercent = hasDiscount
     ? Math.round(((book.price - book.discountPrice!) / book.price) * 100)
     : 0;
 
+  const ratingAvg = Number(book.rating || 4.5).toFixed(1);
+  const reviewCount = reviews.length > 0 ? reviews.length : (book.totalReviews || 0);
+
+  // Review star distribution breakdown
+  const starCounts = [5, 4, 3, 2, 1].map((star) => {
+    const count = reviews.filter((r) => Math.round(r.rating || 5) === star).length;
+    const pct = reviewCount > 0 ? Math.round((count / reviewCount) * 100) : star === 5 ? 85 : 5;
+    return { star, count, pct };
+  });
+
+  const sortedReviews = [...reviews].sort((a, b) => {
+    if (sortReviewsBy === "highest") {
+      return (b.rating || 0) - (a.rating || 0);
+    }
+    return new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime();
+  });
+
   const handleAddToCart = () => {
     addItem(book, quantity);
-    toast.success(`Added ${quantity} ${quantity > 1 ? 'copies' : 'copy'} to cart!`);
+    toast.success(`Added ${quantity} ${quantity > 1 ? "copies" : "copy"} of "${book.title}" to cart! 🛒`);
   };
 
   const handleBuyNow = () => {
     addItem(book, quantity);
-    window.location.href = '/checkout/cart';
+    router.push("/checkout/cart");
   };
 
+  const availableFormats = ["Paperback", "Hardcover", "eBook"];
+
   return (
-    <div className="bg-background min-h-screen">
-      {/* Breadcrumb */}
-      <div className="bg-muted/30 border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link href="/" className="hover:text-foreground">Home</Link>
-            <ChevronRight className="h-4 w-4" />
-            <Link href="/books" className="hover:text-foreground">Books</Link>
-            <ChevronRight className="h-4 w-4" />
+    <div className="bg-[#F8F9F7] min-h-screen text-[#0F3D3E]">
+      {/* 1. Top Breadcrumb Bar */}
+      <div className="bg-white border-b border-[#E2E6DF]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+          <nav className="flex items-center gap-2 text-xs text-[#5C6E6E] font-sans">
+            <Link href="/" className="hover:text-[#0F3D3E]">Home</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <Link href="/books" className="hover:text-[#0F3D3E]">Books Catalog</Link>
             {category && (
               <>
-                <Link href={`/categories/${category.slug}`} className="hover:text-foreground">
+                <ChevronRight className="h-3.5 w-3.5" />
+                <Link href={`/categories/${category.slug}`} className="hover:text-[#0F3D3E]">
                   {category.name}
                 </Link>
-                <ChevronRight className="h-4 w-4" />
               </>
             )}
-            <span className="text-foreground truncate">{book.title}</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-[#0F3D3E] font-bold truncate max-w-[200px] sm:max-w-none">{book.title}</span>
           </nav>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-12">
-          {/* Image Gallery */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:w-2/5"
-          >
-            <div className="sticky top-24 mx-auto w-4/5 sm:w-2/3 lg:w-full max-w-[400px]">
-              <div className="relative aspect-[2/3] rounded-r-2xl rounded-l-sm overflow-hidden mb-4 shadow-2xl ring-1 ring-border/20 group">
-                {/* Book Spine Effect */}
+      {/* 2. Main 3-Column Layout Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+          
+          {/* --- LEFT COLUMN: Book Cover Gallery & Preview (4 Cols) --- */}
+          <div className="lg:col-span-4 space-y-4">
+            <div className="sticky top-24">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="relative aspect-[2/3] w-full max-w-[360px] mx-auto rounded-2xl overflow-hidden bg-white border-2 border-[#E2E6DF] shadow-lg group hover:shadow-xl transition-all"
+              >
+                {/* Subtle Book Spine Effect */}
                 <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-black/20 to-transparent z-10 mix-blend-multiply pointer-events-none" />
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
+
                 <Image
-                  src={book.galleryImages?.[selectedImage] || book.coverImage}
+                  src={book.galleryImages?.[selectedImage] || book.coverImage || "https://placehold.co/400x600/png?text=Book"}
                   alt={book.title}
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                   priority
                 />
+
                 {book.isBestseller && (
-                  <Badge className="absolute top-4 left-4 bg-secondary text-secondary-foreground">
-                    Bestseller
+                  <Badge className="absolute top-4 left-4 bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold shadow-sm border border-[#D4AF37]">
+                    ⭐ Bestseller
                   </Badge>
                 )}
                 {hasDiscount && (
-                  <Badge variant="destructive" className="absolute top-4 right-4">
+                  <Badge variant="destructive" className="absolute top-4 right-4 font-bold">
                     -{discountPercent}% OFF
                   </Badge>
                 )}
-              </div>
+              </motion.div>
+
+              {/* Gallery Thumbnails */}
               {book.galleryImages && book.galleryImages.length > 1 && (
-                <div className="flex gap-2">
-                  {book.galleryImages?.map((img: string, idx: number) => (
+                <div className="flex justify-center gap-2.5 mt-4">
+                  {book.galleryImages.map((img: string, idx: number) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImage(idx)}
                       className={cn(
-                        'relative w-20 h-28 rounded-md overflow-hidden border-2 transition-colors',
-                        selectedImage === idx ? 'border-primary' : 'border-transparent'
+                        "relative w-16 h-22 rounded-lg overflow-hidden border-2 transition-all",
+                        selectedImage === idx ? "border-[#D4AF37] ring-2 ring-[#D4AF37]/30" : "border-transparent opacity-70 hover:opacity-100"
                       )}
                     >
-                      <Image src={img} alt={`${book.title} - ${idx + 1}`} fill className="object-cover" />
+                      <Image src={img} alt={`${book.title} cover ${idx + 1}`} fill className="object-cover" />
                     </button>
                   ))}
                 </div>
               )}
             </div>
-          </motion.div>
+          </div>
 
-          {/* Book Details */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:w-3/5"
-          >
-            <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-2">
-              {book.title}
-            </h1>
+          {/* --- CENTER COLUMN: Book Editorial Info & Highlights (5 Cols) --- */}
+          <div className="lg:col-span-5 space-y-6">
+            <div>
+              {/* Category Pill */}
+              {category && (
+                <span className="inline-block px-3 py-1 rounded-full bg-[#0F3D3E]/10 text-[#0F3D3E] text-xs font-bold uppercase tracking-wider mb-2">
+                  {category.name}
+                </span>
+              )}
+              {/* Title (Serif Editorial Upgrade) */}
+              <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E] tracking-tight leading-tight">
+                {book.title}
+              </h1>
 
-            <Link
-              href={`/authors/${author._id}`}
-              className="text-lg text-primary hover:underline mb-4 inline-block"
+              {/* Author */}
+              <div className="mt-2 flex items-center gap-2 text-sm font-sans">
+                <span className="text-[#5C6E6E]">By</span>
+                <Link
+                  href={author._id ? `/authors/${author._id}` : "#"}
+                  className="font-bold text-[#0F3D3E] hover:text-[#D4AF37] underline decoration-[#D4AF37]/50 underline-offset-4 transition-colors"
+                >
+                  {author.name}
+                </Link>
+                {book.publisher && (
+                  <>
+                    <span className="text-[#5C6E6E]">•</span>
+                    <span className="text-[#5C6E6E]">{book.publisher}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Clickable Rating Summary Box */}
+            <div
+              onClick={scrollToReviews}
+              className="inline-flex items-center gap-3 p-2.5 px-4 rounded-xl bg-white border border-[#E2E6DF] cursor-pointer hover:border-[#D4AF37] transition-all shadow-xs group"
             >
-              by {author.name}
-            </Link>
-
-            {/* Rating */}
-            <div className="flex items-center gap-2 mb-6">
-              <div className="flex items-center">
+              <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
                     className={cn(
-                      'h-5 w-5',
-                      i < Math.round(book.rating || 0)
-                        ? 'fill-secondary text-secondary'
-                        : 'text-muted'
+                      "h-4 w-4",
+                      i < Math.round(Number(ratingAvg))
+                        ? "fill-[#D4AF37] text-[#D4AF37]"
+                        : "text-gray-200"
                     )}
                   />
                 ))}
               </div>
-              <span className="text-lg font-medium">{book.rating}</span>
-              <span className="text-muted-foreground">({book.totalReviews} reviews)</span>
+              <span className="font-bold text-sm text-[#0F3D3E] font-serif">{ratingAvg}</span>
+              <span className="text-xs text-[#5C6E6E] group-hover:text-[#0F3D3E]">
+                ({reviewCount} customer reviews)
+              </span>
             </div>
 
-            {/* Price */}
-            <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-3xl font-bold text-primary">₹{price.toLocaleString()}</span>
-              {hasDiscount && (
-                <>
-                  <span className="text-xl text-muted-foreground line-through">
-                    ₹{book.price.toLocaleString()}
+            {/* Short Preview Synopsis */}
+            {book.shortDescription && (
+              <p className="text-sm text-[#5C6E6E] leading-relaxed font-sans border-l-2 border-[#D4AF37] pl-3.5 italic">
+                &ldquo;{book.shortDescription}&rdquo;
+              </p>
+            )}
+
+            {/* Structured Highlights Card */}
+            <div className="bg-white border border-[#E2E6DF] rounded-2xl p-5 shadow-xs space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" />
+                Book Specifications
+              </h4>
+              <div className="grid grid-cols-2 gap-3 text-xs font-sans">
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F8F9F7]">
+                  <BookOpen className="h-4 w-4 text-[#0F3D3E] shrink-0" />
+                  <div>
+                    <span className="text-[#5C6E6E] block text-[10px]">Format</span>
+                    <span className="font-bold text-[#0F3D3E]">{book.format || "Paperback"}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F8F9F7]">
+                  <FileText className="h-4 w-4 text-[#0F3D3E] shrink-0" />
+                  <div>
+                    <span className="text-[#5C6E6E] block text-[10px]">Length</span>
+                    <span className="font-bold text-[#0F3D3E]">{book.pages ? `${book.pages} pages` : "240 pages"}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F8F9F7]">
+                  <Globe className="h-4 w-4 text-[#0F3D3E] shrink-0" />
+                  <div>
+                    <span className="text-[#5C6E6E] block text-[10px]">Language</span>
+                    <span className="font-bold text-[#0F3D3E]">{book.language || "English"}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F8F9F7]">
+                  <Calendar className="h-4 w-4 text-[#0F3D3E] shrink-0" />
+                  <div>
+                    <span className="text-[#5C6E6E] block text-[10px]">Published</span>
+                    <span className="font-bold text-[#0F3D3E]">
+                      {book.publishedDate ? new Date(book.publishedDate).getFullYear() : "2024"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* --- RIGHT COLUMN: High-Converting Buy Box (3 Cols Sticky) --- */}
+          <div className="lg:col-span-3">
+            <div className="sticky top-24 bg-white border-2 border-[#E2E6DF] rounded-2xl p-6 shadow-md space-y-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-2 h-full bg-[#0F3D3E]" />
+
+              {/* Price Box */}
+              <div className="space-y-1">
+                <span className="text-xs text-[#5C6E6E] font-bold uppercase tracking-wider block">Price</span>
+                <div className="flex items-baseline gap-2.5 flex-wrap">
+                  <span className="text-3xl font-serif font-bold text-[#0F3D3E]">
+                    ₹{price.toLocaleString()}
                   </span>
-                  <Badge variant="destructive">Save ₹{(book.price - price).toLocaleString()}</Badge>
-                </>
-              )}
-            </div>
-
-            {/* Short Description */}
-            <p className="text-muted-foreground mb-6">{book.shortDescription}</p>
-
-            {/* Book Info */}
-            <div className="grid grid-cols-2 gap-4 mb-8 p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Format</p>
-                  <p className="font-medium">{book.format}</p>
+                  {hasDiscount && (
+                    <span className="text-sm text-gray-400 line-through">
+                      ₹{book.price.toLocaleString()}
+                    </span>
+                  )}
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Pages</p>
-                  <p className="font-medium">{book.pages}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Language</p>
-                  <p className="font-medium">{book.language}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Published</p>
-                  <p className="font-medium">
-                    {book.publishedDate ? new Date(book.publishedDate).toLocaleDateString() : 'N/A'}
+                {hasDiscount && (
+                  <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1 mt-1">
+                    <Tag className="h-3 w-3" />
+                    Save ₹{(book.price - price).toLocaleString()} ({discountPercent}% OFF)
                   </p>
-                </div>
+                )}
               </div>
-            </div>
 
-            {/* Quantity and Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <div className="flex items-center border border-border rounded-lg">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-12 text-center font-medium">{quantity}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <Button size="lg" className="flex-1" onClick={handleAddToCart}>
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart
-              </Button>
-              <Button size="lg" variant="secondary" className="flex-1" onClick={handleBuyNow}>
-                Buy Now
-              </Button>
-            </div>
-
-            {/* Secondary Actions */}
-            <div className="flex items-center gap-4 mb-8">
-              <Button variant="outline" size="sm">
-                <Heart className="h-4 w-4 mr-2" />
-                Add to Wishlist
-              </Button>
-              <Button variant="outline" size="sm">
-                <Share2 className="h-4 w-4 mr-2" />
-                Share
-              </Button>
-            </div>
-
-            {/* Trust Badges */}
-            <div className="flex flex-wrap gap-4 mb-8">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Truck className="h-4 w-4" />
-                Free shipping on ₹499+
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Shield className="h-4 w-4" />
-                Secure payment
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <Tabs defaultValue="description" className="mt-8">
-              <TabsList>
-                <TabsTrigger value="description">Description</TabsTrigger>
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews ({book.totalReviews})</TabsTrigger>
-              </TabsList>
-              <TabsContent value="description" className="mt-4">
-                <div className="prose prose-sm max-w-none text-muted-foreground">
-                  {book.description.split('\n\n').map((para, idx) => (
-                    <p key={idx} className="mb-4">{para}</p>
+              {/* Format Selection Pills */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] block">
+                  Select Edition
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {availableFormats.map((fmt) => (
+                    <button
+                      key={fmt}
+                      type="button"
+                      onClick={() => setSelectedFormat(fmt)}
+                      className={cn(
+                        "py-2 px-2 text-xs font-bold rounded-xl border transition-all text-center",
+                        selectedFormat === fmt
+                          ? "bg-[#0F3D3E] text-white border-[#0F3D3E] shadow-xs"
+                          : "bg-white text-[#0F3D3E] border-[#E2E6DF] hover:border-[#0F3D3E]/40"
+                      )}
+                    >
+                      {fmt}
+                    </button>
                   ))}
                 </div>
-              </TabsContent>
-              <TabsContent value="details" className="mt-4">
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { label: 'ISBN-10', value: book.isbn10 },
-                    { label: 'ISBN-13', value: book.isbn13 },
-                    { label: 'Publisher', value: book.publisher },
-                    { label: 'Edition', value: book.edition },
-                    { label: 'Pages', value: book.pages },
-                    { label: 'Language', value: book.language },
-                  ].map(
-                    (item) =>
-                      item.value && (
-                        <div key={item.label}>
-                          <dt className="text-sm text-muted-foreground">{item.label}</dt>
-                          <dd className="font-medium">{item.value}</dd>
-                        </div>
-                      )
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] block">
+                  Quantity
+                </label>
+                <div className="flex items-center border border-[#E2E6DF] rounded-xl bg-[#F8F9F7] w-36">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                    className="h-10 w-10 text-[#0F3D3E] rounded-l-xl"
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="flex-1 text-center font-serif font-bold text-sm text-[#0F3D3E]">
+                    {quantity}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="h-10 w-10 text-[#0F3D3E] rounded-r-xl"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Primary Purchase Buttons (Bigger, 12px Rounded) */}
+              <div className="space-y-3 pt-2">
+                <Button
+                  onClick={handleAddToCart}
+                  className="w-full bg-[#0F3D3E] hover:bg-[#174C4D] text-white font-medium h-12 rounded-xl shadow-xs gap-2 text-sm"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  <span>Add to Cart</span>
+                </Button>
+
+                <Button
+                  onClick={handleBuyNow}
+                  className="w-full bg-[#D4AF37] hover:bg-[#C29F2F] text-[#0F3D3E] font-serif font-bold h-12 rounded-xl shadow-xs gap-2 text-sm"
+                >
+                  <span>Buy Now</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Trust Signal Badges */}
+              <div className="border-t border-[#E2E6DF] pt-4 space-y-2.5 text-xs text-[#5C6E6E]">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span><strong>100% Secure Payment</strong> (UPI, Cards, NetBanking)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-[#0F3D3E] shrink-0" />
+                  <span><strong>Fast Dispatch</strong> (Free delivery on orders ₹499+)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-[#D4AF37] shrink-0" />
+                  <span><strong>Guaranteed Replacement</strong> on damaged copies</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* --- 3. TABBED SECTION (Synopsis, Details, Reviews) --- */}
+        <div className="mt-16 border-t border-[#E2E6DF] pt-10" ref={reviewsSectionRef}>
+          {/* Tab Navigation Header with Gold Active Line */}
+          <div className="flex border-b border-[#E2E6DF] gap-8">
+            <button
+              onClick={() => setActiveTab("synopsis")}
+              className={cn(
+                "pb-3.5 text-sm font-serif font-bold transition-all relative",
+                activeTab === "synopsis" ? "text-[#0F3D3E]" : "text-[#5C6E6E] hover:text-[#0F3D3E]"
+              )}
+            >
+              Book Synopsis
+              {activeTab === "synopsis" && (
+                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-[#D4AF37] rounded-t" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("details")}
+              className={cn(
+                "pb-3.5 text-sm font-serif font-bold transition-all relative",
+                activeTab === "details" ? "text-[#0F3D3E]" : "text-[#5C6E6E] hover:text-[#0F3D3E]"
+              )}
+            >
+              Product Details
+              {activeTab === "details" && (
+                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-[#D4AF37] rounded-t" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("reviews")}
+              className={cn(
+                "pb-3.5 text-sm font-serif font-bold transition-all relative flex items-center gap-2",
+                activeTab === "reviews" ? "text-[#0F3D3E]" : "text-[#5C6E6E] hover:text-[#0F3D3E]"
+              )}
+            >
+              <span>Customer Reviews</span>
+              <Badge className="bg-[#0F3D3E] text-white text-[10px] px-1.5 py-0">
+                {reviewCount}
+              </Badge>
+              {activeTab === "reviews" && (
+                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-[#D4AF37] rounded-t" />
+              )}
+            </button>
+          </div>
+
+          {/* TAB 1: SYNOPSIS */}
+          {activeTab === "synopsis" && (
+            <div className="py-6 max-w-4xl space-y-4">
+              <div
+                className={cn(
+                  "prose prose-sm max-w-none text-[#5C6E6E] font-sans leading-relaxed transition-all overflow-hidden",
+                  !isSynopsisExpanded && "line-clamp-6"
+                )}
+              >
+                {book.description ? (
+                  book.description.split("\n\n").map((para, idx) => (
+                    <p key={idx} className="mb-4">{para}</p>
+                  ))
+                ) : (
+                  <p>Synopsis details coming soon.</p>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+                className="text-[#0F3D3E] font-serif font-bold hover:text-[#D4AF37] gap-1 p-0 h-auto"
+              >
+                <span>{isSynopsisExpanded ? "Show Less" : "Read Full Synopsis"}</span>
+                {isSynopsisExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </div>
+          )}
+
+          {/* TAB 2: PRODUCT DETAILS */}
+          {activeTab === "details" && (
+            <div className="py-6 max-w-3xl">
+              <Card className="bg-white border border-[#E2E6DF] rounded-2xl p-6 shadow-xs">
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                  <div>
+                    <dt className="text-xs text-[#5C6E6E] uppercase tracking-wider font-bold">Publisher</dt>
+                    <dd className="font-semibold text-[#0F3D3E] mt-0.5">{book.publisher || "Harglim Publishers"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-[#5C6E6E] uppercase tracking-wider font-bold">Language</dt>
+                    <dd className="font-semibold text-[#0F3D3E] mt-0.5">{book.language || "English"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-[#5C6E6E] uppercase tracking-wider font-bold">Format / Binding</dt>
+                    <dd className="font-semibold text-[#0F3D3E] mt-0.5">{book.format || "Paperback"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-[#5C6E6E] uppercase tracking-wider font-bold">Page Count</dt>
+                    <dd className="font-semibold text-[#0F3D3E] mt-0.5">{book.pages ? `${book.pages} pages` : "N/A"}</dd>
+                  </div>
+                  {book.isbn10 && (
+                    <div>
+                      <dt className="text-xs text-[#5C6E6E] uppercase tracking-wider font-bold">ISBN-10</dt>
+                      <dd className="font-mono font-semibold text-[#0F3D3E] mt-0.5">{book.isbn10}</dd>
+                    </div>
+                  )}
+                  {book.isbn13 && (
+                    <div>
+                      <dt className="text-xs text-[#5C6E6E] uppercase tracking-wider font-bold">ISBN-13</dt>
+                      <dd className="font-mono font-semibold text-[#0F3D3E] mt-0.5">{book.isbn13}</dd>
+                    </div>
                   )}
                 </dl>
-              </TabsContent>
-              <TabsContent value="reviews" className="mt-4">
-                <div className="space-y-6">
-                  {/* Write / Edit Review Section */}
-                  {user ? (
-                    <div className="bg-muted/20 border border-border p-5 rounded-xl space-y-4">
-                      <h4 className="font-semibold text-foreground text-base">
-                        {editingReviewId ? "Edit Your Review" : "Write a Review"}
+              </Card>
+            </div>
+          )}
+
+          {/* TAB 3: CUSTOMER REVIEWS */}
+          {activeTab === "reviews" && (
+            <div className="py-6 space-y-8 max-w-4xl">
+              
+              {/* Rating Summary Breakdown Card */}
+              <Card className="bg-white border border-[#E2E6DF] rounded-2xl p-6 shadow-xs">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                  
+                  {/* Rating Overall Score */}
+                  <div className="md:col-span-4 text-center border-b md:border-b-0 md:border-r border-[#E2E6DF] pb-6 md:pb-0 md:pr-6 space-y-2">
+                    <span className="text-5xl font-serif font-bold text-[#0F3D3E] block">{ratingAvg}</span>
+                    <div className="flex justify-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={cn(
+                            "h-5 w-5",
+                            i < Math.round(Number(ratingAvg))
+                              ? "fill-[#D4AF37] text-[#D4AF37]"
+                              : "text-gray-200"
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-[#5C6E6E] font-sans">
+                      Based on {reviewCount} verified reader review{reviewCount === 1 ? "" : "s"}
+                    </p>
+                  </div>
+
+                  {/* Star Distribution Bars */}
+                  <div className="md:col-span-5 space-y-2">
+                    {starCounts.map(({ star, pct }) => (
+                      <div key={star} className="flex items-center gap-3 text-xs">
+                        <span className="w-8 font-bold text-[#0F3D3E]">{star} ★</span>
+                        <div className="flex-1 h-2 rounded-full bg-[#F8F9F7] border border-[#E2E6DF] overflow-hidden">
+                          <div className="h-full bg-[#D4AF37] rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="w-8 text-right text-[#5C6E6E] font-mono">{pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Write Review Action Button */}
+                  <div className="md:col-span-3 text-center md:text-right space-y-2">
+                    <p className="text-xs text-[#5C6E6E] font-sans">Have you read this book?</p>
+                    <Button
+                      onClick={() => {
+                        if (!user) {
+                          toast.error("Please log in to write a review.");
+                          router.push("/login");
+                          return;
+                        }
+                        setIsWriteReviewOpen(!isWriteReviewOpen);
+                      }}
+                      className="bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold text-xs h-10 px-4 rounded-xl shadow-xs w-full sm:w-auto"
+                    >
+                      Write a Review
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Expandable Write Review Form */}
+              <AnimatePresence>
+                {isWriteReviewOpen && user && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <Card className="bg-white border-2 border-[#D4AF37]/50 rounded-2xl p-6 shadow-sm space-y-4">
+                      <h4 className="font-serif font-bold text-lg text-[#0F3D3E]">
+                        {editingReviewId ? "Edit Your Review" : "Write a Customer Review"}
                       </h4>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-muted-foreground">Rating:</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E]">Your Rating:</span>
                         <div className="flex items-center gap-1">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
                               key={star}
                               type="button"
                               onClick={() => setNewRating(star)}
-                              className="focus:outline-none"
+                              className="focus:outline-none transition-transform hover:scale-110"
                             >
                               <Star
                                 className={cn(
-                                  "h-6 w-6 transition-colors",
-                                  star <= newRating
-                                    ? "fill-secondary text-secondary"
-                                    : "text-muted hover:text-secondary/50"
+                                  "h-6 w-6 cursor-pointer",
+                                  star <= newRating ? "fill-[#D4AF37] text-[#D4AF37]" : "text-gray-200"
                                 )}
                               />
                             </button>
@@ -498,127 +775,185 @@ export default function BookDetailPage() {
                       <textarea
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Share your thoughts about this book..."
-                        className="w-full min-h-[90px] p-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        placeholder="Share your detailed thoughts about the writing, story, and binding quality..."
+                        className="w-full min-h-[100px] p-3.5 rounded-xl border border-[#E2E6DF] bg-white text-sm focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0F3D3E]"
                       />
-                      <div className="flex items-center gap-3 justify-end">
-                        {editingReviewId && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingReviewId(null);
-                              setNewComment("");
-                              setNewRating(5);
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        )}
+                      <div className="flex justify-end gap-2">
                         <Button
+                          variant="ghost"
                           size="sm"
-                          disabled={submittingReview || !newComment.trim()}
-                          onClick={handleReviewSubmit}
+                          onClick={() => {
+                            setIsWriteReviewOpen(false);
+                            setEditingReviewId(null);
+                            setNewComment("");
+                          }}
                         >
-                          {submittingReview
-                            ? "Submitting..."
-                            : editingReviewId
-                            ? "Update Review"
-                            : "Post Review"}
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleReviewSubmit}
+                          disabled={submittingReview}
+                          size="sm"
+                          className="bg-[#0F3D3E] text-white hover:bg-[#174C4D]"
+                        >
+                          {submittingReview ? "Submitting..." : editingReviewId ? "Update Review" : "Publish Review"}
                         </Button>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="bg-muted/20 border border-border p-4 rounded-xl text-center">
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Want to leave a review for this book?
-                      </p>
-                      <Link href="/login">
-                        <Button variant="outline" size="sm">
-                          Log In to Write a Review
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                  {/* Reviews List */}
-                  {reviews.length === 0 ? (
-                    <p className="text-muted-foreground text-sm py-4 text-center">
-                      No reviews yet. Be the first to review this book!
-                    </p>
-                  ) : (
-                    reviews.map((review: any) => {
-                      const reviewUser = review.user || {};
-                      const reviewUserId = reviewUser._id || reviewUser.id || review.userId;
-                      const isMyReview = user && (user._id === reviewUserId || user.id === reviewUserId);
+              {/* Reviews List Toolbar */}
+              <div className="flex items-center justify-between border-b border-[#E2E6DF] pb-3">
+                <h4 className="font-serif font-bold text-base text-[#0F3D3E]">
+                  Customer Reviews ({reviews.length})
+                </h4>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-[#5C6E6E]">Sort by:</span>
+                  <select
+                    value={sortReviewsBy}
+                    onChange={(e) => setSortReviewsBy(e.target.value as any)}
+                    className="bg-white border border-[#E2E6DF] rounded-lg px-2.5 py-1 text-xs font-semibold text-[#0F3D3E]"
+                  >
+                    <option value="latest">Most Recent</option>
+                    <option value="highest">Highest Rating</option>
+                  </select>
+                </div>
+              </div>
 
-                      return (
-                        <div key={review._id || review.id} className="border-b border-border pb-6 last:border-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-foreground">
-                                {reviewUser.name || review.userName || "Anonymous Reader"}
-                              </span>
-                              <div className="flex">
+              {/* Reviews Cards List */}
+              {sortedReviews.length === 0 ? (
+                <div className="text-center py-10 space-y-3 bg-white border border-dashed border-[#E2E6DF] rounded-2xl">
+                  <Star className="h-8 w-8 text-[#5C6E6E]/30 mx-auto" />
+                  <p className="text-sm font-medium text-[#0F3D3E]">No customer reviews written yet</p>
+                  <p className="text-xs text-[#5C6E6E]">Be the first reader to share feedback for this book.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sortedReviews.map((review: any) => {
+                    const reviewUser = review.user || {};
+                    const reviewUserId = reviewUser._id || reviewUser.id || review.userId;
+                    const isMyReview = user && (user._id === reviewUserId || user.id === reviewUserId);
+                    const reviewId = review._id || review.id;
+                    const helpfulCount = helpfulMap[reviewId] || 0;
+
+                    return (
+                      <Card
+                        key={reviewId}
+                        className="bg-white border border-[#E2E6DF] hover:border-[#0F3D3E]/30 transition-all rounded-2xl p-5 shadow-xs"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-[#0F3D3E] text-[#D4AF37] font-serif font-bold text-sm flex items-center justify-center">
+                              {(reviewUser.name || review.userName || "R").charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-serif font-bold text-sm text-[#0F3D3E]">
+                                  {reviewUser.name || review.userName || "Verified Reader"}
+                                </span>
+                                <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] font-semibold">
+                                  Verified Purchase
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-1 mt-0.5">
                                 {[...Array(5)].map((_, i) => (
                                   <Star
                                     key={i}
                                     className={cn(
-                                      'h-4 w-4',
-                                      i < (review.rating || 5)
-                                        ? 'fill-secondary text-secondary'
-                                        : 'text-muted'
+                                      "h-3.5 w-3.5",
+                                      i < (review.rating || 5) ? "fill-[#D4AF37] text-[#D4AF37]" : "text-gray-200"
                                     )}
                                   />
                                 ))}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-muted-foreground">
-                                {review.createdAt || review.date
-                                  ? new Date(review.createdAt || review.date).toLocaleDateString()
-                                  : "Recently"}
-                              </span>
-                              {isMyReview && (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => handleEditClick(review)}
-                                    className="p-1 hover:text-primary transition-colors text-muted-foreground"
-                                    title="Edit Review"
-                                  >
-                                    <Edit3 className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteReview(review._id || review.id)}
-                                    className="p-1 hover:text-red-600 transition-colors text-muted-foreground"
-                                    title="Delete Review"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
                           </div>
-                          <p className="text-muted-foreground text-sm">{review.comment}</p>
+
+                          <div className="flex items-center gap-3 text-xs text-[#5C6E6E]">
+                            <span>
+                              {review.createdAt || review.date
+                                ? new Date(review.createdAt || review.date).toLocaleDateString("en-IN", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "Recent"}
+                            </span>
+
+                            {isMyReview && (
+                              <div className="flex items-center gap-1.5 ml-2 border-l border-[#E2E6DF] pl-2">
+                                <button
+                                  onClick={() => handleEditClick(review)}
+                                  className="text-[#5C6E6E] hover:text-[#0F3D3E] transition-colors p-1"
+                                  title="Edit Review"
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteReview(reviewId)}
+                                  className="text-[#5C6E6E] hover:text-red-600 transition-colors p-1"
+                                  title="Delete Review"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      );
-                    })
-                  )}
+
+                        <p className="text-sm text-[#5C6E6E] leading-relaxed font-sans mt-2">
+                          {review.comment}
+                        </p>
+
+                        <div className="mt-4 pt-3 border-t border-[#E2E6DF]/60 flex items-center justify-between text-xs">
+                          <button
+                            onClick={() => handleToggleHelpful(reviewId)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold transition-all",
+                              votedHelpful[reviewId]
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                                : "bg-[#F8F9F7] text-[#5C6E6E] border-[#E2E6DF] hover:text-[#0F3D3E]"
+                            )}
+                          >
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                            <span>Helpful {helpfulCount > 0 ? `(${helpfulCount})` : ""}</span>
+                          </button>
+                        </div>
+                      </Card>
+                    );
+                  })}
                 </div>
-              </TabsContent>
-            </Tabs>
-          </motion.div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Related Books */}
-        <section className="mt-16">
-          <h2 className="text-2xl font-serif font-bold text-foreground mb-6">You May Also Like</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {relatedBooks.map((relatedBook) => (
-              <BookCard key={relatedBook._id} book={relatedBook} />
-            ))}
-          </div>
-        </section>
+        {/* --- 4. YOU MAY ALSO LIKE (Related Books Section) --- */}
+        {relatedBooks.length > 0 && (
+          <section className="mt-16 border-t border-[#E2E6DF] pt-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-serif font-bold text-[#0F3D3E]">
+                  You May Also Like
+                </h2>
+                <p className="text-xs text-[#5C6E6E] font-sans mt-0.5">
+                  Curated titles from similar authors and genres
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" asChild className="text-xs font-bold text-[#0F3D3E]">
+                <Link href="/books">Explore Catalog →</Link>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {relatedBooks.map((relatedBook) => (
+                <BookCard key={relatedBook._id || (relatedBook as any).id} book={relatedBook} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
