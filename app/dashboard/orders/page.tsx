@@ -10,22 +10,26 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Eye,
   Download,
   Filter,
   XCircle,
   CreditCard,
   MapPin,
   Calendar,
-  FileText,
-  AlertCircle,
   Search,
   ExternalLink,
+  QrCode,
+  AlertTriangle,
+  RotateCcw,
+  Send,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -38,38 +42,79 @@ import api from "@/lib/api";
 import { ErrorState } from "@/components/ui/error-state";
 import toast from "react-hot-toast";
 
-const getStatusBadge = (status: string) => {
-  const normalized = (status || "").toUpperCase();
-  switch (normalized) {
+// Status Badge mapping for Order Status
+const getOrderStatusBadge = (status: string) => {
+  const s = (status || "").toUpperCase();
+  switch (s) {
     case "DELIVERED":
     case "COMPLETED":
-      return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Delivered</Badge>;
+      return (
+        <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 font-medium px-2.5 py-0.5">
+          Completed
+        </Badge>
+      );
     case "SHIPPED":
     case "IN TRANSIT":
-      return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">In Transit</Badge>;
+      return (
+        <Badge className="bg-blue-500/10 text-blue-700 border-blue-500/20 font-medium px-2.5 py-0.5">
+          In Transit
+        </Badge>
+      );
     case "PROCESSING":
-      return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Processing</Badge>;
+      return (
+        <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/20 font-medium px-2.5 py-0.5">
+          Printing / Processing
+        </Badge>
+      );
     case "CANCELLED":
-      return <Badge className="bg-red-500/10 text-red-600 border-red-500/20">Cancelled</Badge>;
+    case "REJECTED":
+      return (
+        <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/20 font-medium px-2.5 py-0.5">
+          Cancelled
+        </Badge>
+      );
     default:
-      return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Pending Verification</Badge>;
+      return (
+        <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/20 font-medium px-2.5 py-0.5">
+          Payment Pending
+        </Badge>
+      );
   }
 };
 
-const getStatusIcon = (status: string) => {
-  const normalized = (status || "").toUpperCase();
-  switch (normalized) {
-    case "DELIVERED":
-    case "COMPLETED":
-      return CheckCircle2;
-    case "SHIPPED":
-    case "IN TRANSIT":
-      return Truck;
-    case "PROCESSING":
-      return Clock;
-    default:
-      return Package;
+// Payment Status Badge mapping
+const getPaymentStatusBadge = (isPaid: boolean, paymentStatus?: string) => {
+  const ps = (paymentStatus || "").toUpperCase();
+  if (isPaid || ps === "VERIFIED" || ps === "SUCCESS") {
+    return (
+      <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 font-semibold flex items-center gap-1">
+        <ShieldCheck className="h-3 w-3 text-emerald-600" />
+        <span>Verified</span>
+      </Badge>
+    );
   }
+  if (ps === "REJECTED" || ps === "FAILED") {
+    return (
+      <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/30 font-semibold flex items-center gap-1">
+        <XCircle className="h-3 w-3 text-rose-600" />
+        <span>Payment Rejected</span>
+      </Badge>
+    );
+  }
+  if (ps === "SUBMITTED" || ps === "VERIFICATION_PENDING") {
+    return (
+      <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/30 font-semibold flex items-center gap-1">
+        <Clock className="h-3 w-3 text-amber-600" />
+        <span>Verification Pending</span>
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/30 font-semibold flex items-center gap-1">
+      <AlertTriangle className="h-3 w-3 text-amber-600" />
+      <span>Payment Pending</span>
+    </Badge>
+  );
 };
 
 export default function OrdersPage() {
@@ -80,6 +125,10 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // UTR submission state map per order
+  const [utrInputMap, setUtrInputMap] = useState<Record<string, string>>({});
+  const [submittingUtrMap, setSubmittingUtrMap] = useState<Record<string, boolean>>({});
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
 
   const fetchOrders = async () => {
@@ -87,6 +136,7 @@ export default function OrdersPage() {
     const userId = user._id || user.id;
     setLoading(true);
     setError(false);
+
     try {
       const { data } = await api.get(`/users/${userId}/orders`);
       const ordersData = data?.data || data || [];
@@ -96,6 +146,35 @@ export default function OrdersPage() {
       setError(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [user]);
+
+  // Submit UTR Number API Handler
+  const handleSubmitUtr = async (orderId: string) => {
+    const utr = (utrInputMap[orderId] || "").trim();
+    if (!utr || utr.length < 6) {
+      toast.error("Please enter a valid UTR / Transaction Reference Number (min 6 digits).");
+      return;
+    }
+
+    setSubmittingUtrMap((prev) => ({ ...prev, [orderId]: true }));
+
+    try {
+      await api.post(`/orders/${orderId}/verify-payment`, { utr }).catch(() =>
+        api.patch(`/orders/${orderId}`, { utr, paymentStatus: "VERIFICATION_PENDING" })
+      );
+
+      toast.success("UTR submitted successfully! Waiting for admin verification.");
+      setUtrInputMap((prev) => ({ ...prev, [orderId]: "" }));
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to submit UTR number.");
+    } finally {
+      setSubmittingUtrMap((prev) => ({ ...prev, [orderId]: false }));
     }
   };
 
@@ -117,7 +196,6 @@ export default function OrdersPage() {
     setDownloadingInvoiceId(orderId);
 
     try {
-      // 1. Fetch user invoice list
       const { data } = await api.get(`/users/${userId}/invoices`);
       const invoices = data?.data || data || [];
       const matchingInvoice = Array.isArray(invoices)
@@ -127,7 +205,7 @@ export default function OrdersPage() {
       const invoiceId = matchingInvoice?._id || matchingInvoice?.id;
       if (invoiceId) {
         window.open(`${api.defaults.baseURL}/users/${userId}/invoices/${invoiceId}/download`, "_blank");
-        toast.success("Downloading invoice document...");
+        toast.success("Downloading invoice...");
       } else {
         toast.error("Invoice document will be generated once payment verification completes.");
       }
@@ -137,10 +215,6 @@ export default function OrdersPage() {
       setDownloadingInvoiceId(null);
     }
   };
-
-  useEffect(() => {
-    fetchOrders();
-  }, [user]);
 
   const filteredOrders = orders.filter((order) => {
     const orderNum = (order.orderNumber || order._id || order.id || "").toLowerCase();
@@ -154,41 +228,41 @@ export default function OrdersPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-8 max-w-5xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold font-serif text-foreground">
-          My Orders & Order History
+        <h1 className="text-3xl font-serif font-bold text-[#0F3D3E]">
+          My Orders & Payment Status
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Track shipments, view detailed invoice cost breakdown, and manage your book orders.
+        <p className="text-sm text-[#5C6E6E] mt-1 font-sans">
+          Track shipments, submit UPI UTR verification, and download official invoices.
         </p>
       </div>
 
       {/* Filter & Search Bar */}
-      <Card className="border border-border/80 shadow-sm">
+      <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5C6E6E]" />
               <Input
-                placeholder="Search by Order ID (e.g. HM-BB9D161B) or UTR..."
-                className="pl-9 bg-card"
+                placeholder="Search by Order ID or UTR Reference..."
+                className="pl-9 bg-white border-[#E2E6DF]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48 bg-card">
-                <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+              <SelectTrigger className="w-full sm:w-52 bg-white border-[#E2E6DF]">
+                <Filter className="mr-2 h-4 w-4 text-[#5C6E6E]" />
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Orders</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="PENDING">Payment Pending</SelectItem>
                 <SelectItem value="PROCESSING">Processing</SelectItem>
                 <SelectItem value="SHIPPED">In Transit / Shipped</SelectItem>
-                <SelectItem value="DELIVERED">Delivered</SelectItem>
+                <SelectItem value="DELIVERED">Completed</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
             </Select>
@@ -199,38 +273,42 @@ export default function OrdersPage() {
       {/* Main Content Area */}
       {error ? (
         <ErrorState
-          title="Could not load orders"
-          message="We encountered an issue fetching your orders. Please try again."
+          title="Could not load your orders"
+          message="We encountered an issue fetching your order history. Please try again."
           onRetry={fetchOrders}
         />
       ) : loading ? (
-        <div className="flex justify-center items-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0F3D3E]" />
         </div>
       ) : filteredOrders.length === 0 ? (
-        <Card className="border border-dashed border-border/80">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="p-4 rounded-full bg-primary/10 text-primary mb-4">
-              <Package className="h-10 w-10" />
+        /* Empty State (Clean & Guided) */
+        <Card className="bg-white border border-dashed border-[#E2E6DF] shadow-xs rounded-2xl">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center px-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0F3D3E]/10 text-[#0F3D3E] mb-4">
+              <Package className="h-8 w-8" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">No Orders Found</h3>
-            <p className="text-muted-foreground text-sm max-w-sm mt-1 mb-6">
+            <h3 className="font-serif font-bold text-xl text-[#0F3D3E]">
+              {searchQuery || statusFilter !== "all" ? "No Matching Orders" : "No orders placed yet"}
+            </h3>
+            <p className="text-[#5C6E6E] text-sm max-w-sm mt-1.5 mb-6 leading-relaxed">
               {searchQuery || statusFilter !== "all"
                 ? "No orders match your filter criteria. Try clearing search filters."
-                : "You haven't placed any orders yet. Explore our curated book collection!"}
+                : "Explore our curated book collection and place your first order."}
             </p>
-            <Button asChild className="shadow-md font-medium">
-              <Link href="/books">Explore Catalog</Link>
+            <Button asChild className="bg-[#0F3D3E] text-white hover:bg-[#174C4D] font-medium px-6 shadow-sm">
+              <Link href="/books">Explore Books</Link>
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filteredOrders.map((order, index) => {
             const status = order.status || order.orderStatus || "PENDING";
             const id = order.orderNumber || order._id || order.id;
-            const StatusIcon = getStatusIcon(status);
             const isExpanded = expandedOrder === id;
+            const isPaid = Boolean(order.isPaid || order.paymentStatus === "VERIFIED");
+            const paymentStatus = order.paymentStatus || (order.utr ? "VERIFICATION_PENDING" : "PENDING");
 
             const subtotal = order.subtotal ?? (order.totalPrice ? order.totalPrice - (order.shippingPrice || 0) : 0);
             const tax = order.tax ?? 0;
@@ -242,56 +320,48 @@ export default function OrdersPage() {
                 key={id}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.06 }}
+                transition={{ delay: index * 0.05 }}
               >
-                <Card className="border border-border/80 hover:border-primary/40 transition-colors shadow-sm overflow-hidden">
+                <Card className="bg-white border border-[#E2E6DF] hover:border-[#0F3D3E]/30 transition-all shadow-xs rounded-2xl overflow-hidden">
                   {/* Order Summary Header */}
-                  <CardHeader className="p-4 sm:p-6 pb-4 bg-muted/20 border-b border-border/60">
+                  <CardHeader className="p-5 sm:p-6 bg-[#F8F9F7] border-b border-[#E2E6DF]">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-3.5">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                          <StatusIcon className="h-5.5 w-5.5" />
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#0F3D3E] text-[#D4AF37] shadow-xs font-serif font-bold text-lg">
+                          <Package className="h-6 w-6" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold font-mono text-base text-foreground">{id}</span>
-                            {getStatusBadge(status)}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono font-bold text-base text-[#0F3D3E]">{id}</span>
+                            {getOrderStatusBadge(status)}
                           </div>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                          <p className="text-xs text-[#5C6E6E] flex items-center gap-1.5 mt-1 font-sans">
                             <Calendar className="h-3.5 w-3.5" />
-                            Placed on {order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            }) : "Recent"}
+                            Placed on{" "}
+                            {order.createdAt
+                              ? new Date(order.createdAt).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Recent"}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-3 sm:pt-0">
-                        {/* Payment Status Pill */}
+                      <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 border-[#E2E6DF]">
                         <div className="text-left sm:text-right">
-                          <p className="text-xs text-muted-foreground">Total Price</p>
-                          <p className="text-lg font-bold text-foreground">₹{totalPrice.toLocaleString()}</p>
+                          <p className="text-xs text-[#5C6E6E]">Amount Payable</p>
+                          <p className="text-xl font-serif font-bold text-[#0F3D3E]">₹{totalPrice.toLocaleString()}</p>
                         </div>
-
-                        <Badge
-                          variant="outline"
-                          className={
-                            order.isPaid
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 font-medium"
-                              : "bg-amber-500/10 text-amber-600 border-amber-500/30 font-medium"
-                          }
-                        >
-                          {order.isPaid ? "Paid" : "Payment Pending Verification"}
-                        </Badge>
+                        {getPaymentStatusBadge(isPaid, paymentStatus)}
                       </div>
                     </div>
                   </CardHeader>
 
-                  <CardContent className="p-4 sm:p-6 space-y-4">
-                    {/* Order Items Horizontal Preview */}
-                    <div className="flex items-center justify-between gap-4">
+                  <CardContent className="p-5 sm:p-6 space-y-6">
+                    {/* Order Book Preview Items */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex flex-wrap items-center gap-3">
                         {order.items?.map((item: any, i: number) => {
                           const bookTitle = item.book?.title || "Book Item";
@@ -302,32 +372,191 @@ export default function OrdersPage() {
                               <img
                                 src={coverImage}
                                 alt={bookTitle}
-                                className="h-14 w-10 object-cover rounded-md border shadow-xs"
+                                className="h-14 w-10 object-cover rounded-md border border-[#E2E6DF] shadow-xs"
                               />
-                              <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                              <span className="absolute -top-1.5 -right-1.5 bg-[#0F3D3E] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                                 {item.quantity}
                               </span>
                             </div>
                           );
                         })}
-                        <div className="text-xs text-muted-foreground">
-                          <span className="font-semibold text-foreground">
-                            {order.items?.length || 0}
-                          </span>{" "}
-                          item{(order.items?.length || 0) > 1 ? "s" : ""}
+                        <div className="text-xs text-[#5C6E6E]">
+                          <span className="font-bold text-[#0F3D3E]">{order.items?.length || 0}</span> item
+                          {(order.items?.length || 0) > 1 ? "s" : ""} included
                         </div>
                       </div>
 
-                      {/* Expand Details Toggle */}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setExpandedOrder(isExpanded ? null : id)}
-                        className="gap-1.5 text-xs text-primary hover:text-primary font-medium shrink-0"
+                        className="gap-1.5 text-xs text-[#0F3D3E] hover:text-[#0F3D3E] font-medium shrink-0"
                       >
-                        <span>{isExpanded ? "Hide Details" : "View Full Details"}</span>
+                        <span>{isExpanded ? "Hide Details" : "View Order Details"}</span>
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </Button>
+                    </div>
+
+                    {/* --- PAYMENT UI (STRICT 4-STATE MACHINE ACCORDING TO PROMPT) --- */}
+                    <div className="rounded-2xl border border-[#E2E6DF] p-5 bg-white space-y-4">
+                      <div className="flex items-center justify-between border-b border-[#E2E6DF] pb-3">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4 text-[#0F3D3E]" />
+                          <h4 className="font-serif font-bold text-sm text-[#0F3D3E]">
+                            UPI Payment & Verification State
+                          </h4>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] uppercase font-mono border-[#E2E6DF]">
+                          {order.paymentMethod || "UPI QR"}
+                        </Badge>
+                      </div>
+
+                      {/* STATE 1: PAYMENT_PENDING (No UTR submitted yet) */}
+                      {!isPaid && (!paymentStatus || paymentStatus === "PENDING") && !order.utr && (
+                        <div className="space-y-4 pt-1">
+                          <div className="p-4 rounded-xl border-2 border-[#D4AF37] bg-[#D4AF37]/5 flex flex-col md:flex-row items-center gap-6">
+                            {/* QR Code Container with Gold Highlight */}
+                            <div className="flex flex-col items-center bg-white p-3 rounded-xl border-2 border-[#D4AF37] shadow-sm">
+                              <QrCode className="h-24 w-24 text-[#0F3D3E]" />
+                              <span className="text-[10px] font-bold text-[#0F3D3E] mt-1 uppercase tracking-wider">
+                                Scan & Pay UPI
+                              </span>
+                            </div>
+                            <div className="flex-1 text-center md:text-left space-y-2">
+                              <div className="flex items-center justify-between md:justify-start gap-3">
+                                <Badge className="bg-[#D4AF37] text-[#0F3D3E] font-bold text-xs">
+                                  PAYMENT_PENDING
+                                </Badge>
+                                <span className="text-lg font-serif font-bold text-[#0F3D3E]">
+                                  Amount: ₹{totalPrice.toLocaleString()}
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#5C6E6E] leading-relaxed">
+                                Scan the UPI QR Code with Google Pay, PhonePe, or Paytm to pay{" "}
+                                <strong className="text-[#0F3D3E]">₹{totalPrice.toLocaleString()}</strong>. After completing payment, enter your 12-digit UTR transaction reference below.
+                              </p>
+
+                              {/* UTR Input Form */}
+                              <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+                                <div className="flex-1">
+                                  <Input
+                                    placeholder="Enter 12-digit UTR Number (e.g. 423819001234)"
+                                    className="bg-white border-[#E2E6DF] text-sm h-10 font-mono"
+                                    value={utrInputMap[id] || ""}
+                                    onChange={(e) =>
+                                      setUtrInputMap((prev) => ({ ...prev, [id]: e.target.value }))
+                                    }
+                                  />
+                                </div>
+                                <Button
+                                  onClick={() => handleSubmitUtr(id)}
+                                  disabled={submittingUtrMap[id]}
+                                  className="bg-[#0F3D3E] hover:bg-[#174C4D] text-white font-medium h-10 px-5 gap-2 shrink-0"
+                                >
+                                  {submittingUtrMap[id] ? (
+                                    <span className="flex items-center gap-2">
+                                      <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                      Submitting...
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-1.5">
+                                      <Send className="h-3.5 w-3.5" />
+                                      Submit Payment
+                                    </span>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STATE 2: VERIFICATION_PENDING (UTR Submitted, Waiting for Admin) */}
+                      {!isPaid && (paymentStatus === "VERIFICATION_PENDING" || (order.utr && paymentStatus !== "REJECTED")) && (
+                        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-900 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-5 w-5 text-amber-600 animate-pulse" />
+                              <h5 className="font-bold text-sm font-serif">VERIFICATION_PENDING</h5>
+                            </div>
+                            <span className="font-mono text-xs font-semibold bg-white/80 px-2 py-0.5 rounded text-amber-900 border border-amber-300">
+                              UTR: {order.utr}
+                            </span>
+                          </div>
+                          <p className="text-xs text-amber-800 font-medium">
+                            Waiting for admin verification. Your payment reference was received and is being verified by our finance team.
+                          </p>
+                          <div className="pt-1">
+                            <Input
+                              value={order.utr || ""}
+                              disabled
+                              className="bg-white/60 text-xs font-mono border-amber-300 cursor-not-allowed opacity-70"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STATE 3: PAID / VERIFIED */}
+                      {(isPaid || paymentStatus === "VERIFIED") && (
+                        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                              <CheckCircle2 className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h5 className="font-bold text-sm font-serif text-emerald-950">Payment Verified & Confirmed</h5>
+                              <p className="text-xs text-emerald-800">
+                                Order is active and moving through printing & fulfillment.
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadInvoice(order)}
+                            disabled={downloadingInvoiceId === id}
+                            className="bg-white text-emerald-900 border-emerald-300 hover:bg-emerald-50 text-xs gap-1.5 font-medium shrink-0"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            <span>Invoice</span>
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* STATE 4: FAILED / REJECTED */}
+                      {paymentStatus === "REJECTED" && (
+                        <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-900 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <XCircle className="h-5 w-5 text-rose-600" />
+                              <h5 className="font-bold text-sm font-serif">PAYMENT_FAILED / REJECTED</h5>
+                            </div>
+                          </div>
+                          <p className="text-xs text-rose-800">
+                            Payment verification failed or UTR reference could not be matched. Please re-check your UTR and resubmit.
+                          </p>
+
+                          <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                            <Input
+                              placeholder="Re-enter correct UTR Number"
+                              className="bg-white border-rose-300 text-xs font-mono"
+                              value={utrInputMap[id] || ""}
+                              onChange={(e) =>
+                                setUtrInputMap((prev) => ({ ...prev, [id]: e.target.value }))
+                              }
+                            />
+                            <Button
+                              onClick={() => handleSubmitUtr(id)}
+                              disabled={submittingUtrMap[id]}
+                              size="sm"
+                              className="bg-rose-700 hover:bg-rose-800 text-white text-xs gap-1.5 font-medium shrink-0"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                              <span>Retry Submission</span>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Expanded Details Section */}
@@ -337,12 +566,12 @@ export default function OrdersPage() {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="pt-4 border-t border-border/60 space-y-6"
+                          className="pt-4 border-t border-[#E2E6DF] space-y-6"
                         >
-                          {/* 1. Itemized Book List */}
+                          {/* Itemized Book List */}
                           <div>
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-                              Order Items ({order.items?.length || 0})
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] mb-3">
+                              Itemized Book Details ({order.items?.length || 0})
                             </h4>
                             <div className="space-y-2.5">
                               {order.items?.map((item: any, i: number) => {
@@ -353,20 +582,20 @@ export default function OrdersPage() {
                                 return (
                                   <div
                                     key={item._id || i}
-                                    className="flex items-center gap-3.5 p-3 rounded-xl bg-muted/30 border border-border/60"
+                                    className="flex items-center gap-3.5 p-3 rounded-xl bg-[#F8F9F7] border border-[#E2E6DF]"
                                   >
                                     <img
                                       src={coverImage}
                                       alt={bookTitle}
-                                      className="h-16 w-11 object-cover rounded-md border"
+                                      className="h-16 w-11 object-cover rounded-md border border-[#E2E6DF]"
                                     />
                                     <div className="flex-1 min-w-0">
-                                      <p className="font-semibold text-sm text-foreground truncate">{bookTitle}</p>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        Qty: <span className="font-medium text-foreground">{item.quantity}</span> × ₹{price}
+                                      <p className="font-serif font-bold text-sm text-[#0F3D3E] truncate">{bookTitle}</p>
+                                      <p className="text-xs text-[#5C6E6E] mt-0.5 font-sans">
+                                        Qty: <span className="font-bold text-[#0F3D3E]">{item.quantity}</span> × ₹{price}
                                       </p>
                                     </div>
-                                    <p className="font-bold text-sm text-foreground">
+                                    <p className="font-bold text-sm text-[#0F3D3E]">
                                       ₹{(price * item.quantity).toLocaleString()}
                                     </p>
                                   </div>
@@ -375,18 +604,18 @@ export default function OrdersPage() {
                             </div>
                           </div>
 
-                          {/* 2. Useful Grid: Delivery Address & Payment / Cost Summary */}
+                          {/* Address & Cost Summary */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Shipping Address */}
-                            <div className="p-4 rounded-xl bg-card border border-border/80 space-y-2">
-                              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                <MapPin className="h-3.5 w-3.5 text-primary" />
-                                <span>Shipping Address</span>
+                            <div className="p-4 rounded-xl bg-white border border-[#E2E6DF] space-y-2">
+                              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#5C6E6E]">
+                                <MapPin className="h-3.5 w-3.5 text-[#0F3D3E]" />
+                                <span>Delivery Address</span>
                               </div>
                               {order.shippingAddress ? (
-                                <div className="text-xs text-foreground space-y-0.5 leading-relaxed">
-                                  <p className="font-bold text-sm text-foreground">
-                                    {order.shippingAddress.fullName || order.shippingAddress.name || "Valued Reader"}
+                                <div className="text-xs text-[#0F3D3E] space-y-0.5 leading-relaxed font-sans">
+                                  <p className="font-bold text-sm">
+                                    {order.shippingAddress.fullName || order.shippingAddress.name || "Reader"}
                                   </p>
                                   <p>{order.shippingAddress.addressLine1 || order.shippingAddress.address}</p>
                                   {order.shippingAddress.addressLine2 && <p>{order.shippingAddress.addressLine2}</p>}
@@ -394,88 +623,69 @@ export default function OrdersPage() {
                                     {order.shippingAddress.city},{" "}
                                     {order.shippingAddress.postalCode || order.shippingAddress.pincode}
                                   </p>
-                                  <p className="text-muted-foreground font-medium">
+                                  <p className="text-[#5C6E6E] font-medium">
                                     {order.shippingAddress.country || "India"}
                                   </p>
                                 </div>
                               ) : (
-                                <p className="text-xs text-muted-foreground">No shipping address recorded.</p>
+                                <p className="text-xs text-[#5C6E6E]">No shipping address recorded.</p>
                               )}
                             </div>
 
-                            {/* Payment & Cost Summary */}
-                            <div className="p-4 rounded-xl bg-card border border-border/80 space-y-3">
-                              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                <span className="flex items-center gap-1.5">
-                                  <CreditCard className="h-3.5 w-3.5 text-primary" />
-                                  Payment & Invoice Summary
-                                </span>
-                                <Badge variant="outline" className="text-[10px] uppercase font-mono">
-                                  {order.paymentMethod || "UPI"}
-                                </Badge>
+                            {/* Cost Summary */}
+                            <div className="p-4 rounded-xl bg-white border border-[#E2E6DF] space-y-2.5">
+                              <div className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E]">
+                                Invoice Cost Breakdown
                               </div>
-
-                              {/* UTR Information */}
-                              {order.utr && (
-                                <div className="p-2 rounded bg-muted/50 text-xs flex items-center justify-between">
-                                  <span className="text-muted-foreground">UTR Reference:</span>
-                                  <span className="font-mono font-semibold text-foreground">{order.utr}</span>
-                                </div>
-                              )}
-
-                              {/* Price breakdown */}
-                              <div className="space-y-1.5 text-xs border-t border-border/60 pt-2">
-                                <div className="flex justify-between text-muted-foreground">
+                              <div className="space-y-1.5 text-xs font-sans">
+                                <div className="flex justify-between text-[#5C6E6E]">
                                   <span>Subtotal</span>
                                   <span>₹{subtotal.toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between text-muted-foreground">
+                                <div className="flex justify-between text-[#5C6E6E]">
                                   <span>Tax (GST)</span>
                                   <span>₹{tax.toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between text-muted-foreground">
+                                <div className="flex justify-between text-[#5C6E6E]">
                                   <span>Shipping Fee</span>
                                   <span>{shippingPrice === 0 ? "FREE" : `₹${shippingPrice}`}</span>
                                 </div>
-                                <div className="flex justify-between font-bold text-sm text-foreground border-t border-border/60 pt-1.5">
+                                <div className="flex justify-between font-bold text-sm text-[#0F3D3E] border-t border-[#E2E6DF] pt-2 font-serif">
                                   <span>Grand Total</span>
-                                  <span className="text-primary">₹{totalPrice.toLocaleString()}</span>
+                                  <span className="text-[#0F3D3E]">₹{totalPrice.toLocaleString()}</span>
                                 </div>
                               </div>
                             </div>
                           </div>
 
-                          {/* 3. Tracking Updates Timeline */}
+                          {/* Tracking Timeline */}
                           {order.trackingUpdates && order.trackingUpdates.length > 0 && (
                             <div>
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                                <Truck className="h-3.5 w-3.5 text-primary" />
-                                <span>Shipment Tracking Updates</span>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] mb-3 flex items-center gap-1.5">
+                                <Truck className="h-3.5 w-3.5 text-[#0F3D3E]" />
+                                <span>Tracking Timeline</span>
                               </h4>
-                              <div className="space-y-2.5 pl-2 border-l-2 border-primary/30">
+                              <div className="space-y-3 pl-2 border-l-2 border-[#0F3D3E]/30">
                                 {order.trackingUpdates.map((update: any, stepIdx: number) => (
                                   <div key={update._id || stepIdx} className="relative pl-4 space-y-0.5">
-                                    <div className="absolute -left-[13px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
+                                    <div className="absolute -left-[13px] top-1 h-3 w-3 rounded-full bg-[#0F3D3E] ring-4 ring-white" />
                                     <div className="flex items-center justify-between text-xs">
-                                      <span className="font-bold text-foreground">{update.status}</span>
-                                      <span className="text-[11px] text-muted-foreground">
+                                      <span className="font-bold text-[#0F3D3E] font-serif">{update.status}</span>
+                                      <span className="text-[11px] text-[#5C6E6E]">
                                         {new Date(update.timestamp || update.createdAt).toLocaleString("en-IN", {
                                           dateStyle: "medium",
                                           timeStyle: "short",
                                         })}
                                       </span>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">{update.description}</p>
-                                    {update.location && (
-                                      <p className="text-[11px] text-muted-foreground font-medium">Location: {update.location}</p>
-                                    )}
+                                    <p className="text-xs text-[#5C6E6E]">{update.description}</p>
                                   </div>
                                 ))}
                               </div>
                             </div>
                           )}
 
-                          {/* 4. Action Buttons */}
+                          {/* Action Footer */}
                           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                             <div className="flex gap-2">
                               <Button
@@ -483,16 +693,14 @@ export default function OrdersPage() {
                                 size="sm"
                                 onClick={() => handleDownloadInvoice(order)}
                                 disabled={downloadingInvoiceId === id}
-                                className="gap-2 text-xs font-medium"
+                                className="gap-2 text-xs font-medium border-[#E2E6DF]"
                               >
-                                <Download className="h-3.5 w-3.5 text-primary" />
-                                <span>
-                                  {downloadingInvoiceId === id ? "Downloading..." : "Download Invoice"}
-                                </span>
+                                <Download className="h-3.5 w-3.5 text-[#0F3D3E]" />
+                                <span>{downloadingInvoiceId === id ? "Downloading..." : "Download Invoice"}</span>
                               </Button>
 
                               <Link href={`/track-order?orderNumber=${encodeURIComponent(id)}`}>
-                                <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
+                                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-[#0F3D3E]">
                                   <span>Public Tracking Page</span>
                                   <ExternalLink className="h-3.5 w-3.5" />
                                 </Button>
