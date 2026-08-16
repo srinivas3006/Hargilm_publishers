@@ -89,10 +89,7 @@ export const useCartStore = create<CartState>()(
         }, 0);
       },
       
-      getTax: () => {
-        const subtotal = get().getSubtotal();
-        return parseFloat((subtotal * TAX_RATE).toFixed(2));
-      },
+      getTax: () => 0,
       
       getShipping: () => {
         const subtotal = get().getSubtotal();
@@ -101,7 +98,7 @@ export const useCartStore = create<CartState>()(
       },
       
       getTotal: () => {
-        const totalAmount = get().getSubtotal() + get().getTax() + get().getShipping();
+        const totalAmount = get().getSubtotal() + get().getShipping();
         return parseFloat(totalAmount.toFixed(2));
       },
       

@@ -178,18 +178,6 @@ export default function OrdersPage() {
     }
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    if (!confirm("Are you sure you want to cancel this order?")) return;
-
-    try {
-      await api.delete(`/orders/${orderId}`);
-      toast.success("Order cancelled successfully");
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to cancel order");
-    }
-  };
-
   const handleDownloadInvoice = async (order: any) => {
     const userId = user?._id || user?.id;
     const orderId = order._id || order.id;
@@ -310,10 +298,9 @@ export default function OrdersPage() {
             const isPaid = Boolean(order.isPaid || order.paymentStatus === "VERIFIED");
             const paymentStatus = order.paymentStatus || (order.utr ? "VERIFICATION_PENDING" : "PENDING");
 
-            const subtotal = order.subtotal ?? (order.totalPrice ? order.totalPrice - (order.shippingPrice || 0) : 0);
-            const tax = order.tax ?? 0;
-            const shippingPrice = order.shippingPrice ?? 50;
-            const totalPrice = order.totalPrice ?? (subtotal + tax + shippingPrice);
+            const subtotal = order.subtotal ?? (order.totalPrice ? order.totalPrice - (order.shippingPrice || 0) : order.items?.reduce((acc: number, item: any) => acc + (item.price || item.book?.price || 0) * (item.quantity || 1), 0) || 0);
+            const shippingPrice = order.shippingPrice ?? order.shippingFee ?? 0;
+            const totalPrice = order.totalPrice ?? order.totalAmount ?? order.amount ?? (subtotal + shippingPrice);
 
             return (
               <motion.div
@@ -643,10 +630,6 @@ export default function OrdersPage() {
                                   <span>₹{subtotal.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-[#5C6E6E]">
-                                  <span>Tax (GST)</span>
-                                  <span>₹{tax.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-[#5C6E6E]">
                                   <span>Shipping Fee</span>
                                   <span>{shippingPrice === 0 ? "FREE" : `₹${shippingPrice}`}</span>
                                 </div>
@@ -706,18 +689,6 @@ export default function OrdersPage() {
                                 </Button>
                               </Link>
                             </div>
-
-                            {status === "PENDING" && (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleCancelOrder(id)}
-                                className="gap-1.5 text-xs font-medium"
-                              >
-                                <XCircle className="h-3.5 w-3.5" />
-                                <span>Cancel Order</span>
-                              </Button>
-                            )}
                           </div>
                         </motion.div>
                       )}

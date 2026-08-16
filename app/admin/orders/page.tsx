@@ -144,10 +144,8 @@ export default function AdminOrdersPage() {
     const subtotal = typeof o.subtotal === 'number' && o.subtotal > 0 ? o.subtotal : itemsSum;
     if (subtotal <= 0) return 0;
 
-    const tax = typeof o.tax === 'number' ? o.tax : (subtotal * 0.05);
-    const shipping = typeof o.shippingPrice === 'number' ? o.shippingPrice : (typeof o.shippingFee === 'number' ? o.shippingFee : 50);
-
-    return Math.round((subtotal + tax + shipping) * 100) / 100;
+    const shipping = typeof o.shippingPrice === 'number' ? o.shippingPrice : (typeof o.shippingFee === 'number' ? o.shippingFee : 0);
+    return Math.round((subtotal + shipping) * 100) / 100;
   };
 
   const filteredOrders = orders.filter((order: any) => {

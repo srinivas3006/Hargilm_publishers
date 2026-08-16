@@ -185,59 +185,59 @@ export function Navbar() {
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-[#E2E6DF] shadow-md bg-white">
+                  <div className="px-3 py-2 bg-[#F8F9F7] rounded-xl mb-1 border border-[#E2E6DF]">
+                    <p className="text-sm font-serif font-bold text-[#0F3D3E] truncate">{user.name}</p>
+                    <p className="text-xs text-[#5C6E6E] truncate">
                       {user.email}
                     </p>
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuSeparator className="my-1 bg-[#E2E6DF]" />
+                  <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
                     <Link
                       href={getDashboardLink()}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2.5"
                     >
-                      <LayoutDashboard className="h-4 w-4" />
+                      <LayoutDashboard className="h-4 w-4 text-[#0F3D3E]" />
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
                   {user.role === "author" && (
-                    <DropdownMenuItem asChild>
+                    <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
                       <Link
                         href="/author/manuscripts/new"
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2.5"
                       >
-                        <PenTool className="h-4 w-4" />
+                        <PenTool className="h-4 w-4 text-[#D4AF37]" />
                         Submit Manuscript
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
                     <Link
                       href="/dashboard/orders"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2.5"
                     >
-                      <ShoppingCart className="h-4 w-4" />
+                      <ShoppingCart className="h-4 w-4 text-[#0F3D3E]" />
                       My Orders
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
                     <Link
                       href="/dashboard/profile"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2.5"
                     >
-                      <User className="h-4 w-4" />
-                      Profile
+                      <User className="h-4 w-4 text-[#0F3D3E]" />
+                      Profile Settings
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="my-1 bg-[#E2E6DF]" />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="text-destructive focus:text-destructive"
+                    className="rounded-lg px-3 py-2 cursor-pointer text-rose-600 focus:text-rose-700 focus:bg-rose-50 text-xs font-medium gap-2"
                   >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                    <LogOut className="h-4 w-4 text-rose-500" />
+                    <span>Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
