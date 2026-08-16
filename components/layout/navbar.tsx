@@ -268,12 +268,12 @@ export function Navbar() {
               </DropdownMenu>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
-                <Link href={pathname && pathname !== "/" && pathname !== "/login" && pathname !== "/register" ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login"}>
+                <Link href={pathname && pathname !== "/login" && pathname !== "/register" ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login"}>
                   <Button variant="ghost" size="sm">
                     Login
                   </Button>
                 </Link>
-                <Link href={pathname && pathname !== "/" && pathname !== "/login" && pathname !== "/register" ? `/register?redirect=${encodeURIComponent(pathname)}` : "/register"}>
+                <Link href={pathname && pathname !== "/login" && pathname !== "/register" ? `/register?redirect=${encodeURIComponent(pathname)}` : "/register"}>
                   <Button size="sm">Register</Button>
                 </Link>
               </div>
@@ -317,12 +317,20 @@ export function Navbar() {
                 </div>
                 {!isAuthenticated && (
                   <div className="pt-4 border-t border-border mt-auto space-y-3 pb-6">
-                    <Link href="/login" className="block" onClick={() => setIsOpen(false)}>
+                    <Link
+                      href={pathname && pathname !== "/login" && pathname !== "/register" ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login"}
+                      className="block"
+                      onClick={() => setIsOpen(false)}
+                    >
                       <Button variant="outline" className="w-full">
                         Login
                       </Button>
                     </Link>
-                    <Link href="/register" className="block" onClick={() => setIsOpen(false)}>
+                    <Link
+                      href={pathname && pathname !== "/login" && pathname !== "/register" ? `/register?redirect=${encodeURIComponent(pathname)}` : "/register"}
+                      className="block"
+                      onClick={() => setIsOpen(false)}
+                    >
                       <Button className="w-full">Register</Button>
                     </Link>
                   </div>

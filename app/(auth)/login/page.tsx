@@ -47,14 +47,7 @@ function LoginFormContent() {
       return;
     }
 
-    const caps = context?.capabilities;
-    if (caps?.canAdminister) {
-      router.replace("/admin");
-    } else if (caps?.canAccessAuthorDashboard) {
-      router.replace("/author");
-    } else {
-      router.replace("/dashboard");
-    }
+    router.replace("/");
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {

@@ -52,15 +52,7 @@ function RegisterFormContent() {
       return;
     }
 
-    const caps = context?.capabilities;
-    const userRole = useAuthStore.getState().user?.role;
-    if (caps?.canAdminister || userRole === "admin") {
-      router.replace("/admin");
-    } else if (caps?.canAccessAuthorDashboard || userRole === "author") {
-      router.replace("/author");
-    } else {
-      router.replace("/dashboard");
-    }
+    router.replace("/");
   };
 
   const handleManualRegister = async (e: React.FormEvent) => {
