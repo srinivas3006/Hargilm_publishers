@@ -26,12 +26,11 @@ import { useAuthStore } from "@/store/auth-store";
 import { AuthGuard } from "@/components/auth/auth-guard";
 
 const authorSidebarLinks = [
-  { href: "/author", label: "Author Overview", icon: LayoutDashboard },
-  { href: "/author/books", label: "My Publications", icon: BookOpen },
-  { href: "/author/manuscripts", label: "Manuscript Submissions", icon: FileText },
-  { href: "/author/royalties", label: "Royalty Earnings", icon: DollarSign },
-  { href: "/author/analytics", label: "Sales Analytics", icon: BarChart3 },
-  { href: "/author/settings", label: "Author Profile Settings", icon: Settings },
+  { href: "/author", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/author/books", label: "My Books", icon: BookOpen },
+  { href: "/author/manuscripts", label: "Manuscripts", icon: FileText },
+  { href: "/author/royalties", label: "Royalties", icon: DollarSign },
+  { href: "/author/settings", label: "Profile & Payments", icon: Settings },
 ];
 
 export default function AuthorLayout({

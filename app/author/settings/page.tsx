@@ -1,250 +1,308 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuthStore } from "@/store/auth-store";
+import api from "@/lib/api";
+import toast from "react-hot-toast";
+import { User, CreditCard, Save, Upload, Building, CheckCircle2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuthStore } from "@/store/auth-store";
-import toast from "react-hot-toast";
-import { Save, User, CreditCard, Bell } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function AuthorSettingsPage() {
   const { user, setUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("profile");
 
-  const [profileData, setProfileData] = useState({
+  // Author Profile Form
+  const [profileForm, setProfileForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
-    bio: "Passionate author and storyteller.",
+    bio: "",
+    profileImage: user?.profileImage || "",
   });
 
-  const [paymentData, setPaymentData] = useState({
+  // Payment Details Form
+  const [paymentForm, setPaymentForm] = useState({
+    accountHolderName: user?.name || "",
     bankName: "",
     accountNumber: "",
     ifscCode: "",
     upiId: "",
   });
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    // Fetch profile & payment details
+    const fetchSettings = async () => {
+      if (!user?._id && !user?.id) return;
+      try {
+        const authorId = user._id || user.id;
+        const res = await api.get(`/authors/${authorId}`).catch(() => null);
+        if (res?.data) {
+          const authObj = res.data.data || res.data;
+          setProfileForm((prev) => ({
+            ...prev,
+            name: authObj.name || prev.name,
+            bio: authObj.bio || "",
+            profileImage: authObj.profileImage || prev.profileImage,
+          }));
+
+          if (authObj.paymentDetails) {
+            setPaymentForm({
+              accountHolderName: authObj.paymentDetails.accountHolderName || authObj.name || "",
+              bankName: authObj.paymentDetails.bankName || "",
+              accountNumber: authObj.paymentDetails.accountNumber || "",
+              ifscCode: authObj.paymentDetails.ifscCode || "",
+              upiId: authObj.paymentDetails.upiId || "",
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load author settings:", e);
+      }
+    };
+    fetchSettings();
+  }, [user]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    if (user) {
-      setUser({ ...user, name: profileData.name, email: profileData.email });
+    try {
+      const authorId = user?._id || user?.id;
+      const payload = {
+        name: profileForm.name,
+        bio: profileForm.bio,
+        profileImage: profileForm.profileImage,
+      };
+
+      await api.put(`/authors/${authorId}`, payload).catch(() =>
+        api.put(`/users/${authorId}`, payload)
+      );
+
+      if (user) {
+        setUser({
+          ...user,
+          name: profileForm.name,
+          profileImage: profileForm.profileImage,
+        });
+      }
+
+      toast.success("Profile details updated! Reflects on public author page. 👤");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update profile.");
+    } finally {
+      setLoading(false);
     }
-    
-    toast.success("Profile updated successfully");
-    setLoading(false);
   };
 
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
+  const handleSavePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    toast.success("Payment details saved securely");
-    setLoading(false);
+    try {
+      const authorId = user?._id || user?.id;
+      const payload = {
+        paymentDetails: paymentForm,
+      };
+
+      await api.put(`/authors/${authorId}/payment-details`, payload).catch(() =>
+        api.put(`/authors/${authorId}`, payload)
+      );
+
+      toast.success("Payment & payout details saved securely! 💳");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to save payment details.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="space-y-8 max-w-4xl">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your author profile and royalty payout preferences.
+    <div className="space-y-8 text-[#0F3D3E] font-sans max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="border-b border-[#E2E6DF] pb-5">
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#0F3D3E]">
+          Profile & Payment Settings
+        </h1>
+        <p className="text-xs sm:text-sm text-[#5C6E6E] mt-0.5">
+          Update your public author biography and bank details for royalty payouts.
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        <aside className="w-full md:w-64 flex-shrink-0">
-          <nav className="flex flex-col gap-2">
-            <button
-              onClick={() => setActiveTab("profile")}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-left ${
-                activeTab === "profile" 
-                  ? "bg-primary text-primary-foreground font-medium" 
-                  : "hover:bg-muted/50 text-muted-foreground"
-              }`}
-            >
-              <User className="h-4 w-4" />
-              Public Profile
-            </button>
-            <button
-              onClick={() => setActiveTab("payment")}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-left ${
-                activeTab === "payment" 
-                  ? "bg-primary text-primary-foreground font-medium" 
-                  : "hover:bg-muted/50 text-muted-foreground"
-              }`}
-            >
-              <CreditCard className="h-4 w-4" />
-              Payout Details
-            </button>
-            <button
-              onClick={() => setActiveTab("notifications")}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-left ${
-                activeTab === "notifications" 
-                  ? "bg-primary text-primary-foreground font-medium" 
-                  : "hover:bg-muted/50 text-muted-foreground"
-              }`}
-            >
-              <Bell className="h-4 w-4" />
-              Notifications
-            </button>
-          </nav>
-        </aside>
-
-        <div className="flex-1">
-          {activeTab === "profile" && (
-            <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm">
-              <h2 className="text-xl font-semibold mb-6">Profile Information</h2>
-              <form onSubmit={handleProfileSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Display Name</Label>
+      <div className="grid grid-cols-1 gap-8">
+        
+        {/* 1. Author Profile Form */}
+        <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl overflow-hidden">
+          <CardHeader className="p-6 bg-[#F8F9F7] border-b border-[#E2E6DF]">
+            <CardTitle className="font-serif font-bold text-lg text-[#0F3D3E] flex items-center gap-2">
+              <User className="h-5 w-5 text-[#D4AF37]" />
+              <span>Public Author Profile</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            <form onSubmit={handleSaveProfile} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                    Full Name *
+                  </Label>
                   <Input
                     id="name"
-                    value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                    className="max-w-md rounded-2xl"
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                    className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs font-bold"
+                    required
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                    Email Address
+                  </Label>
                   <Input
                     id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                    className="max-w-md rounded-2xl"
+                    value={profileForm.email}
+                    disabled
+                    className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs text-gray-500"
                   />
-                  <p className="text-xs text-muted-foreground">This email is used for login and important communications.</p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="bio" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Author Bio & Introduction (Public)
+                </Label>
+                <Textarea
+                  id="bio"
+                  rows={4}
+                  placeholder="Share a brief introduction about yourself and your published works..."
+                  value={profileForm.bio}
+                  onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="profileImage" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Profile Image URL / Photo Link
+                </Label>
+                <Input
+                  id="profileImage"
+                  placeholder="https://example.com/photo.jpg"
+                  value={profileForm.profileImage}
+                  onChange={(e) => setProfileForm({ ...profileForm, profileImage: e.target.value })}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold text-xs h-11 px-6 rounded-xl gap-2"
+              >
+                <Save className="h-4 w-4" />
+                <span>Save Profile Changes</span>
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* 2. Simple Payment & Bank Details Form */}
+        <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl overflow-hidden">
+          <CardHeader className="p-6 bg-[#F8F9F7] border-b border-[#E2E6DF]">
+            <CardTitle className="font-serif font-bold text-lg text-[#0F3D3E] flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-[#D4AF37]" />
+              <span>Royalty Payout & Bank Details</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            <form onSubmit={handleSavePayment} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="accountHolderName" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                    Account Holder Name *
+                  </Label>
+                  <Input
+                    id="accountHolderName"
+                    placeholder="Name as per bank account"
+                    value={paymentForm.accountHolderName}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, accountHolderName: e.target.value })}
+                    className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs font-bold"
+                    required
+                  />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Author Bio</Label>
-                  <textarea
-                    id="bio"
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                    className="w-full max-w-md min-h-[120px] rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
-                  />
-                  <p className="text-xs text-muted-foreground">This will be displayed on your published books.</p>
-                </div>
-
-                <Button type="submit" disabled={loading} className="gap-2">
-                  {loading ? "Saving..." : "Save Profile"}
-                  {!loading && <Save className="h-4 w-4" />}
-                </Button>
-              </form>
-            </div>
-          )}
-
-          {activeTab === "payment" && (
-            <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm">
-              <h2 className="text-xl font-semibold mb-2">Royalty Payouts</h2>
-              <p className="text-sm text-muted-foreground mb-6">Where should we send your book earnings?</p>
-              
-              <form onSubmit={handlePaymentSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="bankName">Bank Name</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bankName" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                    Bank Name *
+                  </Label>
                   <Input
                     id="bankName"
-                    placeholder="e.g. HDFC Bank, SBI"
-                    value={paymentData.bankName}
-                    onChange={(e) => setPaymentData({ ...paymentData, bankName: e.target.value })}
-                    className="max-w-md rounded-2xl"
+                    placeholder="e.g. HDFC Bank, SBI, ICICI"
+                    value={paymentForm.bankName}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, bankName: e.target.value })}
+                    className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs font-bold"
+                    required
                   />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="accountNumber" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                    Account Number *
+                  </Label>
                   <Input
                     id="accountNumber"
                     type="password"
-                    placeholder="••••••••••••"
-                    value={paymentData.accountNumber}
-                    onChange={(e) => setPaymentData({ ...paymentData, accountNumber: e.target.value })}
-                    className="max-w-md rounded-2xl"
+                    placeholder="Enter bank account number"
+                    value={paymentForm.accountNumber}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, accountNumber: e.target.value })}
+                    className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs font-mono font-bold"
+                    required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="ifscCode">IFSC Code</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ifscCode" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                    IFSC Code *
+                  </Label>
                   <Input
                     id="ifscCode"
                     placeholder="e.g. HDFC0001234"
-                    value={paymentData.ifscCode}
-                    onChange={(e) => setPaymentData({ ...paymentData, ifscCode: e.target.value })}
-                    className="max-w-md rounded-2xl uppercase"
+                    value={paymentForm.ifscCode}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, ifscCode: e.target.value.toUpperCase() })}
+                    className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs font-mono font-bold uppercase"
+                    required
                   />
-                </div>
-
-                <div className="relative flex items-center py-4">
-                  <div className="flex-grow border-t border-border"></div>
-                  <span className="flex-shrink-0 mx-4 text-muted-foreground text-sm uppercase">OR</span>
-                  <div className="flex-grow border-t border-border"></div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="upiId">UPI ID</Label>
-                  <Input
-                    id="upiId"
-                    placeholder="yourname@okhdfcbank"
-                    value={paymentData.upiId}
-                    onChange={(e) => setPaymentData({ ...paymentData, upiId: e.target.value })}
-                    className="max-w-md rounded-2xl"
-                  />
-                  <p className="text-xs text-muted-foreground">For faster royalty transfers.</p>
-                </div>
-
-                <Button type="submit" disabled={loading} className="gap-2">
-                  {loading ? "Saving..." : "Save Payment Details"}
-                  {!loading && <Save className="h-4 w-4" />}
-                </Button>
-              </form>
-            </div>
-          )}
-
-          {activeTab === "notifications" && (
-            <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm">
-              <h2 className="text-xl font-semibold mb-6">Email Notifications</h2>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-border rounded-2xl">
-                  <div>
-                    <h3 className="font-medium">Manuscript Updates</h3>
-                    <p className="text-sm text-muted-foreground">Get notified when an admin reviews your draft.</p>
-                  </div>
-                  <div className="h-6 w-11 rounded-full bg-primary relative cursor-pointer">
-                    <div className="absolute right-1 top-1 h-4 w-4 rounded-full bg-white transition-all"></div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border border-border rounded-2xl">
-                  <div>
-                    <h3 className="font-medium">Royalty Reports</h3>
-                    <p className="text-sm text-muted-foreground">Receive a monthly summary of your earnings.</p>
-                  </div>
-                  <div className="h-6 w-11 rounded-full bg-primary relative cursor-pointer">
-                    <div className="absolute right-1 top-1 h-4 w-4 rounded-full bg-white transition-all"></div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border border-border rounded-2xl">
-                  <div>
-                    <h3 className="font-medium">Marketing & Tips</h3>
-                    <p className="text-sm text-muted-foreground">Tips to help you sell more books.</p>
-                  </div>
-                  <div className="h-6 w-11 rounded-full bg-muted border border-border relative cursor-pointer">
-                    <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-all"></div>
-                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="upiId" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  UPI ID (Optional Direct Transfer)
+                </Label>
+                <Input
+                  id="upiId"
+                  placeholder="e.g. authorname@upi"
+                  value={paymentForm.upiId}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, upiId: e.target.value })}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold text-xs h-11 px-6 rounded-xl gap-2"
+              >
+                <Save className="h-4 w-4" />
+                <span>Save Payment Details</span>
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
       </div>
     </div>
   );
