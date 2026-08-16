@@ -230,10 +230,9 @@ export default function PublishPage() {
               <Link href="#packages">
                 <Button
                   size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto border-2 border-white/30 text-white hover:bg-white/10 h-14 px-8 rounded-full text-base font-bold transition-all"
+                  className="w-full sm:w-auto bg-white/10 hover:bg-white/20 border-2 border-white/40 text-white font-serif font-bold h-14 px-8 rounded-full text-base transition-all"
                 >
-                  View Packages
+                  <span>View Packages</span>
                 </Button>
               </Link>
             </div>
