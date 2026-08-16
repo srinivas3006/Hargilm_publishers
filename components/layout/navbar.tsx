@@ -58,9 +58,10 @@ export function Navbar() {
   const itemCount = (isAuthenticated && user) ? rawItemCount : 0;
   const isHydrated = useHydration();
 
-  // Hide Navbar only on admin and auth routes
+  // Hide Navbar on admin, author dashboard, and auth routes
   const isHiddenRoute = 
     pathname?.startsWith('/admin') || 
+    pathname?.startsWith('/author') || 
     pathname?.startsWith('/login') ||
     pathname?.startsWith('/register');
 
