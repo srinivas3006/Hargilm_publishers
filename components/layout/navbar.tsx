@@ -121,6 +121,13 @@ export function Navbar() {
         className="absolute top-0 left-0 right-0 h-[2px] origin-left bg-gold-gradient z-50"
         style={{ scaleX }}
       />
+
+      {/* Dynamic Announcement Banner (Post-Hydration Only to Prevent Mismatch) */}
+      {isHydrated && content?.announcementActive && content?.announcementText && (
+        <div className="bg-gradient-to-r from-[#0F3D3E] via-[#174C4D] to-[#0F3D3E] text-[#D4AF37] text-xs font-semibold py-1.5 px-4 text-center border-b border-[#D4AF37]/30 flex items-center justify-center gap-2 shadow-xs">
+          <span>{content.announcementText}</span>
+        </div>
+      )}
       
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
