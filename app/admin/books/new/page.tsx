@@ -258,53 +258,70 @@ export default function AddBookPage() {
                 Select Author Type *
               </Label>
               
-              <RadioGroup
-                value={authorType}
-                onValueChange={(val: AuthorType) => setAuthorType(val)}
-                className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1"
-              >
-                <div
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                <button
+                  type="button"
                   onClick={() => setAuthorType("existing")}
-                  className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center space-x-3 p-4 rounded-xl border-2 text-left transition-all cursor-pointer select-none ${
                     authorType === "existing"
-                      ? "border-[#0F3D3E] bg-[#0F3D3E]/5"
-                      : "border-[#E2E6DF] bg-[#F8F9F7] hover:bg-white"
+                      ? "border-[#0F3D3E] bg-[#0F3D3E]/5 shadow-xs"
+                      : "border-[#E2E6DF] bg-[#F8F9F7] hover:bg-white hover:border-[#0F3D3E]/40"
                   }`}
                 >
-                  <RadioGroupItem value="existing" id="existing" />
-                  <Label htmlFor="existing" className="cursor-pointer font-serif font-bold text-xs text-[#0F3D3E]">
+                  <div
+                    className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      authorType === "existing" ? "border-[#0F3D3E]" : "border-[#5C6E6E]"
+                    }`}
+                  >
+                    {authorType === "existing" && <div className="h-2 w-2 rounded-full bg-[#0F3D3E]" />}
+                  </div>
+                  <span className="font-serif font-bold text-xs text-[#0F3D3E]">
                     Existing Author
-                  </Label>
-                </div>
+                  </span>
+                </button>
 
-                <div
+                <button
+                  type="button"
                   onClick={() => setAuthorType("new")}
-                  className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center space-x-3 p-4 rounded-xl border-2 text-left transition-all cursor-pointer select-none ${
                     authorType === "new"
-                      ? "border-[#0F3D3E] bg-[#0F3D3E]/5"
-                      : "border-[#E2E6DF] bg-[#F8F9F7] hover:bg-white"
+                      ? "border-[#0F3D3E] bg-[#0F3D3E]/5 shadow-xs"
+                      : "border-[#E2E6DF] bg-[#F8F9F7] hover:bg-white hover:border-[#0F3D3E]/40"
                   }`}
                 >
-                  <RadioGroupItem value="new" id="new" />
-                  <Label htmlFor="new" className="cursor-pointer font-serif font-bold text-xs text-[#0F3D3E]">
+                  <div
+                    className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      authorType === "new" ? "border-[#0F3D3E]" : "border-[#5C6E6E]"
+                    }`}
+                  >
+                    {authorType === "new" && <div className="h-2 w-2 rounded-full bg-[#0F3D3E]" />}
+                  </div>
+                  <span className="font-serif font-bold text-xs text-[#0F3D3E]">
                     New Author
-                  </Label>
-                </div>
+                  </span>
+                </button>
 
-                <div
+                <button
+                  type="button"
                   onClick={() => setAuthorType("external")}
-                  className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`flex items-center space-x-3 p-4 rounded-xl border-2 text-left transition-all cursor-pointer select-none ${
                     authorType === "external"
-                      ? "border-[#0F3D3E] bg-[#0F3D3E]/5"
-                      : "border-[#E2E6DF] bg-[#F8F9F7] hover:bg-white"
+                      ? "border-[#0F3D3E] bg-[#0F3D3E]/5 shadow-xs"
+                      : "border-[#E2E6DF] bg-[#F8F9F7] hover:bg-white hover:border-[#0F3D3E]/40"
                   }`}
                 >
-                  <RadioGroupItem value="external" id="external" />
-                  <Label htmlFor="external" className="cursor-pointer font-serif font-bold text-xs text-[#0F3D3E]">
+                  <div
+                    className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      authorType === "external" ? "border-[#0F3D3E]" : "border-[#5C6E6E]"
+                    }`}
+                  >
+                    {authorType === "external" && <div className="h-2 w-2 rounded-full bg-[#0F3D3E]" />}
+                  </div>
+                  <span className="font-serif font-bold text-xs text-[#0F3D3E]">
                     External Author
-                  </Label>
-                </div>
-              </RadioGroup>
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Dynamic Input Views Based on Selection */}
