@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
-import { User, CreditCard, Save, Upload, Building, CheckCircle2 } from "lucide-react";
+import { User, CreditCard, Save, Upload, Building, CheckCircle2, Image as ImageIcon, Camera } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 export default function AuthorSettingsPage() {
   const { user, setUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
 
   // Author Profile Form
   const [profileForm, setProfileForm] = useState({
@@ -41,12 +43,14 @@ export default function AuthorSettingsPage() {
         const res = await api.get(`/authors/${authorId}`).catch(() => null);
         if (res?.data) {
           const authObj = res.data.data || res.data;
+          const imgUrl = authObj.profileImage || authObj.profilePicture || user?.profileImage || "";
           setProfileForm((prev) => ({
             ...prev,
             name: authObj.name || prev.name,
             bio: authObj.bio || "",
-            profileImage: authObj.profileImage || prev.profileImage,
+            profileImage: imgUrl,
           }));
+          setImagePreview(imgUrl);
 
           if (authObj.paymentDetails) {
             setPaymentForm({
@@ -65,15 +69,34 @@ export default function AuthorSettingsPage() {
     fetchSettings();
   }, [user]);
 
+  // Handle local image file selection
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+
+      // Generate base64 data preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const resultStr = reader.result as string;
+        setImagePreview(resultStr);
+        setProfileForm((prev) => ({ ...prev, profileImage: resultStr }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const authorId = user?._id || user?.id;
+      const finalImage = profileForm.profileImage || imagePreview;
+
       const payload = {
         name: profileForm.name,
         bio: profileForm.bio,
-        profileImage: profileForm.profileImage,
+        profileImage: finalImage,
       };
 
       await api.put(`/authors/${authorId}`, payload).catch(() =>
@@ -84,11 +107,11 @@ export default function AuthorSettingsPage() {
         setUser({
           ...user,
           name: profileForm.name,
-          profileImage: profileForm.profileImage,
+          profileImage: finalImage,
         });
       }
 
-      toast.success("Profile details updated! Reflects on public author page. 👤");
+      toast.success("Author profile & photo updated successfully! 👤");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update profile.");
     } finally {
@@ -125,7 +148,7 @@ export default function AuthorSettingsPage() {
           Profile & Payment Settings
         </h1>
         <p className="text-xs sm:text-sm text-[#5C6E6E] mt-0.5">
-          Update your public author biography and bank details for royalty payouts.
+          Update your public author biography, upload profile image, and bank details for royalty payouts.
         </p>
       </div>
 
@@ -136,11 +159,60 @@ export default function AuthorSettingsPage() {
           <CardHeader className="p-6 bg-[#F8F9F7] border-b border-[#E2E6DF]">
             <CardTitle className="font-serif font-bold text-lg text-[#0F3D3E] flex items-center gap-2">
               <User className="h-5 w-5 text-[#D4AF37]" />
-              <span>Public Author Profile</span>
+              <span>Public Author Profile & Photo Upload</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <form onSubmit={handleSaveProfile} className="space-y-5">
+            
+            <form onSubmit={handleSaveProfile} className="space-y-6">
+              
+              {/* Photo Upload & Preview Section */}
+              <div className="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-2xl bg-[#F8F9F7] border border-[#E2E6DF]">
+                <div className="relative group">
+                  <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-[#D4AF37] shadow-sm bg-white flex items-center justify-center">
+                    {imagePreview || profileForm.profileImage ? (
+                      <img
+                        src={imagePreview || profileForm.profileImage}
+                        alt="Author Preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl font-serif font-bold text-[#0F3D3E]">
+                        {profileForm.name?.slice(0, 2)?.toUpperCase() || "AU"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-2 text-center sm:text-left">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                    Author Profile Image Upload
+                  </Label>
+                  <p className="text-xs text-[#5C6E6E]">
+                    Upload a high-resolution portrait (JPG, PNG, WebP) to display on your public author page.
+                  </p>
+                  
+                  <div className="flex flex-wrap items-center gap-3 pt-1 justify-center sm:justify-start">
+                    <label className="inline-flex items-center gap-2 bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold text-xs px-4 h-9 rounded-xl cursor-pointer shadow-xs transition-colors">
+                      <Camera className="h-4 w-4" />
+                      <span>{imageFile ? "Change Image" : "Upload New Photo"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {imageFile && (
+                      <span className="text-xs font-mono font-bold text-emerald-700">
+                        ✓ {imageFile.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
@@ -184,13 +256,16 @@ export default function AuthorSettingsPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="profileImage" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
-                  Profile Image URL / Photo Link
+                  Or Enter Direct Profile Image URL
                 </Label>
                 <Input
                   id="profileImage"
                   placeholder="https://example.com/photo.jpg"
                   value={profileForm.profileImage}
-                  onChange={(e) => setProfileForm({ ...profileForm, profileImage: e.target.value })}
+                  onChange={(e) => {
+                    setProfileForm({ ...profileForm, profileImage: e.target.value });
+                    setImagePreview(e.target.value);
+                  }}
                   className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs"
                 />
               </div>
@@ -198,9 +273,9 @@ export default function AuthorSettingsPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold text-xs h-11 px-6 rounded-xl gap-2"
+                className="bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold text-xs h-11 px-6 rounded-xl gap-2 shadow-xs"
               >
-                <Save className="h-4 w-4" />
+                <Save className="h-4 w-4 text-[#D4AF37]" />
                 <span>Save Profile Changes</span>
               </Button>
             </form>
@@ -294,9 +369,9 @@ export default function AuthorSettingsPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold text-xs h-11 px-6 rounded-xl gap-2"
+                className="bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold text-xs h-11 px-6 rounded-xl gap-2 shadow-xs"
               >
-                <Save className="h-4 w-4" />
+                <Save className="h-4 w-4 text-[#D4AF37]" />
                 <span>Save Payment Details</span>
               </Button>
             </form>
