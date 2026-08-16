@@ -42,10 +42,10 @@ export default function AdminAuthorApplicationsPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/author-applications").catch(() =>
-        api.get("/admin/author-applications")
+      const { data } = await api.get("/admin/author-applications").catch(() =>
+        api.get("/author-applications")
       );
-      const items = data?.data || data || [];
+      const items = data?.data?.applications || data?.data || data || [];
       setApplications(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error("Failed to fetch author applications:", err);
@@ -62,9 +62,13 @@ export default function AdminAuthorApplicationsPage() {
   const handleApprove = async (id: string) => {
     setProcessingId(id);
     try {
-      await api.put(`/author-applications/${id}/status`, { status: "approved" }).catch(() =>
-        api.patch(`/author-applications/${id}`, { status: "approved" })
-      );
+      await api
+        .put(`/admin/author-applications/${id}/status`, { status: "approved" })
+        .catch(() =>
+          api.put(`/author-applications/${id}/status`, { status: "approved" }).catch(() =>
+            api.patch(`/admin/author-applications/${id}`, { status: "approved" })
+          )
+        );
 
       toast.success("Author application APPROVED successfully! 🎉");
       fetchApplications();
@@ -81,9 +85,13 @@ export default function AdminAuthorApplicationsPage() {
 
     setProcessingId(id);
     try {
-      await api.put(`/author-applications/${id}/status`, { status: "rejected", rejectionReason: reason }).catch(() =>
-        api.patch(`/author-applications/${id}`, { status: "rejected", rejectionReason: reason })
-      );
+      await api
+        .put(`/admin/author-applications/${id}/status`, { status: "rejected", rejectionReason: reason })
+        .catch(() =>
+          api.put(`/author-applications/${id}/status`, { status: "rejected", rejectionReason: reason }).catch(() =>
+            api.patch(`/admin/author-applications/${id}`, { status: "rejected", rejectionReason: reason })
+          )
+        );
 
       toast.error("Author application REJECTED.");
       fetchApplications();
