@@ -1,290 +1,177 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { BookOpen, Users, Globe, Award, ArrowRight, Target, Heart, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import Image from "next/image";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { BookOpen, Users, Globe, Award, ArrowRight, Target, Heart, Sparkles, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const stats = [
-  { label: 'Books Published', value: '30+', icon: BookOpen },
-  { label: 'Happy Authors', value: '25+', icon: Users },
-  { label: 'Countries Reached', value: '5+', icon: Globe },
+  { label: "Books Published", value: "30+", icon: BookOpen },
+  { label: "Happy Authors", value: "25+", icon: Users },
+  { label: "Countries Reached", value: "5+", icon: Globe },
 ];
 
 const values = [
   {
     icon: Target,
-    title: 'Quality First',
-    description: 'We maintain the highest standards in editing, design, and production to ensure every book we publish is of exceptional quality.',
+    title: "Quality Editorial First",
+    description: "We maintain strict editorial standards in editing, typography, cover design, and archival printing so every book stands out.",
   },
   {
     icon: Heart,
-    title: 'Author-Centric',
-    description: 'Our authors are our partners. We provide fair royalties, transparent processes, and dedicated support throughout the publishing journey.',
+    title: "Author-Centric Values",
+    description: "Our authors retain 100% copyright ownership, receiving transparent monthly royalty settlements and dedicated editorial guidance.",
   },
   {
     icon: Sparkles,
-    title: 'Innovation',
-    description: 'We embrace new technologies and trends in publishing to help our authors reach wider audiences across multiple platforms.',
+    title: "Modern Print Innovation",
+    description: "We leverage print-on-demand technology and digital e-book distribution to reach global reader communities seamlessly.",
   },
 ];
 
 const team = [
   {
-    name: 'Sunkarapally Sai Teja',
-    role: 'Founder & CEO',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop',
-  }
+    name: "Sunkarapally Sai Teja",
+    role: "Founder & CEO",
+    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+  },
 ];
 
 export default function AboutPage() {
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-  };
-
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.15 },
-    },
-  };
-
   return (
-    <div className="bg-background min-h-screen">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="max-w-3xl mx-auto text-center"
-          >
-            <motion.h1
-              variants={fadeInUp}
-              className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-6"
-            >
-              About Harglim
-            </motion.h1>
-            <motion.p
-              variants={fadeInUp}
-              className="text-lg md:text-xl text-primary-foreground/90"
-            >
-              We are passionate about bringing great stories to the world. Founded with a mission
-              to empower authors and delight readers, Harglim has become one of India&apos;s most
-              trusted publishing houses.
-            </motion.p>
-          </motion.div>
+    <div className="bg-[#F8F9F7] min-h-screen text-[#0F3D3E] font-sans">
+      
+      {/* 1. HERO SECTION */}
+      <section className="relative bg-gradient-to-b from-[#0B2E2F] via-[#0F3D3E] to-[#082223] text-white py-20 md:py-28 overflow-hidden text-center">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-serif font-bold">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Our Publishing Philosophy</span>
+          </div>
+
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-white tracking-tight">
+            About Harglim Publishers
+          </h1>
+
+          <p className="text-base sm:text-lg text-white/80 max-w-2xl mx-auto font-light leading-relaxed">
+            Founded with a mission to empower authors and delight readers, Harglim Publishers is one of India&apos;s most trusted publishing houses, bringing great stories to the world.
+          </p>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-20 bg-background border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {stats.map((stat, index) => (
-              <motion.div key={index} variants={fadeInUp} className="text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-4">
-                  <stat.icon className="h-7 w-7 text-primary" />
+      {/* 2. STATS BAR */}
+      <section className="py-12 bg-white border-b border-[#E2E6DF]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            {stats.map((stat, idx) => (
+              <div key={idx} className="space-y-1">
+                <div className="h-12 w-12 rounded-2xl bg-[#0F3D3E] text-[#D4AF37] flex items-center justify-center mx-auto shadow-xs mb-2">
+                  <stat.icon className="h-6 w-6" />
                 </div>
-                <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">
+                <p className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
                   {stat.value}
-                </div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </motion.div>
+                </p>
+                <p className="text-xs text-[#5C6E6E] font-medium uppercase tracking-wider">{stat.label}</p>
+              </div>
             ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Our Story */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-16 text-center max-w-4xl mx-auto"
-          >
-            <p className="text-lg md:text-xl text-muted-foreground">
-              Harglim Publishers was born from the belief that no dream of becoming an author should be left unrealized. We exist to empower beginner and emerging writers who often face challenges in finding publishing opportunities. By providing professional guidance and end-to-end publishing services, we help transform manuscripts into published books and dreams into reality.
-            </p>
-          </motion.div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-6">
-                Our Story
-              </h2>
-              <div className="space-y-4 text-muted-foreground">
-                <p>
-                  Founded in 2025, Harglim Publishers was born from a simple yet powerful belief: every
-                  aspiring author deserves an opportunity to become a published author.
-                </p>
-                <p>
-                  We recognised that many talented writers, especially first-time authors, struggle to find
-                  trustworthy and affordable publishing support. Despite having inspiring stories and valuable
-                  ideas, countless manuscripts remain unpublished because the path to publishing often feels
-                  confusing, expensive, or out of reach. We provide end-to-end publishing solutions that
-                  empower authors to confidently share their work with the world.
-                </p>
-                <p>
-                  Today, Harglim Publishers continues to grow as a trusted partner for emerging and established
-                  writers alike. Every book we publish represents a dream fulfilled, a voice amplified, and a story
-                  brought to life.
-                </p>
-              </div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-                <Image
-                  src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800&h=600&fit=crop"
-                  alt="Harglim Library"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Our Values */}
-      <section className="py-20 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInUp}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">
-              Our Values
+      {/* 3. OUR STORY */}
+      <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="lg:col-span-7 space-y-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+              Empowering Writers Since 2025
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
+              Our Story & Mission
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              The principles that guide everything we do at Harglim
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {values.map((value, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                className="bg-card p-8 rounded-xl border border-border text-center"
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-                  <value.icon className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">{value.title}</h3>
-                <p className="text-muted-foreground">{value.description}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Team */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInUp}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">
-              Meet Our Founder
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              The passionate visionary behind Harglim&apos;s success
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="flex justify-center"
-          >
-            {team.map((member, index) => (
-              <motion.div key={index} variants={fadeInUp} className="text-center">
-                <div className="relative w-20 h-20 mx-auto mb-4">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    fill
-                    className="object-cover rounded-full ring-4 ring-muted"
-                  />
-                </div>
-                <h3 className="font-semibold text-foreground">{member.name}</h3>
-                <p className="text-sm text-muted-foreground">{member.role}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20 bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-primary-foreground">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInUp}
-          >
-            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
-              Ready to Start Your Journey?
-            </h2>
-            <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-              Whether you want to publish your book or discover your next favorite read,
-              we&apos;re here to help.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/publish">
-                <Button size="lg" variant="secondary" className="text-base px-8 h-12 font-semibold">
-                  Publish Your Book
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/books">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-base px-8 h-12 font-semibold bg-transparent border-2 border-white/30 text-white hover:bg-white/10"
-                >
-                  Browse Books
-                </Button>
-              </Link>
+            <div className="space-y-4 text-xs sm:text-sm text-[#5C6E6E] leading-relaxed font-sans">
+              <p>
+                Harglim Publishers was born from a simple yet powerful belief: every aspiring writer deserves an opportunity to become a published author.
+              </p>
+              <p>
+                We recognised that many talented writers, especially first-time authors, struggle to find trustworthy and affordable publishing support. Countless manuscripts remain unpublished because the traditional publishing path often feels confusing, expensive, or out of reach. We provide end-to-end publishing solutions that empower authors to confidently share their work.
+              </p>
+              <p>
+                Today, Harglim Publishers continues to grow as a trusted partner for emerging and established writers alike. Every book we publish represents a dream fulfilled, a voice amplified, and a story brought to life.
+              </p>
             </div>
-          </motion.div>
+          </div>
+
+          <div className="lg:col-span-5">
+            <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-xl border-2 border-[#D4AF37]/30">
+              <Image
+                src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800&h=600&fit=crop"
+                alt="Harglim Library"
+                fill
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. CORE VALUES */}
+      <section className="py-16 sm:py-20 bg-white border-y border-[#E2E6DF]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-12 space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+              What Guides Us
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
+              Our Core Principles
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {values.map((v, idx) => (
+              <Card key={idx} className="bg-[#F8F9F7] border border-[#E2E6DF] rounded-2xl p-6 shadow-xs text-center space-y-4">
+                <div className="h-14 w-14 rounded-2xl bg-[#0F3D3E] text-[#D4AF37] flex items-center justify-center mx-auto shadow-xs">
+                  <v.icon className="h-7 w-7" />
+                </div>
+                <h3 className="font-serif font-bold text-lg text-[#0F3D3E]">{v.title}</h3>
+                <p className="text-xs text-[#5C6E6E] leading-relaxed">{v.description}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. FOUNDER HIGHLIGHT */}
+      <section className="py-16 sm:py-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+        <div className="space-y-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+            Leadership
+          </span>
+          <h2 className="text-3xl font-serif font-bold text-[#0F3D3E]">
+            Meet Our Founder
+          </h2>
+        </div>
+
+        <div className="bg-white border border-[#E2E6DF] rounded-3xl p-8 shadow-xs max-w-md mx-auto space-y-4">
+          <div className="relative h-28 w-28 rounded-full overflow-hidden border-4 border-[#0F3D3E] mx-auto shadow-md">
+            <Image
+              src={team[0].image}
+              alt={team[0].name}
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div>
+            <h3 className="font-serif font-bold text-xl text-[#0F3D3E]">{team[0].name}</h3>
+            <p className="text-xs text-[#D4AF37] font-bold uppercase tracking-wider mt-0.5">{team[0].role}</p>
+          </div>
+          <p className="text-xs text-[#5C6E6E] leading-relaxed">
+            Championing independent authors and building India&apos;s premier literary publishing house.
+          </p>
         </div>
       </section>
     </div>
