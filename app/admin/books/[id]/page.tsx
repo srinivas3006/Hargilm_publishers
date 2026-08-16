@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
-import { ArrowLeft, Save, Upload } from "lucide-react";
+import { ArrowLeft, Save, Upload, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,14 +20,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import toast from "react-hot-toast";
 
-export default function EditBookPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditBookPage() {
   const router = useRouter();
+  const routeParams = useParams();
+  const bookId = (routeParams?.id as string) || "";
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  
-  const unwrappedParams = use(params);
-  const bookId = unwrappedParams.id;
 
   const [formData, setFormData] = useState({
     title: "",
@@ -46,26 +46,63 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
   });
 
   useEffect(() => {
+    if (!bookId) return;
+
     const fetchBook = async () => {
+      setFetching(true);
       try {
-        const { data } = await api.get(`/books/${bookId}`);
-        const book = data.data || data;
-        
-        setFormData({
-          title: book.title || "",
-          authorName: typeof book.author === 'object' ? book.author?.name || "" : book.author || "",
-          description: book.description || "",
-          category: typeof book.category === 'object' ? book.category?.name || "" : book.category || "",
-          price: book.price?.toString() || "",
-          discountPrice: book.discountPrice?.toString() || "",
-          stock: book.stock?.toString() || "0",
-          isbn: book.isbn || "",
-          status: book.status || "Active",
-          isFeatured: book.isFeatured || false,
-          isBestseller: book.isBestseller || false,
-          isNewRelease: book.isNewRelease || false,
-          royaltyPercentage: book.royaltyPercentage?.toString() || "",
-        });
+        let bookData: any = null;
+
+        // Tier 1: Try /admin/books/:id
+        const res1 = await api.get(`/admin/books/${bookId}`).catch(() => null);
+        if (res1?.data) {
+          bookData = res1.data.data || res1.data;
+        }
+
+        // Tier 2: Try /books/:id
+        if (!bookData) {
+          const res2 = await api.get(`/books/${bookId}`).catch(() => null);
+          if (res2?.data) {
+            bookData = res2.data.data || res2.data;
+          }
+        }
+
+        // Tier 3: Search list in /books
+        if (!bookData) {
+          const res3 = await api.get(`/books?limit=100`).catch(() => null);
+          const list = res3?.data?.data?.books || res3?.data?.data || res3?.data || [];
+          if (Array.isArray(list)) {
+            bookData = list.find(
+              (b: any) => (b._id || b.id) === bookId || b.slug === bookId
+            );
+          }
+        }
+
+        if (bookData) {
+          setFormData({
+            title: bookData.title || "",
+            authorName:
+              typeof bookData.author === "object"
+                ? bookData.author?.name || ""
+                : bookData.authorName || bookData.author || "",
+            description: bookData.description || "",
+            category:
+              typeof bookData.category === "object"
+                ? bookData.category?.name || ""
+                : bookData.category || "",
+            price: bookData.price?.toString() || "",
+            discountPrice: bookData.discountPrice?.toString() || "",
+            stock: bookData.stock?.toString() || "0",
+            isbn: bookData.isbn || "",
+            status: bookData.status || "Active",
+            isFeatured: Boolean(bookData.isFeatured),
+            isBestseller: Boolean(bookData.isBestseller),
+            isNewRelease: Boolean(bookData.isNewRelease),
+            royaltyPercentage: bookData.royaltyPercentage?.toString() || "",
+          });
+        } else {
+          toast.error("Book not found in database.");
+        }
       } catch (err) {
         console.error("Failed to fetch book details:", err);
         toast.error("Could not load book data.");
@@ -73,10 +110,13 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
         setFetching(false);
       }
     };
+
     fetchBook();
   }, [bookId]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -99,13 +139,15 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
         });
         submitData.append("coverImage", imageFile);
 
-        await api.put(`/admin/books/${bookId}`, submitData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        }).catch(() =>
-          api.put(`/books/${bookId}`, submitData, {
+        await api
+          .put(`/admin/books/${bookId}`, submitData, {
             headers: { "Content-Type": "multipart/form-data" },
           })
-        );
+          .catch(() =>
+            api.put(`/books/${bookId}`, submitData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            })
+          );
       } else {
         const jsonPayload = {
           title: formData.title,
@@ -113,19 +155,23 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
           description: formData.description,
           category: formData.category,
           price: Number(formData.price) || 0,
-          discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+          discountPrice: formData.discountPrice
+            ? Number(formData.discountPrice)
+            : undefined,
           stock: Number(formData.stock) || 0,
           isbn: formData.isbn,
           status: formData.status,
           isFeatured: formData.isFeatured,
           isBestseller: formData.isBestseller,
           isNewRelease: formData.isNewRelease,
-          royaltyPercentage: formData.royaltyPercentage ? Number(formData.royaltyPercentage) : undefined,
+          royaltyPercentage: formData.royaltyPercentage
+            ? Number(formData.royaltyPercentage)
+            : undefined,
         };
 
-        await api.put(`/admin/books/${bookId}`, jsonPayload).catch(() =>
-          api.put(`/books/${bookId}`, jsonPayload)
-        );
+        await api
+          .put(`/admin/books/${bookId}`, jsonPayload)
+          .catch(() => api.put(`/books/${bookId}`, jsonPayload));
       }
 
       toast.success("Book updated successfully!");
@@ -141,56 +187,68 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
   if (fetching) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-[#0F3D3E]"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto text-[#0F3D3E]">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/admin/books">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 text-[#0F3D3E]" />
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold lg:text-3xl">Edit Book</h1>
-          <p className="text-muted-foreground mt-1">Update the details of the book</p>
+          <h1 className="text-2xl font-serif font-bold lg:text-3xl text-[#0F3D3E]">Edit Book</h1>
+          <p className="text-sm text-[#5C6E6E] mt-1 font-sans">
+            Update the title, author, pricing, stock, and marketing flags of the book
+          </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Book Details</CardTitle>
+        <Card className="bg-white border border-[#E2E6DF] shadow-sm rounded-2xl">
+          <CardHeader className="border-b border-[#E2E6DF] bg-[#F8F9F7]">
+            <CardTitle className="font-serif font-bold text-lg text-[#0F3D3E]">
+              Book Details & Metadata
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="p-6 space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="title">Book Title *</Label>
+                <Label htmlFor="title" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Book Title *
+                </Label>
                 <Input
                   id="title"
                   name="title"
                   required
                   value={formData.title}
                   onChange={handleInputChange}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="authorName">Author Name *</Label>
+                <Label htmlFor="authorName" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Author Name *
+                </Label>
                 <Input
                   id="authorName"
                   name="authorName"
                   required
                   value={formData.authorName}
                   onChange={handleInputChange}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                Description *
+              </Label>
               <Textarea
                 id="description"
                 name="description"
@@ -198,49 +256,62 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                 rows={5}
                 value={formData.description}
                 onChange={handleInputChange}
+                className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm"
               />
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
+                <Label htmlFor="category" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Category *
+                </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(val) => setFormData((prev) => ({ ...prev, category: val }))}
-                  required
+                  onValueChange={(val) =>
+                    setFormData((prev) => ({ ...prev, category: val }))
+                  }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm">
                     <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-[#E2E6DF]">
                     <SelectItem value="Fiction">Fiction</SelectItem>
                     <SelectItem value="Non-Fiction">Non-Fiction</SelectItem>
-                    <SelectItem value="Science Fiction">Science Fiction</SelectItem>
-                    <SelectItem value="Romance">Romance</SelectItem>
-                    <SelectItem value="Mystery">Mystery</SelectItem>
-                    <SelectItem value="Biography">Biography</SelectItem>
+                    <SelectItem value="Business & Leadership">Business & Leadership</SelectItem>
+                    <SelectItem value="Technology">Technology</SelectItem>
+                    <SelectItem value="Self Help">Self Help</SelectItem>
+                    <SelectItem value="Children">Children</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="isbn">ISBN</Label>
+                <Label htmlFor="isbn" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  ISBN
+                </Label>
                 <Input
                   id="isbn"
                   name="isbn"
                   value={formData.isbn}
                   onChange={handleInputChange}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm font-mono"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Status
+                </Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(val) => setFormData((prev) => ({ ...prev, status: val }))}
+                  onValueChange={(val) =>
+                    setFormData((prev) => ({ ...prev, status: val }))
+                  }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm font-bold">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-[#E2E6DF]">
                     <SelectItem value="Active">Active</SelectItem>
                     <SelectItem value="Out of Stock">Out of Stock</SelectItem>
                     <SelectItem value="Low Stock">Low Stock</SelectItem>
@@ -251,7 +322,9 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
 
             <div className="grid gap-6 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="price">Price (₹) *</Label>
+                <Label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Price (₹) *
+                </Label>
                 <Input
                   id="price"
                   name="price"
@@ -260,10 +333,14 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                   required
                   value={formData.price}
                   onChange={handleInputChange}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm font-bold font-mono"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="discountPrice">Discount Price (₹)</Label>
+                <Label htmlFor="discountPrice" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Discount Price (₹)
+                </Label>
                 <Input
                   id="discountPrice"
                   name="discountPrice"
@@ -271,10 +348,14 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                   min="0"
                   value={formData.discountPrice}
                   onChange={handleInputChange}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm font-bold font-mono text-[#D4AF37]"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="stock">Stock *</Label>
+                <Label htmlFor="stock" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Stock *
+                </Label>
                 <Input
                   id="stock"
                   name="stock"
@@ -283,62 +364,73 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                   required
                   value={formData.stock}
                   onChange={handleInputChange}
+                  className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm font-bold font-mono"
                 />
               </div>
             </div>
 
-            <div className="space-y-4 border rounded-xl p-4 bg-muted/20">
-              <h3 className="font-semibold text-lg">Display & Marketing Flags</h3>
+            <div className="space-y-4 border border-[#E2E6DF] rounded-2xl p-5 bg-[#F8F9F7]">
+              <h3 className="font-serif font-bold text-base text-[#0F3D3E]">
+                Display & Marketing Badges
+              </h3>
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="flex items-center justify-between space-x-2">
-                  <Label htmlFor="isFeatured" className="flex flex-col space-y-1">
-                    <span>Feature on Home Screen</span>
-                    <span className="font-normal text-[0.8rem] text-muted-foreground">Show in hero carousel</span>
+                  <Label htmlFor="isFeatured" className="flex flex-col space-y-1 cursor-pointer">
+                    <span className="font-bold text-xs">Feature on Home</span>
+                    <span className="font-normal text-[11px] text-[#5C6E6E]">Show in hero carousel</span>
                   </Label>
                   <Switch
                     id="isFeatured"
                     checked={formData.isFeatured}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, isFeatured: checked }))
+                    }
                   />
                 </div>
+
                 <div className="flex items-center justify-between space-x-2">
-                  <Label htmlFor="isBestseller" className="flex flex-col space-y-1">
-                    <span>Bestseller</span>
-                    <span className="font-normal text-[0.8rem] text-muted-foreground">Add bestseller badge</span>
+                  <Label htmlFor="isBestseller" className="flex flex-col space-y-1 cursor-pointer">
+                    <span className="font-bold text-xs text-[#D4AF37]">Bestseller</span>
+                    <span className="font-normal text-[11px] text-[#5C6E6E]">Add bestseller badge</span>
                   </Label>
                   <Switch
                     id="isBestseller"
                     checked={formData.isBestseller}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isBestseller: checked }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, isBestseller: checked }))
+                    }
                   />
                 </div>
+
                 <div className="flex items-center justify-between space-x-2">
-                  <Label htmlFor="isNewRelease" className="flex flex-col space-y-1">
-                    <span>New Release</span>
-                    <span className="font-normal text-[0.8rem] text-muted-foreground">Add new release badge</span>
+                  <Label htmlFor="isNewRelease" className="flex flex-col space-y-1 cursor-pointer">
+                    <span className="font-bold text-xs text-emerald-700">New Release</span>
+                    <span className="font-normal text-[11px] text-[#5C6E6E]">Add new release badge</span>
                   </Label>
                   <Switch
                     id="isNewRelease"
                     checked={formData.isNewRelease}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNewRelease: checked }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, isNewRelease: checked }))
+                    }
                   />
                 </div>
               </div>
             </div>
-            
-
 
             <div className="space-y-2">
-              <Label>Cover Image (Upload New)</Label>
+              <Label className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                Cover Image (Upload New)
+              </Label>
               <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E2E6DF] rounded-2xl cursor-pointer bg-[#F8F9F7] hover:bg-[#F0F2ED] transition-colors">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
-                    <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Click to upload new image</span> or drag and drop
+                    <Upload className="w-8 h-8 mb-2 text-[#5C6E6E]" />
+                    <p className="mb-1 text-xs text-[#5C6E6E]">
+                      <span className="font-bold text-[#0F3D3E]">Click to upload new cover</span> or drag and drop
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {imageFile ? imageFile.name : "Leave empty to keep current image"}
+                    <p className="text-[11px] text-[#5C6E6E]">
+                      {imageFile ? imageFile.name : "Leave empty to retain current book cover"}
                     </p>
                   </div>
                   <input
@@ -350,13 +442,19 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                 </label>
               </div>
             </div>
-            
+
             <div className="flex justify-end pt-4">
-              <Button type="submit" disabled={loading} size="lg" className="w-full sm:w-auto">
-                {loading ? "Saving..." : (
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] border border-[#D4AF37]/50 font-serif font-bold h-12 px-8 rounded-xl shadow-xs"
+              >
+                {loading ? (
+                  "Updating Book..."
+                ) : (
                   <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Update Book
+                    <Save className="w-4 h-4 mr-2 text-[#D4AF37]" />
+                    Update Book Details
                   </>
                 )}
               </Button>
