@@ -86,7 +86,7 @@ export default function AdminLayout({
           )}
         </AnimatePresence>
 
-        {/* Sidebar (Luxury Deep Green #0F3D3E) */}
+        {/* Sidebar (Seamless Uniform Deep Green #0F3D3E) */}
         <aside
           className={cn(
             "fixed left-0 top-0 z-50 h-full w-64 transform bg-[#0F3D3E] text-white border-r border-[#174C4D] transition-transform duration-300 lg:translate-x-0 shadow-2xl flex flex-col",
@@ -94,7 +94,7 @@ export default function AdminLayout({
           )}
         >
           {/* Header Brand */}
-          <div className="flex h-16 items-center justify-between border-b border-[#174C4D] px-5 bg-[#0C3233]">
+          <div className="flex h-16 items-center justify-between border-b border-[#174C4D] px-5 bg-[#0F3D3E]">
             <Link href="/admin" className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-lg shadow-sm">
                 H
@@ -115,7 +115,7 @@ export default function AdminLayout({
           </div>
 
           {/* Admin User Info */}
-          <div className="border-b border-[#174C4D] p-4 bg-[#092424]">
+          <div className="border-b border-[#174C4D] p-4 bg-[#0F3D3E]">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-base shadow-sm">
                 {user?.name?.charAt(0).toUpperCase() || "A"}
@@ -133,7 +133,7 @@ export default function AdminLayout({
           </div>
 
           {/* Navigation Sections */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-6">
+          <nav className="flex-1 overflow-y-auto p-4 space-y-6 bg-[#0F3D3E]">
             {sidebarSections.map((section) => (
               <div key={section.title} className="space-y-1">
                 <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2 font-sans">
@@ -174,7 +174,7 @@ export default function AdminLayout({
           </nav>
 
           {/* Bottom Actions */}
-          <div className="border-t border-[#174C4D] p-4 space-y-2 bg-[#092424]">
+          <div className="border-t border-[#174C4D] p-4 space-y-2 bg-[#0F3D3E]">
             <Link href="/" passHref>
               <Button
                 variant="ghost"

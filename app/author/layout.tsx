@@ -60,7 +60,7 @@ export default function AuthorLayout({
           )}
         </AnimatePresence>
 
-        {/* Sidebar (Distinct Author Studio - Gold & Deep Green Theme) */}
+        {/* Sidebar (Seamless Uniform Deep Green #0C3233) */}
         <aside
           className={cn(
             "fixed left-0 top-0 z-50 h-full w-64 transform bg-[#0C3233] text-white border-r border-[#174C4D] transition-transform duration-300 lg:translate-x-0 shadow-2xl flex flex-col",
@@ -68,7 +68,7 @@ export default function AuthorLayout({
           )}
         >
           {/* Header Brand */}
-          <div className="flex h-16 items-center justify-between border-b border-[#174C4D] px-5 bg-[#092424]">
+          <div className="flex h-16 items-center justify-between border-b border-[#174C4D] px-5 bg-[#0C3233]">
             <Link href="/author" className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-lg shadow-sm">
                 ✍️
@@ -89,7 +89,7 @@ export default function AuthorLayout({
           </div>
 
           {/* Author User Info */}
-          <div className="border-b border-[#174C4D] p-4 bg-[#071C1D]">
+          <div className="border-b border-[#174C4D] p-4 bg-[#0C3233]">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-base shadow-sm">
                 {user?.name?.charAt(0).toUpperCase() || "A"}
@@ -107,7 +107,7 @@ export default function AuthorLayout({
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1.5">
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 bg-[#0C3233]">
             <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2 font-sans">
               Author Navigation
             </p>
@@ -144,7 +144,7 @@ export default function AuthorLayout({
           </nav>
 
           {/* Quick Submit Manuscript Action */}
-          <div className="p-4 border-t border-[#174C4D] bg-[#071C1D] space-y-2">
+          <div className="p-4 border-t border-[#174C4D] bg-[#0C3233] space-y-2">
             <Link href="/author/manuscripts/new" passHref>
               <Button className="w-full bg-[#D4AF37] hover:bg-[#C29F2F] text-[#0F3D3E] font-serif font-bold text-xs h-10 rounded-xl shadow-xs gap-2">
                 <PenTool className="h-4 w-4" />
