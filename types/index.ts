@@ -6,6 +6,7 @@ export interface Book {
   category: { _id: string; name: string; slug: string } | string | any;
   description: string;
   coverImage: string;
+  mrp?: number;
   price: number;
   discountPrice?: number;
   format: string;
@@ -83,3 +84,33 @@ export interface Order {
   shippingAddress: any;
   createdAt: string;
 }
+
+export type Role = 'visitor' | 'reader' | 'author' | 'admin';
+
+export interface UserCapabilities {
+  canPublish: boolean;
+  canAccessAuthorDashboard: boolean;
+  canAdminister: boolean;
+}
+
+export interface UserStates {
+  authorApplicationStatus: string;
+  dashboardAccessStatus: string;
+  publishingStatus: string;
+}
+
+export interface UserContextData {
+  user: {
+    id: string;
+    _id: string;
+    name: string;
+    email: string;
+    role: Role;
+    isActive: boolean;
+    profilePicture: string | null;
+    createdAt: string;
+  };
+  capabilities: UserCapabilities;
+  states: UserStates;
+}
+

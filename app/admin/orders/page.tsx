@@ -187,17 +187,17 @@ export default function AdminOrdersPage() {
       toast.error("No orders to export");
       return;
     }
-    
+
     const headers = ["Order ID", "Customer Name", "Email", "Total Amount", "Status", "Date"];
     const csvRows = [headers.join(",")];
-    
+
     orders.forEach((order: any) => {
       const orderId = order.orderNumber || order.id || order._id;
       const customer = order.customerName || order.user?.name || "Guest";
       const email = order.email || order.user?.email || "-";
       const amount = getOrderAmount(order);
       const date = new Date(order.createdAt || order.date).toLocaleDateString();
-      
+
       const row = [
         `"${orderId}"`,
         `"${customer}"`,
@@ -208,7 +208,7 @@ export default function AdminOrdersPage() {
       ];
       csvRows.push(row.join(","));
     });
-    
+
     const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -217,7 +217,7 @@ export default function AdminOrdersPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast.success("Orders exported successfully!");
   };
 
@@ -227,7 +227,7 @@ export default function AdminOrdersPage() {
     const email = order.email || order.user?.email || "-";
     const amount = getOrderAmount(order);
     const date = new Date(order.createdAt || order.date).toLocaleDateString();
-    
+
     const invoiceText = `
 INVOICE
 -----------------------------
@@ -245,7 +245,7 @@ Status: ${order.status}
 -----------------------------
 Thank you for shopping with Hargilm Publishers!
     `.trim();
-    
+
     const blob = new Blob([invoiceText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -254,7 +254,7 @@ Thank you for shopping with Hargilm Publishers!
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast.success(`Invoice downloaded for order ${orderId}`);
   };
 

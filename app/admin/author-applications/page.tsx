@@ -42,9 +42,7 @@ export default function AuthorApplicationsPage() {
     try {
       setIsLoading(true);
       const queryParam = statusFilter === "all" ? "" : `?status=${statusFilter}`;
-      const { data } = await api.get(`/admin/author-applications${queryParam}`).catch(() => 
-        api.get('/admin/author-applications')
-      );
+      const { data } = await api.get(`/admin/author-applications${queryParam}`);
       const appsList = data.data || data || [];
       setApplications(Array.isArray(appsList) ? appsList : []);
     } catch (error) {
