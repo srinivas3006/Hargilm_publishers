@@ -37,6 +37,7 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
 import { cn } from "@/lib/utils";
+import { useSiteContent } from "@/context/site-content-context";
 import { useHydration } from "@/hooks/useHydration";
 
 const navLinks = [
@@ -50,6 +51,7 @@ const navLinks = [
 ];
 
 export function Navbar() {
+  const { content } = useSiteContent();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();

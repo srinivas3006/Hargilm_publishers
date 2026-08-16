@@ -35,6 +35,8 @@ import api from "@/lib/api";
 import type { Book } from "@/types";
 import { BookCardSkeleton } from "@/components/books/book-card-skeleton";
 
+import { useSiteContent } from "@/context/site-content-context";
+
 const trustBadges = [
   { label: "10,000+ Readers", sub: "Active Book Club Members", icon: Star, color: "text-[#D4AF37]" },
   { label: "500+ Books Published", sub: "Across Diverse Genres", icon: BookOpen, color: "text-emerald-400" },
@@ -68,7 +70,7 @@ const whyChooseBlocks = [
   },
 ];
 
-const faqData = [
+const defaultFaqs = [
   {
     question: "How do I publish my manuscript with Harglim Publishers?",
     answer: "Getting published is simple! Navigate to our 'Publish With Us' page, fill out the manuscript submission form with your book details, sample chapters, and contact information. Our editorial review team will respond within 3 to 5 business days.",
@@ -88,6 +90,7 @@ const faqData = [
 ];
 
 export default function Home() {
+  const { content } = useSiteContent();
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [bestsellers, setBestsellers] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +103,19 @@ export default function Home() {
   // Newsletter State
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+
+  // Parse FAQs dynamically if provided in site content
+  let activeFaqs = defaultFaqs;
+  if (content?.faqsJson) {
+    try {
+      const parsed = JSON.parse(content.faqsJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        activeFaqs = parsed;
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }
 
   const fetchBooks = async () => {
     try {
@@ -148,7 +164,7 @@ export default function Home() {
     }, 800);
   };
 
-  const filteredFaqs = faqData.filter(
+  const filteredFaqs = activeFaqs.filter(
     (faq) =>
       faq.question.toLowerCase().includes(faqSearch.toLowerCase()) ||
       faq.answer.toLowerCase().includes(faqSearch.toLowerCase())
@@ -182,16 +198,14 @@ export default function Home() {
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-white leading-[1.1]">
-                You write, we print. <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#F0E68C] to-[#D4AF37]">
-                  You dream, we publish.
-                </span>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-white leading-[1.1] whitespace-pre-line">
+                {content?.homeTitle || "You write, we print.\nYou dream, we publish"}
               </h1>
 
               {/* Subtitle */}
               <p className="text-base sm:text-lg text-white/80 max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
-                Discover inspiring stories from extraordinary authors across multiple genres, or publish your own literary masterpiece with Harglim Publishers.
+                {content?.homeSubtitle ||
+                  "Discover inspiring stories from extraordinary authors across multiple genres, or publish your own literary masterpiece with Harglim Publishers."}
               </p>
 
               {/* Action Buttons */}
@@ -201,7 +215,7 @@ export default function Home() {
                     size="lg"
                     className="w-full sm:w-auto bg-[#D4AF37] hover:bg-[#C29F2F] text-[#0F3D3E] font-serif font-bold h-14 px-8 rounded-full shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:shadow-[0_0_35px_rgba(212,175,55,0.6)] transition-all gap-2 text-base"
                   >
-                    <span>Start Your Publishing Journey</span>
+                    <span>{content?.homeCtaButtonText || "Start Your Publishing Journey"}</span>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -211,7 +225,7 @@ export default function Home() {
                     size="lg"
                     className="w-full sm:w-auto bg-white/10 hover:bg-white/20 border-2 border-white/40 text-white font-serif font-bold h-14 px-8 rounded-full text-base transition-all"
                   >
-                    <span>Explore Books Catalog</span>
+                    <span>{content?.homeHeroCtaText || "Explore Books Catalog"}</span>
                   </Button>
                 </Link>
               </div>

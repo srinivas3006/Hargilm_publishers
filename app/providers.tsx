@@ -1,10 +1,11 @@
 'use client';
 
 import { Toaster } from 'react-hot-toast';
+import { SiteContentProvider } from '@/context/site-content-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <SiteContentProvider>
       {children}
       <Toaster
         position="top-right"
@@ -31,6 +32,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }}
       />
-    </>
+    </SiteContentProvider>
   );
 }

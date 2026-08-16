@@ -276,44 +276,7 @@ function BooksContent() {
         )}
       </div>
 
-      {/* Accordion Section 2: Formats (Icon Pills) */}
-      <div className="border-b border-[#E2E6DF]/60 pb-4">
-        <button
-          type="button"
-          onClick={() => setOpenSections((prev) => ({ ...prev, formats: !prev.formats }))}
-          className="w-full flex items-center justify-between font-serif font-bold text-sm text-[#0F3D3E] py-1"
-        >
-          <span>Format & Binding</span>
-          {openSections.formats ? <ChevronUp className="h-4 w-4 text-[#5C6E6E]" /> : <ChevronDown className="h-4 w-4 text-[#5C6E6E]" />}
-        </button>
 
-        {openSections.formats && (
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {formatOptions.map((fmt) => {
-              const isSelected = selectedFormats.includes(fmt);
-              const fmtObj = formatIcons[fmt] || { label: fmt, icon: BookOpen };
-              const IconComp = fmtObj.icon;
-
-              return (
-                <button
-                  key={fmt}
-                  type="button"
-                  onClick={() => handleFormatToggle(fmt)}
-                  className={cn(
-                    "flex items-center gap-2 px-2.5 py-2 rounded-xl border text-xs font-semibold transition-all text-left",
-                    isSelected
-                      ? "bg-[#0F3D3E] text-white border-[#0F3D3E] shadow-xs"
-                      : "bg-[#F8F9F7] text-[#5C6E6E] border-[#E2E6DF] hover:border-[#0F3D3E]"
-                  )}
-                >
-                  <IconComp className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{fmtObj.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
       {/* Accordion Section 3: Price Range */}
       <div className="border-b border-[#E2E6DF]/60 pb-4">
@@ -592,17 +555,6 @@ function BooksContent() {
                   ) : null;
                 })}
 
-                {selectedFormats.map((fmt) => (
-                  <span
-                    key={fmt}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0F3D3E]/10 text-[#0F3D3E] font-bold rounded-full"
-                  >
-                    <span>Format: {fmt}</span>
-                    <button onClick={() => handleFormatToggle(fmt)} className="hover:text-rose-600">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
 
                 {selectedPriceRange && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0F3D3E]/10 text-[#0F3D3E] font-bold rounded-full">

@@ -64,16 +64,21 @@ const socialLinks = [
   },
 ];
 
+import { useSiteContent } from "@/context/site-content-context";
+
 export function Footer() {
   const pathname = usePathname();
-  const isHiddenRoute = 
-    pathname?.startsWith('/admin') || 
-    pathname?.startsWith('/author') ||
-    pathname?.startsWith('/dashboard') ||
-    pathname?.startsWith('/login') ||
-    pathname?.startsWith('/register');
+  const { content } = useSiteContent();
 
-  if (isHiddenRoute) return null;
+  const dynamicSocial = [
+    { icon: Facebook, href: content?.socialFacebook || siteConfig.social.facebook, label: "Facebook" },
+    { icon: Twitter, href: content?.socialTwitter || siteConfig.social.twitter, label: "Twitter" },
+    { icon: Instagram, href: content?.socialInstagram || siteConfig.social.instagram, label: "Instagram" },
+    { icon: Linkedin, href: content?.socialLinkedin || siteConfig.social.linkedin, label: "LinkedIn" },
+  ];
+  
+  // Only keep footer ("bottom details") for the home page screen
+  if (pathname !== "/") return null;
 
   return (
     <footer className="bg-black text-white">
@@ -99,15 +104,19 @@ export function Footer() {
             <div className="space-y-2 text-sm text-white/70">
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>{siteConfig.contact.address}</span>
+                <span>
+                  {content?.contactAddressLine1
+                    ? `${content.contactAddressLine1}, ${content.contactAddressLine2}`
+                    : siteConfig.contact.address}
+                </span>
               </div>
               <div className="flex items-start gap-2">
                 <Phone className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>{siteConfig.contact.phonePrimary}</span>
+                <span>{content?.contactPhone || siteConfig.contact.phonePrimary}</span>
               </div>
               <div className="flex items-start gap-2">
                 <Mail className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>{siteConfig.contact.email}</span>
+                <span>{content?.contactEmail || siteConfig.contact.email}</span>
               </div>
             </div>
           </div>
@@ -198,7 +207,7 @@ export function Footer() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {socialLinks.map((social) => (
+              {dynamicSocial.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
