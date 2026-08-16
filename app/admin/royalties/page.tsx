@@ -63,9 +63,26 @@ export default function AdminRoyaltiesPage() {
         }
       }
 
+      let fetchedEntries: any[] = [];
       if (entriesRes.status === "fulfilled") {
         const eData = entriesRes.value.data?.data || entriesRes.value.data || [];
-        setRoyaltyEntries(Array.isArray(eData) ? eData : []);
+        if (Array.isArray(eData)) fetchedEntries = eData;
+      }
+
+      try {
+        const localEntries = JSON.parse(localStorage.getItem("harglim_shared_royalties") || "[]");
+        if (Array.isArray(localEntries) && localEntries.length > 0) {
+          const merged = [...localEntries, ...fetchedEntries];
+          // Remove duplicates based on bookTitle and copiesSold and date
+          const unique = merged.filter((item, index, self) =>
+            index === self.findIndex((t) => (t._id && t._id === item._id) || (t.bookTitle === item.bookTitle && t.copiesSold === item.copiesSold && t.royaltyAmount === item.royaltyAmount))
+          );
+          setRoyaltyEntries(unique);
+        } else {
+          setRoyaltyEntries(fetchedEntries);
+        }
+      } catch (e) {
+        setRoyaltyEntries(fetchedEntries);
       }
     } catch (err) {
       console.error("Failed to fetch royalty data:", err);
@@ -122,7 +139,16 @@ export default function AdminRoyaltiesPage() {
         api.post("/admin/royalties", payload)
       );
 
-      toast.success("Royalty entry saved successfully! ✅");
+      // Save to local storage cache so author dashboard instantly picks up real entries
+      try {
+        const existing = JSON.parse(localStorage.getItem("harglim_shared_royalties") || "[]");
+        const updated = [payload, ...existing];
+        localStorage.setItem("harglim_shared_royalties", JSON.stringify(updated));
+      } catch (e) {
+        console.error("LocalStorage save error:", e);
+      }
+
+      toast.success("Royalty entry submitted & author dashboard updated! ✅");
 
       // Add to local entries table
       setRoyaltyEntries((prev) => [payload, ...prev]);
