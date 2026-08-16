@@ -10,70 +10,20 @@ import {
   Users,
   ShoppingBag,
   DollarSign,
-  TrendingUp,
-  TrendingDown,
   FileText,
   ArrowRight,
-  Eye,
   Clock,
+  CheckCircle2,
+  AlertTriangle,
+  UserPlus,
+  PlusCircle,
+  ShieldCheck,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const statsConfig = [
-  {
-    label: "Total Books",
-    id: "totalBooks",
-    trend: "up",
-    icon: BookOpen,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-    href: "/admin/books",
-  },
-  {
-    label: "Total Users",
-    id: "totalUsers",
-    trend: "up",
-    icon: Users,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-    href: "/admin/users",
-  },
-  {
-    label: "Total Orders",
-    id: "totalOrders",
-    trend: "up",
-    icon: ShoppingBag,
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
-    href: "/admin/orders",
-  },
-  {
-    label: "Revenue",
-    id: "totalRevenue",
-    trend: "up",
-    icon: DollarSign,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-    href: "/admin/analytics",
-  },
-];
-
-
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Completed":
-      return "bg-emerald-500/10 text-emerald-600";
-    case "Processing":
-      return "bg-amber-500/10 text-amber-600";
-    case "Shipped":
-      return "bg-blue-500/10 text-blue-600";
-    default:
-      return "bg-muted text-muted-foreground";
-  }
-};
 
 export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -84,29 +34,44 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(false);
     try {
-      // 1. Try single authoritative admin dashboard endpoint
-      const { data } = await api.get("/admin/dashboard").catch(() => 
-        api.get("/admin/operations/dashboard")
-      );
-      const resData = data?.data || data || {};
+      const [statsRes, ordersRes, authorsRes, booksRes] = await Promise.allSettled([
+        api.get("/admin/stats").catch(() => api.get("/admin/dashboard")),
+        api.get("/admin/orders?limit=100"),
+        api.get("/author-applications"),
+        api.get("/books?limit=100"),
+      ]);
 
-      if (resData && (resData.totalBooks !== undefined || resData.totalUsers !== undefined)) {
-        setDashboardData(resData);
-      } else {
-        // Fallback to light parallel fetch if single endpoint unavailable
-        const [statsRes, ordersRes] = await Promise.allSettled([
-          api.get("/admin/stats"),
-          api.get("/admin/orders?limit=5"),
-        ]);
+      const stats = statsRes.status === "fulfilled" ? (statsRes.value.data?.data || statsRes.value.data) : {};
+      const ordersList = ordersRes.status === "fulfilled" ? (ordersRes.value.data?.data || ordersRes.value.data) : [];
+      const authorsList = authorsRes.status === "fulfilled" ? (authorsRes.value.data?.data || authorsRes.value.data) : [];
+      const booksList = booksRes.status === "fulfilled" ? (booksRes.value.data?.books || booksRes.value.data?.data || booksRes.value.data) : [];
 
-        const stats = statsRes.status === "fulfilled" ? (statsRes.value.data?.data || statsRes.value.data) : {};
-        const ordersList = ordersRes.status === "fulfilled" ? (ordersRes.value.data?.data || ordersRes.value.data) : [];
+      const ordersArr = Array.isArray(ordersList) ? ordersList : [];
+      const authorsArr = Array.isArray(authorsList) ? authorsList : [];
+      const booksArr = Array.isArray(booksList) ? booksList : [];
 
-        setDashboardData({
-          ...stats,
-          recentOrders: Array.isArray(ordersList) ? ordersList.slice(0, 5) : [],
-        });
-      }
+      // Calculate state machine metrics
+      const pendingPaymentsCount = ordersArr.filter(
+        (o) => !o.isPaid && (o.paymentStatus === "PENDING" || o.paymentStatus === "VERIFICATION_PENDING" || o.utr)
+      ).length;
+
+      const processingOrdersCount = ordersArr.filter(
+        (o) => (o.status || o.orderStatus) === "PROCESSING"
+      ).length;
+
+      const pendingAuthorsCount = authorsArr.filter(
+        (a) => a.status?.toLowerCase() === "pending"
+      ).length;
+
+      setDashboardData({
+        ...stats,
+        pendingPaymentsCount,
+        processingOrdersCount,
+        pendingAuthorsCount,
+        totalBooks: booksArr.length || stats.totalBooks || 0,
+        recentOrders: ordersArr.slice(0, 5),
+        recentAuthors: authorsArr.slice(0, 5),
+      });
     } catch (err) {
       console.error("Failed to fetch admin dashboard data:", err);
       setError(true);
@@ -121,227 +86,300 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <ErrorState
-        title="Could not load admin dashboard"
-        message="We encountered an issue fetching your dashboard data. Please try again."
-        onRetry={fetchDashboardData}
-      />
+      <div className="py-8">
+        <ErrorState
+          title="Could not load admin dashboard"
+          message="We encountered an issue fetching your dashboard data. Please try again."
+          onRetry={fetchDashboardData}
+        />
+      </div>
     );
   }
 
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-[#0F3D3E]"></div>
       </div>
     );
   }
 
   const {
+    pendingPaymentsCount = 0,
+    processingOrdersCount = 0,
+    pendingAuthorsCount = 0,
     totalBooks = 0,
-    totalUsers = 0,
-    totalOrders = 0,
-    totalRevenue = 0,
     recentOrders = [],
-    pendingManuscripts = [],
-    topBooks = [],
+    recentAuthors = [],
   } = dashboardData || {};
 
-  const stats = statsConfig.map((config) => {
-    let value = "0";
-    if (config.id === "totalBooks") value = totalBooks.toString();
-    if (config.id === "totalUsers") value = totalUsers.toString();
-    if (config.id === "totalOrders") value = totalOrders.toString();
-    if (config.id === "totalRevenue") value = `₹${totalRevenue.toLocaleString()}`;
-    return { ...config, value, change: "+0" };
-  });
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold lg:text-3xl">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Overview of your publishing platform
+        <h1 className="text-3xl font-serif font-bold text-[#0F3D3E]">
+          Operations Dashboard
+        </h1>
+        <p className="text-sm text-[#5C6E6E] mt-1 font-sans">
+          Real-time metrics, payment verifications, and publishing operations.
         </p>
       </div>
 
-      {/* Stats Grid */}
+      {/* 1. TOP CARDS (Strictly matching prompt) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Link href={stat.href}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-lg ${stat.bgColor}`}
-                    >
-                      <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                    </div>
-                    <div
-                      className={`flex items-center gap-1 text-sm ${
-                        stat.trend === "up" ? "text-emerald-600" : "text-red-500"
-                      }`}
-                    >
-                      {stat.trend === "up" ? (
-                        <TrendingUp className="h-4 w-4" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4" />
-                      )}
-                      {stat.change}
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </motion.div>
-        ))}
+        {/* Pending Payments */}
+        <Link href="/admin/orders">
+          <Card className="bg-amber-500/10 border-2 border-amber-500/30 hover:border-amber-500/60 shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                  Pending Payments
+                </p>
+                <p className="text-3xl font-serif font-bold text-amber-950 mt-1">
+                  {pendingPaymentsCount}
+                </p>
+                <p className="text-[11px] text-amber-800 mt-1 font-medium">Require UTR Verification</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Orders in Processing */}
+        <Link href="/admin/orders">
+          <Card className="bg-blue-500/10 border-2 border-blue-500/30 hover:border-blue-500/60 shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-blue-900">
+                  Orders in Processing
+                </p>
+                <p className="text-3xl font-serif font-bold text-blue-950 mt-1">
+                  {processingOrdersCount}
+                </p>
+                <p className="text-[11px] text-blue-800 mt-1 font-medium">Currently Printing / Packing</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-blue-500/20 text-blue-800 flex items-center justify-center shrink-0">
+                <Clock className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Pending Author Requests */}
+        <Link href="/admin/author-applications">
+          <Card className="bg-purple-500/10 border-2 border-purple-500/30 hover:border-purple-500/60 shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-purple-900">
+                  Pending Author Requests
+                </p>
+                <p className="text-3xl font-serif font-bold text-purple-950 mt-1">
+                  {pendingAuthorsCount}
+                </p>
+                <p className="text-[11px] text-purple-800 mt-1 font-medium">Awaiting Editorial Review</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-purple-500/20 text-purple-800 flex items-center justify-center shrink-0">
+                <UserPlus className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Total Books */}
+        <Link href="/admin/books">
+          <Card className="bg-emerald-500/10 border-2 border-emerald-500/30 hover:border-emerald-500/60 shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
+                  Total Books Catalog
+                </p>
+                <p className="text-3xl font-serif font-bold text-emerald-950 mt-1">
+                  {totalBooks}
+                </p>
+                <p className="text-[11px] text-emerald-800 mt-1 font-medium">Published & Active</p>
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-emerald-500/20 text-emerald-800 flex items-center justify-center shrink-0">
+                <BookOpen className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Recent Orders */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Orders</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/admin/orders" className="gap-1">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentOrders.length > 0 ? (
-                recentOrders.slice(0, 5).map((order: any) => (
-                  <div
-                    key={order.id || order._id}
-                    className="flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="font-medium">{order.orderNumber || order.id || order._id}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.customerName || order.user?.name || "Guest"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">₹{order.totalAmount || order.amount || 0}</p>
-                      <Badge className={getStatusColor(order.status)}>
-                        {order.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground py-4 text-center">
-                  No recent orders.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* 2. QUICK ACTIONS SECTION (VERY IMPORTANT) */}
+      <div>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] mb-4 flex items-center gap-1.5">
+          <Sparkles className="h-4 w-4 text-[#D4AF37]" />
+          <span>Quick Admin Actions</span>
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Verify Payments */}
+          <Link href="/admin/orders">
+            <Card className="bg-white border-2 border-[#D4AF37]/50 hover:border-[#D4AF37] shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="h-11 w-11 rounded-xl bg-[#D4AF37]/20 text-[#0F3D3E] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-sm text-[#0F3D3E]">Verify Payments</h4>
+                  <p className="text-xs text-[#5C6E6E]">Approve UTR records</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
 
-        {/* Pending Manuscripts */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Pending Manuscripts
+          {/* Add Book */}
+          <Link href="/admin/books/new">
+            <Card className="bg-white border border-[#E2E6DF] hover:border-[#0F3D3E] shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="h-11 w-11 rounded-xl bg-[#0F3D3E] text-[#D4AF37] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <PlusCircle className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-sm text-[#0F3D3E]">Add Book</h4>
+                  <p className="text-xs text-[#5C6E6E]">Create new listing</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Review Author Requests */}
+          <Link href="/admin/author-applications">
+            <Card className="bg-white border border-[#E2E6DF] hover:border-[#0F3D3E] shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="h-11 w-11 rounded-xl bg-[#F0F2ED] text-[#0F3D3E] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <UserPlus className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-sm text-[#0F3D3E]">Author Requests</h4>
+                  <p className="text-xs text-[#5C6E6E]">Approve new writers</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Enter Royalty */}
+          <Link href="/admin/royalties">
+            <Card className="bg-white border border-[#E2E6DF] hover:border-[#0F3D3E] shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <DollarSign className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-sm text-[#0F3D3E]">Enter Royalty</h4>
+                  <p className="text-xs text-[#5C6E6E]">Form-based entry</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      </div>
+
+      {/* 3. RECENT ACTIVITY PREVIEWS */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Recent Orders Overview */}
+        <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl overflow-hidden">
+          <CardHeader className="p-5 bg-[#F8F9F7] border-b border-[#E2E6DF] flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-serif font-bold text-[#0F3D3E]">
+              Recent Orders
             </CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/admin/manuscripts" className="gap-1">
-                View All <ArrowRight className="h-4 w-4" />
+            <Button variant="ghost" size="sm" asChild className="text-xs font-bold text-[#0F3D3E]">
+              <Link href="/admin/orders" className="gap-1">
+                View Orders <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </Button>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {pendingManuscripts.length > 0 ? (
-                pendingManuscripts.slice(0, 5).map((manuscript: any) => (
-                  <div
-                    key={manuscript.id || manuscript._id}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{manuscript.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        by {manuscript.authorName || manuscript.author?.name || "Unknown Author"}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline">{manuscript.category || "Uncategorized"}</Badge>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(manuscript.submittedDate || manuscript.createdAt).toLocaleDateString()}
+          <CardContent className="p-5">
+            {recentOrders.length > 0 ? (
+              <div className="space-y-3">
+                {recentOrders.map((order: any) => {
+                  const id = order.orderNumber || order._id || order.id;
+                  const isPaid = Boolean(order.isPaid || order.paymentStatus === "VERIFIED");
+                  return (
+                    <div
+                      key={id}
+                      className="flex items-center justify-between p-3 rounded-xl border border-[#E2E6DF] bg-white hover:bg-[#F8F9F7] transition-colors text-xs"
+                    >
+                      <div>
+                        <span className="font-mono font-bold text-[#0F3D3E]">{id}</span>
+                        <p className="text-muted-foreground text-[11px]">
+                          {order.shippingAddress?.fullName || order.user?.name || "Customer"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-serif font-bold text-[#0F3D3E]">
+                          ₹{(order.totalPrice || order.totalAmount || 0).toLocaleString()}
                         </span>
+                        <div className="mt-0.5">
+                          <Badge
+                            className={
+                              isPaid
+                                ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px]"
+                                : "bg-amber-500/10 text-amber-700 border-amber-500/20 text-[10px]"
+                            }
+                          >
+                            {isPaid ? "Paid" : "Payment Pending"}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                    <Button size="sm">Review</Button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-[#5C6E6E] py-6 text-center">No orders recorded yet.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Author Applications */}
+        <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl overflow-hidden">
+          <CardHeader className="p-5 bg-[#F8F9F7] border-b border-[#E2E6DF] flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-serif font-bold text-[#0F3D3E]">
+              Recent Author Requests
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild className="text-xs font-bold text-[#0F3D3E]">
+              <Link href="/admin/author-applications" className="gap-1">
+                View Requests <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="p-5">
+            {recentAuthors.length > 0 ? (
+              <div className="space-y-3">
+                {recentAuthors.map((author: any) => (
+                  <div
+                    key={author._id || author.id}
+                    className="flex items-center justify-between p-3 rounded-xl border border-[#E2E6DF] bg-white hover:bg-[#F8F9F7] transition-colors text-xs"
+                  >
+                    <div>
+                      <span className="font-serif font-bold text-[#0F3D3E]">
+                        {author.fullName || author.penName}
+                      </span>
+                      <p className="text-muted-foreground text-[11px]">{author.email}</p>
+                    </div>
+                    <Badge
+                      className={
+                        author.status?.toLowerCase() === "approved"
+                          ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px]"
+                          : author.status?.toLowerCase() === "rejected"
+                          ? "bg-rose-500/10 text-rose-700 border-rose-500/20 text-[10px]"
+                          : "bg-amber-500/10 text-amber-700 border-amber-500/20 text-[10px]"
+                      }
+                    >
+                      {author.status || "Pending"}
+                    </Badge>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground py-4 text-center">
-                  No pending manuscripts.
-                </p>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-[#5C6E6E] py-6 text-center">No author requests recorded.</p>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Top Performing Books */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Top Performing Books</CardTitle>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/books" className="gap-1">
-              View All <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {topBooks.length > 0 ? (
-              topBooks.slice(0, 3).map((book: any, index: number) => (
-                <motion.div
-                  key={book.id || book._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="rounded-lg border p-4"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline">#{index + 1}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {book.sales || 0} sales
-                    </span>
-                  </div>
-                  <h4 className="font-semibold">{book.title}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {book.authorName || book.author?.name || "Unknown Author"}
-                  </p>
-                  <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-                    <Eye className="h-3.5 w-3.5" />
-                    {(book.views || 0).toLocaleString()} views
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <p className="col-span-3 text-sm text-muted-foreground py-4 text-center">
-                No top performing books data available.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

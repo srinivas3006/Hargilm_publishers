@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, BookOpen, ArrowLeft, CheckCircle, Sparkles } from "lucide-react";
 import Image from "next/image";
@@ -17,8 +17,11 @@ import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { AccountLinkDialog } from "@/components/auth/account-link-dialog";
 import { PasswordStrengthIndicator } from "@/components/auth/password-strength-indicator";
 
-export default function RegisterPage() {
+function RegisterFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect");
+
   const login = useAuthStore((state) => state.login);
   const setAuthStatus = useAuthStore((state) => state.setAuthStatus);
 
@@ -42,6 +45,23 @@ export default function RegisterPage() {
     type: null,
     email: undefined,
   });
+
+  const handleRouteAfterAuth = (context?: any) => {
+    if (redirectUrl) {
+      router.replace(redirectUrl);
+      return;
+    }
+
+    const caps = context?.capabilities;
+    const userRole = useAuthStore.getState().user?.role;
+    if (caps?.canAdminister || userRole === "admin") {
+      router.replace("/admin");
+    } else if (caps?.canAccessAuthorDashboard || userRole === "author") {
+      router.replace("/author");
+    } else {
+      router.replace("/dashboard");
+    }
+  };
 
   const handleManualRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +90,7 @@ export default function RegisterPage() {
     setAuthStatus("authenticating");
 
     try {
-      // 1. Create reader account (Server forces role=reader automatically)
+      // 1. Create reader account
       await api.post("/auth/register", {
         name: formData.name.trim(),
         email: formData.email.trim(),
@@ -108,11 +128,11 @@ export default function RegisterPage() {
       );
 
       setAuthStatus("context-loading");
-      await bootstrapUserContext(token);
+      const context = await bootstrapUserContext(token);
       setAuthStatus("authenticated");
 
       setTimeout(() => {
-        router.replace("/dashboard");
+        handleRouteAfterAuth(context);
       }, 300);
     } catch (error: any) {
       setAuthStatus("error");
@@ -125,75 +145,21 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-background flex overflow-hidden">
-      {/* Security Dialog */}
+      {/* Account Link & Security Dialog */}
       <AccountLinkDialog
         isOpen={dialogState.isOpen}
         type={dialogState.type}
         email={dialogState.email}
         onClose={() => setDialogState({ isOpen: false, type: null })}
-        onSwitchToPasswordLogin={(emailAddress) => {
-          router.push(`/login${emailAddress ? `?email=${encodeURIComponent(emailAddress)}` : ""}`);
+        onSwitchToPasswordLogin={(targetEmail) => {
+          if (targetEmail) {
+            setFormData((prev) => ({ ...prev, email: targetEmail }));
+          }
         }}
       />
 
-      {/* Left side - Hero Feature Panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-bl from-slate-950 via-primary/95 to-primary relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-        <div
-          className="absolute inset-0 opacity-20 mix-blend-overlay"
-          style={{
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&q=80)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-
-        <div className="relative z-20 flex flex-col justify-between p-12 text-primary-foreground h-full w-full">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-400 animate-pulse" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/80">
-              Join the Literary Network
-            </span>
-          </div>
-
-          <div className="space-y-6 max-w-md">
-            <div className="inline-flex p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
-              <BookOpen className="h-8 w-8 text-primary-foreground" />
-            </div>
-
-            <h2 className="text-3xl font-serif font-bold leading-tight">
-              Start Reading & Publishing in Minutes
-            </h2>
-
-            <div className="space-y-3 text-sm text-primary-foreground/85">
-              <div className="flex items-center gap-2.5">
-                <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Instant 1-Click Direct Google Sign Up</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Personalized Reader Library & Wishlist</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Submit Author Applications & Royalty Dashboard</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-primary-foreground/60 border-t border-white/10 pt-4">
-            <span>© 2026 Harglim Publishers</span>
-            <span>Reader & Author Portal</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Form */}
+      {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12 overflow-y-auto relative">
-        {/* Ambient Glow */}
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-
         <Button
           variant="ghost"
           onClick={() => router.push("/")}
@@ -229,19 +195,19 @@ export default function RegisterPage() {
               Create Your Account
             </h1>
             <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-              Join thousands of readers, reviewers, and aspiring authors
+              Join thousands of readers and authors on Harglim Publishers
             </p>
           </div>
 
           <div className="space-y-6">
-            {/* Direct Google Sign Up Button */}
+            {/* 1-Click Direct Google Signup */}
             <div className="space-y-2">
               <GoogleLoginButton
                 label="Sign up with Google"
                 disabled={isLoading}
                 onSuccess={() => {
                   setTimeout(() => {
-                    router.replace("/dashboard");
+                    handleRouteAfterAuth(useAuthStore.getState().userContext);
                   }, 300);
                 }}
                 onAccountLinkRequired={(emailAddress) => {
@@ -264,11 +230,11 @@ export default function RegisterPage() {
             <div className="relative flex items-center justify-center my-6">
               <div className="border-t border-border w-full" />
               <span className="bg-background px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground shrink-0">
-                Or sign up with email
+                Or register with email
               </span>
             </div>
 
-            {/* Manual Account Registration Form */}
+            {/* Registration Form */}
             <form onSubmit={handleManualRegister} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -279,7 +245,7 @@ export default function RegisterPage() {
                   <Input
                     id="name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Enter your full name"
                     className="pl-10 h-11 bg-card/50 border-border/80 focus:bg-card"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -326,15 +292,9 @@ export default function RegisterPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-
-                {/* Password Strength Indicator */}
                 <PasswordStrengthIndicator password={formData.password} />
               </div>
 
@@ -356,20 +316,19 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 pt-1">
+              <div className="flex items-center gap-2 pt-1">
                 <Checkbox
                   id="terms"
                   checked={agreeTerms}
                   onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
-                  className="mt-0.5"
                 />
-                <Label htmlFor="terms" className="text-xs text-muted-foreground leading-normal cursor-pointer select-none">
+                <Label htmlFor="terms" className="text-xs text-muted-foreground cursor-pointer select-none">
                   I agree to the{" "}
-                  <Link href="/terms" className="text-primary hover:underline font-medium">
+                  <Link href="/terms" className="text-primary hover:underline">
                     Terms of Service
                   </Link>{" "}
                   and{" "}
-                  <Link href="/privacy" className="text-primary hover:underline font-medium">
+                  <Link href="/privacy" className="text-primary hover:underline">
                     Privacy Policy
                   </Link>
                 </Label>
@@ -395,10 +354,11 @@ export default function RegisterPage() {
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link
-                  href="/login"
-                  className="text-primary font-semibold hover:underline"
+                  href={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"}
+                  className="text-primary font-semibold hover:underline inline-flex items-center gap-1"
                 >
-                  Sign in
+                  <span>Sign In</span>
+                  <Sparkles className="h-3.5 w-3.5" />
                 </Link>
               </p>
             </div>
@@ -406,5 +366,13 @@ export default function RegisterPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading Register Page...</div>}>
+      <RegisterFormContent />
+    </Suspense>
   );
 }

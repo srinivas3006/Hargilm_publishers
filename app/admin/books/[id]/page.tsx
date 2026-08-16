@@ -92,20 +92,41 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
     setLoading(true);
 
     try {
-      const submitData = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        submitData.append(key, String(value));
-      });
-      
       if (imageFile) {
+        const submitData = new FormData();
+        Object.entries(formData).forEach(([key, value]) => {
+          submitData.append(key, String(value));
+        });
         submitData.append("coverImage", imageFile);
-      }
 
-      await api.put(`/admin/books/${bookId}`, submitData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+        await api.put(`/admin/books/${bookId}`, submitData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        }).catch(() =>
+          api.put(`/books/${bookId}`, submitData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+        );
+      } else {
+        const jsonPayload = {
+          title: formData.title,
+          authorName: formData.authorName,
+          description: formData.description,
+          category: formData.category,
+          price: Number(formData.price) || 0,
+          discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+          stock: Number(formData.stock) || 0,
+          isbn: formData.isbn,
+          status: formData.status,
+          isFeatured: formData.isFeatured,
+          isBestseller: formData.isBestseller,
+          isNewRelease: formData.isNewRelease,
+          royaltyPercentage: formData.royaltyPercentage ? Number(formData.royaltyPercentage) : undefined,
+        };
+
+        await api.put(`/admin/books/${bookId}`, jsonPayload).catch(() =>
+          api.put(`/books/${bookId}`, jsonPayload)
+        );
+      }
 
       toast.success("Book updated successfully!");
       router.push("/admin/books");

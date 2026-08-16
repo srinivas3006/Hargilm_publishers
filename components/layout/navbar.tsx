@@ -187,7 +187,17 @@ export function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-[#E2E6DF] shadow-md bg-white">
                   <div className="px-3 py-2 bg-[#F8F9F7] rounded-xl mb-1 border border-[#E2E6DF]">
-                    <p className="text-sm font-serif font-bold text-[#0F3D3E] truncate">{user.name}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-serif font-bold text-[#0F3D3E] truncate">{user.name}</p>
+                      <span className={cn(
+                        "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
+                        user.role === "admin" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                        user.role === "author" ? "bg-[#D4AF37]/20 text-[#0F3D3E] border-[#D4AF37]/40" :
+                        "bg-[#0F3D3E]/10 text-[#0F3D3E] border-[#0F3D3E]/20"
+                      )}>
+                        {user.role === "admin" ? "Admin" : user.role === "author" ? "Author" : "Reader"}
+                      </span>
+                    </div>
                     <p className="text-xs text-[#5C6E6E] truncate">
                       {user.email}
                     </p>
@@ -199,7 +209,9 @@ export function Navbar() {
                       className="flex items-center gap-2.5"
                     >
                       <LayoutDashboard className="h-4 w-4 text-[#0F3D3E]" />
-                      Dashboard
+                      <span>
+                        {user.role === "admin" ? "Admin Ops Control Panel" : user.role === "author" ? "Author Studio Workspace" : "Reader Dashboard"}
+                      </span>
                     </Link>
                   </DropdownMenuItem>
                   {user.role === "author" && (
@@ -213,18 +225,20 @@ export function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                   )}
+                  {user.role === "reader" && (
+                    <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
+                      <Link
+                        href="/dashboard/orders"
+                        className="flex items-center gap-2.5"
+                      >
+                        <ShoppingCart className="h-4 w-4 text-[#0F3D3E]" />
+                        My Orders
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
                     <Link
-                      href="/dashboard/orders"
-                      className="flex items-center gap-2.5"
-                    >
-                      <ShoppingCart className="h-4 w-4 text-[#0F3D3E]" />
-                      My Orders
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
-                    <Link
-                      href="/dashboard/profile"
+                      href={user.role === "admin" ? "/admin/users" : user.role === "author" ? "/author/settings" : "/dashboard/profile"}
                       className="flex items-center gap-2.5"
                     >
                       <User className="h-4 w-4 text-[#0F3D3E]" />
@@ -243,12 +257,12 @@ export function Navbar() {
               </DropdownMenu>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
-                <Link href="/login">
+                <Link href={pathname && pathname !== "/" && pathname !== "/login" && pathname !== "/register" ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login"}>
                   <Button variant="ghost" size="sm">
                     Login
                   </Button>
                 </Link>
-                <Link href="/register">
+                <Link href={pathname && pathname !== "/" && pathname !== "/login" && pathname !== "/register" ? `/register?redirect=${encodeURIComponent(pathname)}` : "/register"}>
                   <Button size="sm">Register</Button>
                 </Link>
               </div>

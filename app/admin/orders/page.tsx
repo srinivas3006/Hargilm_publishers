@@ -1,21 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import api from "@/lib/api";
 import { ErrorState } from "@/components/ui/error-state";
+import { motion, AnimatePresence } from "framer-motion";
 import {
+  ShoppingBag,
   Search,
   Filter,
-  MoreVertical,
-  Eye,
-  Package,
-  Truck,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
-  Download,
+  Printer,
+  Truck,
+  Eye,
+  ExternalLink,
+  Calendar,
+  CreditCard,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -35,89 +39,78 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import toast from "react-hot-toast";
 
-
-
-const getStatusColor = (status: string) => {
-  switch (status?.toUpperCase()) {
-    case "COMPLETED":
-      return "bg-emerald-500/10 text-emerald-600";
-    case "PROCESSING":
-      return "bg-amber-500/10 text-amber-600";
-    case "SHIPPED":
-      return "bg-blue-500/10 text-blue-600";
-    case "CANCELLED":
-      return "bg-red-500/10 text-red-600";
-    case "PENDING":
-      return "bg-yellow-500/10 text-yellow-600";
-    default:
-      return "bg-muted text-muted-foreground";
+const getPaymentBadge = (isPaid: boolean, paymentStatus?: string) => {
+  const ps = (paymentStatus || "").toUpperCase();
+  if (isPaid || ps === "VERIFIED" || ps === "SUCCESS") {
+    return (
+      <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 font-semibold text-xs">
+        Verified
+      </Badge>
+    );
   }
+  if (ps === "REJECTED" || ps === "FAILED") {
+    return (
+      <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/30 font-semibold text-xs">
+        Rejected
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/30 font-semibold text-xs animate-pulse">
+      Pending
+    </Badge>
+  );
 };
 
-const getStatusIcon = (status: string) => {
-  switch (status?.toUpperCase()) {
+const getOrderStatusBadge = (status: string) => {
+  const s = (status || "").toUpperCase();
+  switch (s) {
+    case "DELIVERED":
     case "COMPLETED":
-      return CheckCircle;
-    case "PROCESSING":
-      return Package;
+      return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-xs">Completed</Badge>;
     case "SHIPPED":
-      return Truck;
+    case "IN TRANSIT":
+      return <Badge className="bg-blue-500/10 text-blue-700 border-blue-500/20 text-xs">Shipped</Badge>;
+    case "PROCESSING":
+      return <Badge className="bg-purple-500/10 text-purple-700 border-purple-500/20 text-xs">Processing / Printed</Badge>;
     case "CANCELLED":
-      return XCircle;
-    case "PENDING":
-      return Package;
+      return <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/20 text-xs">Cancelled</Badge>;
     default:
-      return Package;
+      return <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/20 text-xs">Pending</Badge>;
   }
 };
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [booksMap, setBooksMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+
+  // Tracking Modal State
+  const [trackingModalOpen, setTrackingModalOpen] = useState(false);
+  const [selectedOrderForTracking, setSelectedOrderForTracking] = useState<any>(null);
+  const [trackingNumberInput, setTrackingNumberInput] = useState("");
+  const [isSubmittingTracking, setIsSubmittingTracking] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
     setError(false);
     try {
-      const [ordersRes, booksRes] = await Promise.allSettled([
-        api.get("/admin/orders"),
-        api.get("/books?limit=100")
-      ]);
-
-      if (ordersRes.status === "fulfilled") {
-        setOrders(ordersRes.value.data?.data || ordersRes.value.data || []);
-      }
-
-      if (booksRes.status === "fulfilled") {
-        const booksList = booksRes.value.data?.data?.books || booksRes.value.data?.data || booksRes.value.data || [];
-        if (Array.isArray(booksList)) {
-          const map: Record<string, string> = {};
-          booksList.forEach((b: any) => {
-            if (b._id) map[b._id] = b.title;
-            if (b.id) map[b.id] = b.title;
-          });
-          setBooksMap(map);
-        }
-      }
+      const { data } = await api.get("/admin/orders?limit=100").catch(() =>
+        api.get("/orders?limit=100")
+      );
+      const ordersData = data?.data || data || [];
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
     } catch (err) {
       console.error("Failed to fetch admin orders:", err);
       setError(true);
@@ -130,454 +123,359 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, []);
 
-  const getOrderAmount = (o: any) => {
-    if (!o) return 0;
-    if (typeof o.totalPrice === 'number' && o.totalPrice > 0) return o.totalPrice;
-    if (typeof o.totalAmount === 'number' && o.totalAmount > 0) return o.totalAmount;
-    if (typeof o.amount === 'number' && o.amount > 0) return o.amount;
-
-    // Fallback calculation: subtotal (or sum of items) + tax + shipping
-    const itemsSum = Array.isArray(o.items)
-      ? o.items.reduce((sum: number, item: any) => sum + ((item.price || 0) * (item.quantity || 1)), 0)
-      : 0;
-
-    const subtotal = typeof o.subtotal === 'number' && o.subtotal > 0 ? o.subtotal : itemsSum;
-    if (subtotal <= 0) return 0;
-
-    const shipping = typeof o.shippingPrice === 'number' ? o.shippingPrice : (typeof o.shippingFee === 'number' ? o.shippingFee : 0);
-    return Math.round((subtotal + shipping) * 100) / 100;
-  };
-
-  const filteredOrders = orders.filter((order: any) => {
-    const orderId = order.orderNumber || order.id || order._id || "";
-    const customer = order.customerName || order.user?.name || "Guest";
-    const matchesSearch =
-      orderId.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || order.status?.toUpperCase() === statusFilter.toUpperCase();
-    return matchesSearch && matchesStatus;
-  });
-
-  const totalRevenue = orders
-    .filter((o: any) => o.status?.toUpperCase() !== "CANCELLED")
-    .reduce((sum: number, o: any) => sum + getOrderAmount(o), 0);
-
-  const updateStatus = async (id: string, newStatus: string) => {
+  // Action 1: Approve Payment
+  const handleApprovePayment = async (orderId: string) => {
     try {
-      const upperStatus = newStatus.toUpperCase();
-      await api
-        .put(`/admin/orders/${id}/status`, { status: upperStatus })
-        .catch(() => api.put(`/orders/${id}`, { status: upperStatus }))
-        .catch(() => api.put(`/admin/orders/${id}`, { status: upperStatus }));
-
-      setOrders(
-        orders.map((o: any) => ((o.id || o._id) === id ? { ...o, status: upperStatus } : o))
+      await api.patch(`/admin/orders/${orderId}`, {
+        isPaid: true,
+        paymentStatus: "VERIFIED",
+        status: "PROCESSING",
+      }).catch(() =>
+        api.put(`/orders/${orderId}/status`, {
+          isPaid: true,
+          paymentStatus: "VERIFIED",
+          status: "PROCESSING",
+        })
       );
-      toast.success(`Order status updated to ${upperStatus}`);
-    } catch (err) {
-      console.error("Failed to update order status:", err);
-      toast.error("Failed to update order status");
+
+      toast.success("Payment approved & verified successfully! ✅");
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to approve payment.");
     }
   };
 
-  const handleExportOrders = () => {
-    if (!orders.length) {
-      toast.error("No orders to export");
+  // Action 2: Reject Payment
+  const handleRejectPayment = async (orderId: string) => {
+    const reason = prompt("Enter reason for payment rejection (optional):", "UTR reference mismatch");
+    if (reason === null) return;
+
+    try {
+      await api.patch(`/admin/orders/${orderId}`, {
+        isPaid: false,
+        paymentStatus: "REJECTED",
+        adminNotes: reason,
+      }).catch(() =>
+        api.put(`/orders/${orderId}/status`, {
+          isPaid: false,
+          paymentStatus: "REJECTED",
+          adminNotes: reason,
+        })
+      );
+
+      toast.error("Payment marked as REJECTED.");
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to reject payment.");
+    }
+  };
+
+  // Action 3: Mark as Printed / Processing
+  const handleMarkAsPrinted = async (orderId: string) => {
+    try {
+      await api.patch(`/admin/orders/${orderId}`, {
+        status: "PROCESSING",
+        orderStatus: "PROCESSING",
+      }).catch(() =>
+        api.put(`/orders/${orderId}/status`, { status: "PROCESSING" })
+      );
+
+      toast.success("Order status updated to Processing / Printed 🖨️");
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update order status.");
+    }
+  };
+
+  // Action 4: Submit Tracking ID & Mark Shipped
+  const handleSaveTracking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrderForTracking || !trackingNumberInput.trim()) {
+      toast.error("Please enter a tracking number.");
       return;
     }
 
-    const headers = ["Order ID", "Customer Name", "Email", "Total Amount", "Status", "Date"];
-    const csvRows = [headers.join(",")];
+    setIsSubmittingTracking(true);
+    const orderId = selectedOrderForTracking._id || selectedOrderForTracking.id;
 
-    orders.forEach((order: any) => {
-      const orderId = order.orderNumber || order.id || order._id;
-      const customer = order.customerName || order.user?.name || "Guest";
-      const email = order.email || order.user?.email || "-";
-      const amount = getOrderAmount(order);
-      const date = new Date(order.createdAt || order.date).toLocaleDateString();
+    try {
+      await api.patch(`/admin/orders/${orderId}`, {
+        trackingNumber: trackingNumberInput,
+        status: "SHIPPED",
+        orderStatus: "SHIPPED",
+      }).catch(() =>
+        api.post(`/orders/${orderId}/tracking`, { trackingNumber: trackingNumberInput, status: "SHIPPED" })
+      );
 
-      const row = [
-        `"${orderId}"`,
-        `"${customer}"`,
-        `"${email}"`,
-        amount,
-        `"${order.status}"`,
-        `"${date}"`
-      ];
-      csvRows.push(row.join(","));
-    });
-
-    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast.success("Orders exported successfully!");
+      toast.success("Tracking number saved & status set to Shipped! 🚚");
+      setTrackingModalOpen(false);
+      setTrackingNumberInput("");
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to save tracking number.");
+    } finally {
+      setIsSubmittingTracking(false);
+    }
   };
 
-  const handleDownloadInvoice = (order: any) => {
-    const orderId = order.orderNumber || order.id || order._id;
-    const customer = order.customerName || order.user?.name || "Guest";
-    const email = order.email || order.user?.email || "-";
-    const amount = getOrderAmount(order);
-    const date = new Date(order.createdAt || order.date).toLocaleDateString();
+  const filteredOrders = orders.filter((order) => {
+    const orderNum = (order.orderNumber || order._id || order.id || "").toLowerCase();
+    const utrNum = (order.utr || "").toLowerCase();
+    const customer = (order.shippingAddress?.fullName || order.user?.name || "").toLowerCase();
+    const query = searchQuery.toLowerCase();
 
-    const invoiceText = `
-INVOICE
------------------------------
-Order ID: ${orderId}
-Date: ${date}
-
-Billed To:
-Name: ${customer}
-Email: ${email}
-
------------------------------
-Total Amount: ₹${amount.toLocaleString()}
-Payment Method: ${order.paymentMethod || "UPI"}
-Status: ${order.status}
------------------------------
-Thank you for shopping with Hargilm Publishers!
-    `.trim();
-
-    const blob = new Blob([invoiceText], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Invoice_${orderId}.txt`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast.success(`Invoice downloaded for order ${orderId}`);
-  };
-
-  if (error) {
-    return (
-      <ErrorState
-        title="Could not load orders"
-        message="We encountered an issue fetching the orders list. Please try again."
-        onRetry={fetchOrders}
-      />
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+    const matchesSearch = orderNum.includes(query) || utrNum.includes(query) || customer.includes(query);
+    const matchesStatus = statusFilter === "all" || (order.status || order.orderStatus || "").toUpperCase() === statusFilter.toUpperCase();
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold lg:text-3xl">Orders</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage and track customer orders
-          </p>
-        </div>
-        <Button variant="outline" className="gap-2" onClick={handleExportOrders}>
-          <Download className="h-4 w-4" />
-          Export Orders
-        </Button>
+    <div className="space-y-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-serif font-bold text-[#0F3D3E]">
+          Orders & Payment Verification
+        </h1>
+        <p className="text-sm text-[#5C6E6E] mt-1 font-sans">
+          Verify UTR numbers, manage print processing, and add shipment tracking codes.
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-2xl font-bold">{orders.length}</p>
-            <p className="text-sm text-muted-foreground">Total Orders</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-2xl font-bold">
-              {orders.filter((o) => o.status === "Processing").length}
-            </p>
-            <p className="text-sm text-muted-foreground">Processing</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-2xl font-bold">
-              {orders.filter((o) => o.status === "Shipped").length}
-            </p>
-            <p className="text-sm text-muted-foreground">Shipped</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-2xl font-bold text-emerald-600">
-              ₹{totalRevenue.toLocaleString()}
-            </p>
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
+      {/* Filter & Search Bar */}
+      <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl">
         <CardContent className="p-4">
-          <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5C6E6E]" />
               <Input
-                placeholder="Search orders..."
+                placeholder="Search by Order ID, UTR reference, or Customer Name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 bg-white border-[#E2E6DF]"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <Filter className="mr-2 h-4 w-4" />
+              <SelectTrigger className="w-full sm:w-52 bg-white border-[#E2E6DF]">
+                <Filter className="mr-2 h-4 w-4 text-[#5C6E6E]" />
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All Orders</SelectItem>
                 <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="Processing">Processing</SelectItem>
-                <SelectItem value="Shipped">Shipped</SelectItem>
-                <SelectItem value="Completed">Completed</SelectItem>
-                <SelectItem value="Cancelled">Cancelled</SelectItem>
+                <SelectItem value="PROCESSING">Processing / Printing</SelectItem>
+                <SelectItem value="SHIPPED">Shipped</SelectItem>
+                <SelectItem value="DELIVERED">Completed</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Orders Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="text-center">Items</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.map((order: any, index: number) => {
-                  const StatusIcon = getStatusIcon(order.status);
-                  return (
-                    <motion.tr
-                      key={order.id || order._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="border-b"
-                    >
-                      <TableCell className="font-medium">{order.orderNumber || order.id || order._id}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{order.customerName || order.user?.name || "Guest"}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {order.email || order.user?.email || "-"}
+      {/* Main Table */}
+      {error ? (
+        <ErrorState
+          title="Could not load orders"
+          message="We encountered an issue fetching orders. Please try again."
+          onRetry={fetchOrders}
+        />
+      ) : loading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0F3D3E]" />
+        </div>
+      ) : (
+        <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl overflow-hidden">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-[#F8F9F7]">
+                  <TableRow>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Order ID</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Customer & Contact</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">UTR Reference</TableHead>
+                    <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Total Amount</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Payment</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Order Status</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Action Buttons</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order: any, index: number) => {
+                    const id = order.orderNumber || order._id || order.id;
+                    const isPaid = Boolean(order.isPaid || order.paymentStatus === "VERIFIED");
+                    const paymentStatus = order.paymentStatus || (order.utr ? "VERIFICATION_PENDING" : "PENDING");
+                    const orderStatus = order.status || order.orderStatus || "PENDING";
+                    const totalPrice = order.totalPrice ?? order.totalAmount ?? order.amount ?? 0;
+
+                    return (
+                      <TableRow key={id} className="hover:bg-[#F8F9F7]/60 text-xs">
+                        {/* Order ID */}
+                        <TableCell className="font-mono font-bold text-[#0F3D3E]">
+                          {id}
+                        </TableCell>
+
+                        {/* Customer & Contact */}
+                        <TableCell>
+                          <p className="font-serif font-bold text-[#0F3D3E]">
+                            {order.shippingAddress?.fullName || order.user?.name || "Customer"}
                           </p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">{order.items?.length || order.items || 0}</TableCell>
-                      <TableCell className="text-right font-semibold">
-                        ₹{(getOrderAmount(order)).toLocaleString()}
-                      </TableCell>
-                      <TableCell>{order.paymentMethod || "UPI"}</TableCell>
-                      <TableCell>
-                        {new Date(order.createdAt || order.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`gap-1 ${getStatusColor(order.status)}`}>
-                          <StatusIcon className="h-3 w-3" />
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
+                          <p className="text-[#5C6E6E] text-[11px] font-sans">
+                            {order.user?.email || order.shippingAddress?.email || "N/A"}
+                          </p>
+                        </TableCell>
+
+                        {/* UTR Number */}
+                        <TableCell>
+                          {order.utr ? (
+                            <span className="font-mono font-bold text-xs bg-amber-50 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-300">
+                              {order.utr}
+                            </span>
+                          ) : (
+                            <span className="text-[#5C6E6E] italic text-[11px]">No UTR yet</span>
+                          )}
+                        </TableCell>
+
+                        {/* Total Amount */}
+                        <TableCell className="text-right font-serif font-bold text-[#0F3D3E]">
+                          ₹{totalPrice.toLocaleString()}
+                        </TableCell>
+
+                        {/* Payment Status */}
+                        <TableCell className="text-center">
+                          {getPaymentBadge(isPaid, paymentStatus)}
+                        </TableCell>
+
+                        {/* Order Status */}
+                        <TableCell className="text-center">
+                          {getOrderStatusBadge(orderStatus)}
+                        </TableCell>
+
+                        {/* Action Buttons (Strictly matching prompt) */}
+                        <TableCell className="text-center">
+                          <div className="flex flex-wrap items-center justify-center gap-1.5">
+                            {/* 👉 Approve Payment */}
+                            {!isPaid && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleApprovePayment(id)}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
+                                title="Approve UTR Payment"
+                              >
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span>Approve</span>
+                              </Button>
+                            )}
+
+                            {/* 👉 Reject Payment */}
+                            {!isPaid && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleRejectPayment(id)}
+                                className="text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
+                                title="Reject Payment"
+                              >
+                                <XCircle className="h-3 w-3" />
+                                <span>Reject</span>
+                              </Button>
+                            )}
+
+                            {/* 👉 Mark as Printed */}
+                            {orderStatus !== "SHIPPED" && orderStatus !== "DELIVERED" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMarkAsPrinted(id)}
+                                className="border-[#0F3D3E]/30 text-[#0F3D3E] hover:bg-[#F0F2ED] text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
+                                title="Mark as Printed"
+                              >
+                                <Printer className="h-3 w-3" />
+                                <span>Mark Printed</span>
+                              </Button>
+                            )}
+
+                            {/* 👉 Add Tracking ID */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedOrderForTracking(order);
+                                setTrackingNumberInput(order.trackingNumber || "");
+                                setTrackingModalOpen(true);
+                              }}
+                              className="border-[#D4AF37] text-[#0F3D3E] hover:bg-[#D4AF37]/10 text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
+                              title="Add Tracking ID"
+                            >
+                              <Truck className="h-3 w-3 text-[#D4AF37]" />
+                              <span>Tracking ID</span>
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setSelectedOrder(order)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            {order.status?.toUpperCase() === "PENDING" && (
-                              <DropdownMenuItem
-                                onClick={() => updateStatus(order.id || order._id, "Processing")}
-                              >
-                                <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
-                                Approve Payment (Process)
-                              </DropdownMenuItem>
-                            )}
-                            {order.status?.toUpperCase() === "PROCESSING" && (
-                              <DropdownMenuItem
-                                onClick={() => updateStatus(order.id || order._id, "Shipped")}
-                              >
-                                <Truck className="mr-2 h-4 w-4" />
-                                Mark as Shipped
-                              </DropdownMenuItem>
-                            )}
-                            {order.status?.toUpperCase() === "SHIPPED" && (
-                              <DropdownMenuItem
-                                onClick={() => updateStatus(order.id || order._id, "Completed")}
-                              >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Mark as Completed
-                              </DropdownMenuItem>
-                            )}
-                            {order.status?.toUpperCase() !== "CANCELLED" &&
-                              order.status?.toUpperCase() !== "COMPLETED" && (
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => updateStatus(order.id || order._id, "Cancelled")}
-                                >
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Cancel Order
-                                </DropdownMenuItem>
-                              )}
-                            <DropdownMenuItem onClick={() => handleDownloadInvoice(order)}>
-                              <Download className="mr-2 h-4 w-4" />
-                              Download Invoice
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </motion.tr>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
-            <DialogDescription className="sr-only">Detailed view of the selected order including items, customer info, and total amount.</DialogDescription>
-          </DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Order ID</p>
-                  <p className="font-medium">{selectedOrder.orderNumber || selectedOrder.id || selectedOrder._id}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Date</p>
-                  <p className="font-medium">{new Date(selectedOrder.createdAt || selectedOrder.date).toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Customer</p>
-                  <p className="font-medium">{selectedOrder.shippingAddress?.fullName || selectedOrder.customerName || selectedOrder.user?.name || "Guest"}</p>
-                  <p className="text-xs text-muted-foreground">{selectedOrder.email || selectedOrder.user?.email}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Payment Method & Status</p>
-                  <p className="font-medium">{selectedOrder.paymentMethod || "UPI"} • {selectedOrder.status}</p>
-                </div>
-              </div>
-
-              {selectedOrder.shippingAddress && (
-                <div>
-                  <h3 className="font-semibold mb-2">Shipping Address</h3>
-                  <div className="text-sm bg-muted/30 p-4 rounded-md space-y-1">
-                    <p className="font-semibold text-foreground">
-                      {selectedOrder.shippingAddress.fullName || selectedOrder.customerName || selectedOrder.user?.name}
-                    </p>
-                    <p>
-                      {selectedOrder.shippingAddress.addressLine1 || selectedOrder.shippingAddress.address}
-                      {selectedOrder.shippingAddress.addressLine2 ? `, ${selectedOrder.shippingAddress.addressLine2}` : ""}
-                    </p>
-                    <p>
-                      {[
-                        selectedOrder.shippingAddress.city,
-                        selectedOrder.shippingAddress.state,
-                        selectedOrder.shippingAddress.postalCode || selectedOrder.shippingAddress.pincode,
-                        selectedOrder.shippingAddress.country
-                      ]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <h3 className="font-semibold mb-3">Ordered Items</h3>
-                <div className="border rounded-md overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Book Title</TableHead>
-                        <TableHead className="text-right">Price</TableHead>
-                        <TableHead className="text-center">Qty</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
+                          </div>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {Array.isArray(selectedOrder.items) && selectedOrder.items.map((item: any, i: number) => {
-                        const bookId = typeof item.book === 'string' ? item.book : item.book?._id;
-                        const bookTitle = item.bookTitle || item.book?.title || (bookId && booksMap[bookId]) || "Book (" + (bookId?.substring(0, 8) || (i + 1)) + ")";
-                        const price = item.price || 0;
-                        const qty = item.quantity || 1;
-                        return (
-                          <TableRow key={i}>
-                            <TableCell>
-                              <p className="font-medium text-foreground">{bookTitle}</p>
-                            </TableCell>
-                            <TableCell className="text-right">₹{price}</TableCell>
-                            <TableCell className="text-center">{qty}</TableCell>
-                            <TableCell className="text-right font-medium">₹{(price * qty).toLocaleString()}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
+                    );
+                  })}
 
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>₹{selectedOrder.subtotal ?? (selectedOrder.items?.reduce((s: number, item: any) => s + (item.price * item.quantity), 0) || 0)}</span>
-                </div>
-                {selectedOrder.tax > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">GST (5%)</span>
-                    <span>₹{selectedOrder.tax}</span>
-                  </div>
-                )}
-                {selectedOrder.shippingPrice > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping Fee</span>
-                    <span>₹{selectedOrder.shippingPrice}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-lg font-bold border-t pt-2 text-foreground">
-                  <span>Total Amount</span>
-                  <span className="text-emerald-600">₹{getOrderAmount(selectedOrder).toLocaleString()}</span>
-                </div>
-              </div>
+                  {filteredOrders.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground text-xs">
+                        No orders found matching search criteria.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add Tracking ID Dialog */}
+      <Dialog open={trackingModalOpen} onOpenChange={setTrackingModalOpen}>
+        <DialogContent className="bg-white border-[#E2E6DF] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-serif font-bold text-lg text-[#0F3D3E]">
+              Add Shipment Tracking ID
+            </DialogTitle>
+            <DialogDescription className="text-xs text-[#5C6E6E]">
+              Enter courier tracking reference code for order{" "}
+              <strong className="font-mono text-[#0F3D3E]">
+                {selectedOrderForTracking?.orderNumber || selectedOrderForTracking?._id}
+              </strong>
+              . This will set status to SHIPPED.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveTracking} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                Tracking / Airwaybill Number (AWB)
+              </label>
+              <Input
+                placeholder="e.g. AWB987654321IN"
+                value={trackingNumberInput}
+                onChange={(e) => setTrackingNumberInput(e.target.value)}
+                className="font-mono text-sm border-[#E2E6DF] rounded-xl h-11"
+                required
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setTrackingModalOpen(false)}
+                className="border-[#E2E6DF]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmittingTracking}
+                className="bg-[#0F3D3E] text-white hover:bg-[#174C4D]"
+              >
+                {isSubmittingTracking ? "Saving..." : "Save Tracking & Mark Shipped"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

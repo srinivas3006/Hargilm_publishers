@@ -3,23 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
   ShoppingBag,
   FileText,
-  BarChart3,
-  Settings,
-  LogOut,
+  DollarSign,
   Menu,
   BookOpen,
   X,
   UserPlus,
   Store,
-  DollarSign,
   Globe,
+  CreditCard,
+  LogOut,
+  Sparkles,
+  ShieldCheck,
+  ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -27,15 +28,36 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { AuthGuard } from "@/components/auth/auth-guard";
 
-const sidebarLinks = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/books", label: "Books", icon: BookOpen },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/admin/author-applications", label: "Author Applications", icon: UserPlus },
-  { href: "/admin/manuscripts", label: "Manuscripts", icon: FileText },
-  { href: "/admin/royalties", label: "Royalties", icon: DollarSign },
-  { href: "/admin/content", label: "Site Content", icon: Globe },
+const sidebarSections = [
+  {
+    title: "MAIN",
+    items: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/admin/orders", label: "Orders & Verification", icon: ShoppingBag },
+      { href: "/admin/books", label: "Books Catalog", icon: BookOpen },
+    ],
+  },
+  {
+    title: "MANAGEMENT",
+    items: [
+      { href: "/admin/users", label: "Users & Accounts", icon: Users },
+      { href: "/admin/author-applications", label: "Author Applications", icon: UserPlus },
+      { href: "/admin/manuscripts", label: "Manuscripts", icon: FileText },
+    ],
+  },
+  {
+    title: "FINANCIAL",
+    items: [
+      { href: "/admin/royalties", label: "Royalty Entry", icon: DollarSign },
+      { href: "/admin/settlements", label: "Settlements", icon: CreditCard },
+    ],
+  },
+  {
+    title: "SETTINGS",
+    items: [
+      { href: "/admin/content", label: "Site Content", icon: Globe },
+    ],
+  },
 ];
 
 export default function AdminLayout({
@@ -50,135 +72,162 @@ export default function AdminLayout({
 
   return (
     <AuthGuard requiredRole="admin">
-    <div className="min-h-screen bg-muted/30">
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      <div className="min-h-screen bg-[#F8F9F7] flex text-[#0F3D3E]">
+        {/* Mobile Sidebar Overlay */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-50 h-full w-64 transform bg-card border-r transition-transform duration-300 lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center justify-between border-b px-4">
-            <Link href="/admin" className="flex items-center gap-2">
-              <Image
-                src="/logo.webp"
-                alt="Harglim Admin"
-                width={32}
-                height={32}
-                className="h-8 w-auto object-contain"
-              />
-              <span className="font-bold text-lg">Admin Panel</span>
+        {/* Sidebar (Luxury Deep Green #0F3D3E) */}
+        <aside
+          className={cn(
+            "fixed left-0 top-0 z-50 h-full w-64 transform bg-[#0F3D3E] text-white border-r border-[#174C4D] transition-transform duration-300 lg:translate-x-0 shadow-2xl flex flex-col",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          )}
+        >
+          {/* Header Brand */}
+          <div className="flex h-16 items-center justify-between border-b border-[#174C4D] px-5 bg-[#0C3233]">
+            <Link href="/admin" className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-lg shadow-sm">
+                H
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base text-white block leading-none">Harglim Admin</span>
+                <span className="text-[10px] text-[#D4AF37] tracking-wider uppercase font-sans">Control Panel</span>
+              </div>
             </Link>
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="text-white/80 hover:text-white lg:hidden"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
 
-          {/* Admin Info */}
-          <div className="border-b p-4">
+          {/* Admin User Info */}
+          <div className="border-b border-[#174C4D] p-4 bg-[#092424]">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive text-destructive-foreground font-semibold">
-                {user?.name?.charAt(0) || "A"}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-base shadow-sm">
+                {user?.name?.charAt(0).toUpperCase() || "A"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{user?.name || "Admin"}</p>
-                <p className="text-sm text-muted-foreground">Administrator</p>
+                <p className="font-bold text-xs text-white truncate">{user?.name || "Administrator"}</p>
+                <p className="text-[10px] text-white/60 truncate">{user?.email || "admin@harglim.com"}</p>
+                <div className="mt-1">
+                  <span className="inline-block px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40">
+                    Super Admin
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4">
-            <ul className="space-y-1">
-              {sidebarLinks.map((link) => {
-                const isActive =
-                  pathname === link.href ||
-                  (link.href !== "/admin" && pathname.startsWith(link.href));
-                return (
-                  <li key={link.href}>
+          {/* Navigation Sections */}
+          <nav className="flex-1 overflow-y-auto p-4 space-y-6">
+            {sidebarSections.map((section) => (
+              <div key={section.title} className="space-y-1">
+                <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2 font-sans">
+                  {section.title}
+                </p>
+                {section.items.map((link) => {
+                  const isActive =
+                    pathname === link.href ||
+                    (link.href !== "/admin" && pathname.startsWith(link.href));
+
+                  return (
                     <Link
+                      key={link.href}
                       href={link.href}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                        "flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium transition-all duration-200 group relative",
                         isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          ? "bg-[#174C4D] text-[#D4AF37] font-bold border-l-4 border-[#D4AF37] pl-2.5 shadow-xs"
+                          : "text-white/70 hover:bg-[#174C4D]/60 hover:text-white",
                       )}
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <link.icon className="h-5 w-5" />
-                      {link.label}
+                      <div className="flex items-center gap-3">
+                        <link.icon
+                          className={cn(
+                            "h-4 w-4 transition-transform group-hover:scale-110",
+                            isActive ? "text-[#D4AF37]" : "text-white/60 group-hover:text-white"
+                          )}
+                        />
+                        <span>{link.label}</span>
+                      </div>
+                      {isActive && <ChevronRight className="h-3.5 w-3.5 text-[#D4AF37]" />}
                     </Link>
-                  </li>
-                );
-              })}
-            </ul>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           {/* Bottom Actions */}
-          <div className="border-t p-4 space-y-2">
+          <div className="border-t border-[#174C4D] p-4 space-y-2 bg-[#092424]">
             <Link href="/" passHref>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 text-muted-foreground hover:text-primary"
+                className="w-full justify-start gap-3 text-white/70 hover:text-white hover:bg-[#174C4D] h-9 text-xs"
               >
-                <Store className="h-5 w-5" />
-                Back to Store
+                <Store className="h-4 w-4" />
+                <span>View Main Website</span>
               </Button>
             </Link>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+              className="w-full justify-start gap-3 text-red-300 hover:text-red-200 hover:bg-red-950/40 h-9 text-xs"
               onClick={() => {
                 logout();
                 window.location.href = "/";
               }}
             >
-              <LogOut className="h-5 w-5" />
-              Sign Out
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
             </Button>
           </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <div className="lg:pl-64 flex-1 flex flex-col min-h-screen">
+          {/* Top Admin Header Bar */}
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#E2E6DF] bg-white px-4 sm:px-8 shadow-xs">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                className="text-[#0F3D3E] lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <span className="font-serif font-bold text-lg text-[#0F3D3E]">
+                Publishing Operations Control Panel
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0F3D3E]/5 border border-[#0F3D3E]/10 text-xs">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                <span className="font-semibold text-[#0F3D3E]">Admin Logged In: {user?.name || "Admin"}</span>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Workspace View */}
+          <main className="p-4 sm:p-6 lg:p-8 flex-1 max-w-7xl w-full mx-auto">{children}</main>
         </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="lg:pl-64">
-        {/* Mobile Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <span className="font-semibold">Admin Panel</span>
-        </header>
-
-        {/* Page Content */}
-        <main className="p-4 lg:p-8">{children}</main>
       </div>
-    </div>
     </AuthGuard>
   );
 }

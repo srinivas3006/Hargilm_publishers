@@ -308,7 +308,7 @@ export default function AdminBooksPage() {
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link href={`/admin/books/${book.id || book._id}/edit`}>
+                            <Link href={`/admin/books/${book.id || book._id}`}>
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </Link>
