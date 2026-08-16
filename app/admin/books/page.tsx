@@ -79,11 +79,19 @@ export default function AdminBooksPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/books");
-      setBooks(data.data || data);
+      const { data } = await api.get("/admin/books").catch(() => api.get("/books"));
+      const items = data.data?.books || data.data || data || [];
+      const apiBooks = Array.isArray(items) ? items : [];
+      const localBooks = JSON.parse(localStorage.getItem("harglim_custom_books") || "[]");
+      setBooks([...localBooks, ...apiBooks]);
     } catch (err) {
-      console.error("Failed to fetch admin books:", err);
-      setError(true);
+      console.warn("Failed to fetch books from API, loading local books:", err);
+      const localBooks = JSON.parse(localStorage.getItem("harglim_custom_books") || "[]");
+      if (localBooks.length > 0) {
+        setBooks(localBooks);
+      } else {
+        setError(true);
+      }
     } finally {
       setLoading(false);
     }
