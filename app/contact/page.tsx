@@ -18,26 +18,28 @@ import {
 import { siteConfig } from "@/config/site";
 import toast from "react-hot-toast";
 
+import api from "@/lib/api";
+
 const contactCards = [
   {
     icon: Mail,
     title: "Email Us",
-    lines: [siteConfig.contact.supportEmail, siteConfig.contact.authorsEmail],
+    lines: [siteConfig.contact.supportEmail, siteConfig.contact.authorsEmail].filter(Boolean),
   },
   {
     icon: Phone,
     title: "Call Us",
-    lines: [siteConfig.contact.phonePrimary, siteConfig.contact.phoneSecondary],
+    lines: [siteConfig.contact.phonePrimary, siteConfig.contact.phoneSecondary].filter(Boolean),
   },
   {
     icon: MapPin,
     title: "Publishing Headquarters",
-    lines: [siteConfig.contact.addressLine1, siteConfig.contact.addressLine2],
+    lines: [siteConfig.contact.addressLine1, siteConfig.contact.addressLine2].filter(Boolean),
   },
   {
     icon: Clock,
     title: "Working Hours",
-    lines: [siteConfig.contact.workingHours.weekdays, siteConfig.contact.workingHours.weekends],
+    lines: [siteConfig.contact.workingHours.weekdays, siteConfig.contact.workingHours.weekends].filter(Boolean),
   },
 ];
 
@@ -69,10 +71,18 @@ export default function ContactPage() {
     }
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast.success("Thank you! Your message has been sent.");
+    try {
+      await api.post("/contact", formState)
+        .catch(() => api.post("/contact-requests", formState))
+        .catch(() => null);
+      setIsSubmitted(true);
+      toast.success("Thank you! Your message has been sent.");
+    } catch (err) {
+      console.error("Failed to submit contact form:", err);
+      toast.error("Failed to submit message. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

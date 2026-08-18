@@ -18,7 +18,7 @@ import type { CartItem } from "@/types";
 function CartItemRow({ item }: { item: CartItem }) {
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
-  const price = item.book.discountPrice || item.book.price;
+  const price = item.book.price || item.book.discountPrice || 0;
 
   return (
     <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">

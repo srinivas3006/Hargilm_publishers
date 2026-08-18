@@ -38,14 +38,20 @@ export default function AdminAuthorApplicationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
   const fetchApplications = async () => {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/author-applications").catch(() =>
-        api.get("/author-applications")
+      const params: any = {};
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+
+      const { data } = await api.get("/admin/author-applications", { params }).catch(() =>
+        api.get("/author-applications", { params })
       );
-      const items = data?.data?.applications || data?.data || data || [];
+      const items = data?.data?.applications || data?.applications || data?.data?.items || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
       setApplications(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error("Failed to fetch author applications:", err);
@@ -57,7 +63,7 @@ export default function AdminAuthorApplicationsPage() {
 
   useEffect(() => {
     fetchApplications();
-  }, []);
+  }, [statusFilter, searchQuery]);
 
   const handleApprove = async (id: string) => {
     setProcessingId(id);
@@ -122,19 +128,35 @@ export default function AdminAuthorApplicationsPage() {
         </p>
       </div>
 
-      {/* Search Bar */}
-      <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl">
-        <CardContent className="p-4">
-          <div className="relative">
+      {/* Search & Filter Bar */}
+      <Card className="bg-white border border-[#E2E6DF] shadow-xs rounded-2xl p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5C6E6E]" />
             <Input
-              placeholder="Search applications by Name, Email, or Phone..."
+              placeholder="Search applications by Name, Pen Name, Email, or Phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 bg-white border-[#E2E6DF]"
             />
           </div>
-        </CardContent>
+
+          <div className="flex items-center gap-1.5 self-start sm:self-auto overflow-x-auto w-full sm:w-auto">
+            {["all", "pending", "approved", "rejected"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setStatusFilter(tab)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all whitespace-nowrap ${
+                  statusFilter === tab
+                    ? "bg-[#0F3D3E] text-white shadow-xs"
+                    : "bg-[#F8F9F7] text-[#5C6E6E] hover:text-[#0F3D3E] border border-[#E2E6DF]"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
       </Card>
 
       {/* Applications Table (Strictly matching prompt) */}
@@ -155,34 +177,64 @@ export default function AdminAuthorApplicationsPage() {
               <Table>
                 <TableHeader className="bg-[#F8F9F7]">
                   <TableRow>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Applicant Name</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Email Address</TableHead>
-                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Phone Number</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Applicant & Details</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Contact Info</TableHead>
+                    <TableHead className="font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Bio / Experience</TableHead>
                     <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Status</TableHead>
-                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Action Buttons</TableHead>
+                    <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-[#0F3D3E]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredApps.map((app: any, index: number) => {
                     const id = app._id || app.id;
                     const status = (app.status || "pending").toLowerCase();
-                    const isPending = status === "pending";
 
                     return (
                       <TableRow key={id || index} className="hover:bg-[#F8F9F7]/60 text-xs">
-                        {/* Name */}
-                        <TableCell className="font-serif font-bold text-[#0F3D3E]">
-                          {app.fullName || app.penName || app.name || "Writer Candidate"}
+                        {/* Name & Pen Name */}
+                        <TableCell className="align-top py-3">
+                          <div className="font-serif font-bold text-[#0F3D3E] text-sm">
+                            {app.fullName || app.name || "Writer Candidate"}
+                          </div>
+                          {app.penName && app.penName !== app.fullName && (
+                            <span className="text-[11px] text-[#5C6E6E] block font-sans">
+                              Pen Name: <strong className="text-[#0F3D3E]">{app.penName}</strong>
+                            </span>
+                          )}
+                          {app.portfolioUrl && (
+                            <a
+                              href={app.portfolioUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-primary hover:underline block truncate max-w-[180px] mt-0.5"
+                            >
+                              🔗 Portfolio Website
+                            </a>
+                          )}
                         </TableCell>
 
-                        {/* Email */}
-                        <TableCell className="font-sans text-[#5C6E6E]">
-                          {app.email || "N/A"}
+                        {/* Email & Phone */}
+                        <TableCell className="align-top py-3">
+                          <div className="font-sans text-[#5C6E6E] font-medium">
+                            {app.email || "N/A"}
+                          </div>
+                          {app.phone && (
+                            <div className="font-mono text-[11px] text-[#0F3D3E] mt-0.5">
+                              📞 {app.phone}
+                            </div>
+                          )}
                         </TableCell>
 
-                        {/* Phone */}
-                        <TableCell className="font-mono text-[#0F3D3E]">
-                          {app.phone || "N/A"}
+                        {/* Bio & Experience */}
+                        <TableCell className="align-top py-3 max-w-[240px]">
+                          {app.experience && (
+                            <span className="inline-block px-2 py-0.5 rounded bg-[#0F3D3E]/10 text-[#0F3D3E] font-semibold text-[10px] mb-1">
+                              Exp: {app.experience}
+                            </span>
+                          )}
+                          <p className="text-[11px] text-[#5C6E6E] line-clamp-2 leading-relaxed">
+                            {app.bio || "No bio provided."}
+                          </p>
                         </TableCell>
 
                         {/* Status */}

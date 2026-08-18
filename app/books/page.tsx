@@ -76,11 +76,17 @@ function BooksContent() {
   const [sortBy, setSortBy] = useState("newest");
   
   // Filter States
+  const [quickTagFilter, setQuickTagFilter] = useState<"all" | "featured" | "bestseller" | "newRelease">("all");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
   const [minRatingFilter, setMinRatingFilter] = useState<number | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalBooks, setTotalBooks] = useState(0);
 
   // Accordion Section Collapse State
   const [openSections, setOpenSections] = useState({
@@ -112,9 +118,15 @@ function BooksContent() {
     setLoading(true);
     setError(false);
     try {
-      const params: any = {};
+      const params: any = {
+        page: currentPage,
+        limit: 12,
+      };
 
-      if (searchQuery) params.q = searchQuery;
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+        params.q = searchQuery.trim();
+      }
       if (selectedCategories.length > 0) {
         params.category = selectedCategories[0];
       }
@@ -127,15 +139,21 @@ function BooksContent() {
         }
       }
 
+      if (quickTagFilter === "featured") params.featured = true;
+      if (quickTagFilter === "bestseller") params.bestseller = true;
+      if (quickTagFilter === "newRelease") params.newRelease = true;
+
       if (sortBy === "price-low") params.sort = "price_asc";
       else if (sortBy === "price-high") params.sort = "price_desc";
       else if (sortBy === "rating") params.sort = "rating";
       else if (sortBy === "newest") params.sort = "newest";
+      else if (sortBy === "featured") params.sort = "featured";
 
-      const endpoint = searchQuery ? "/search" : "/books";
-      const { data } = await api.get(endpoint, { params });
+      const { data } = await api.get("/books", { params });
 
-      const items = data.data?.books || data.data || data || [];
+      const items = data.data?.books || (Array.isArray(data.data) ? data.data : []) || (Array.isArray(data) ? data : []);
+      const pagination = data.pagination || data.data?.pagination || {};
+
       let result = Array.isArray(items) ? items : [];
 
       // Filter by selected format
@@ -153,6 +171,8 @@ function BooksContent() {
       }
 
       setBooks(result);
+      setTotalPages(pagination.pages || Math.ceil((pagination.total || result.length) / 12) || 1);
+      setTotalBooks(pagination.total || result.length);
     } catch (err) {
       console.error("Failed to fetch books:", err);
       setError(true);
@@ -164,7 +184,7 @@ function BooksContent() {
 
   useEffect(() => {
     fetchBooks();
-  }, [searchQuery, sortBy, selectedCategories, selectedFormats, selectedPriceRange, minRatingFilter]);
+  }, [searchQuery, sortBy, selectedCategories, selectedFormats, selectedPriceRange, minRatingFilter, quickTagFilter, currentPage]);
 
   // Click outside listener for suggestions
   useEffect(() => {
@@ -190,11 +210,13 @@ function BooksContent() {
   };
 
   const clearFilters = () => {
+    setQuickTagFilter("all");
     setSelectedCategories([]);
     setSelectedFormats([]);
     setSelectedPriceRange(null);
     setMinRatingFilter(null);
     setSearchQuery("");
+    setCurrentPage(1);
   };
 
   const hasActiveFilters =
@@ -536,6 +558,32 @@ function BooksContent() {
               </div>
             </div>
 
+            {/* Quick Tag Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 font-sans text-xs">
+              {[
+                { id: "all", label: "All Books" },
+                { id: "featured", label: "🔥 Featured" },
+                { id: "bestseller", label: "⭐ Bestsellers" },
+                { id: "newRelease", label: "✨ New Releases" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setQuickTagFilter(tab.id as any);
+                    setCurrentPage(1);
+                  }}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-full font-bold transition-all whitespace-nowrap",
+                    quickTagFilter === tab.id
+                      ? "bg-[#0F3D3E] text-[#D4AF37] shadow-xs"
+                      : "bg-white text-[#5C6E6E] hover:text-[#0F3D3E] border border-[#E2E6DF]"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             {/* Active Filter Pills Bar */}
             {hasActiveFilters && (
               <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-2xl border border-[#E2E6DF] text-xs">
@@ -625,23 +673,52 @@ function BooksContent() {
                 </Button>
               </div>
             ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className={
-                  viewMode === "grid"
-                    ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-5"
-                    : "space-y-4"
-                }
-              >
-                {books.map((book) => (
-                  <BookCard
-                    key={book._id || (book as any).id}
-                    book={book}
-                    variant={viewMode === "list" ? "horizontal" : "default"}
-                  />
-                ))}
-              </motion.div>
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={
+                    viewMode === "grid"
+                      ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+                      : "space-y-4"
+                  }
+                >
+                  {books.map((book) => (
+                    <BookCard
+                      key={book._id || (book as any).id}
+                      book={book}
+                      variant={viewMode === "list" ? "horizontal" : "default"}
+                    />
+                  ))}
+                </motion.div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="border-[#E2E6DF] text-[#0F3D3E] font-semibold text-xs h-9 px-4 rounded-xl"
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-xs font-bold text-[#0F3D3E] font-mono px-3">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="border-[#E2E6DF] text-[#0F3D3E] font-semibold text-xs h-9 px-4 rounded-xl"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -51,7 +51,7 @@ export default function LibraryPage() {
 
   const filteredBooks = libraryBooks.filter((book) => {
     const title = (book.title || "").toLowerCase();
-    const author = (typeof book.author === "object" ? book.author?.name : book.author || "").toLowerCase();
+    const author = ((book.author && typeof book.author === "object") ? book.author?.name : (typeof book.author === "string" ? book.author : ""))?.toLowerCase() || "";
     const query = searchQuery.toLowerCase();
 
     const matchesSearch = title.includes(query) || author.includes(query);
@@ -135,7 +135,7 @@ export default function LibraryPage() {
                     {book.title}
                   </h3>
                   <p className="text-xs text-[#5C6E6E] mt-0.5">
-                    {typeof book.author === "object" ? book.author?.name : book.author || "Harglim Press"}
+                    {(book.author && typeof book.author === "object") ? book.author?.name : (typeof book.author === "string" ? book.author : "Harglim Press")}
                   </p>
                   <Button asChild size="sm" className="w-full mt-4 bg-[#0F3D3E] text-white hover:bg-[#174C4D] gap-1.5 text-xs font-medium">
                     <Link href={`/books/${book.slug || book._id || book.id}`}>View Book Details</Link>

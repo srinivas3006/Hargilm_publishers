@@ -177,7 +177,7 @@ export default function PublishPage() {
       setLoadingPackages(true);
       try {
         const { data } = await api.get("/publish-packages").catch(() => ({ data: { data: [] } }));
-        const pkgData = data?.data || data || [];
+        const pkgData = data?.data?.packages || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
         setPackages(Array.isArray(pkgData) && pkgData.length > 0 ? pkgData : defaultPackages);
       } catch (err) {
         setPackages(defaultPackages);
@@ -205,7 +205,7 @@ export default function PublishPage() {
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-serif font-bold">
               <Award className="h-4 w-4" />
-              <span>India&apos;s Most Trusted Publishing House</span>
+              <span>Premier Independent Publishing House</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-white tracking-tight leading-tight">
@@ -218,7 +218,7 @@ export default function PublishPage() {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
-              <Link href="/author/manuscripts/new">
+              <Link href="/dashboard/become-author">
                 <Button
                   size="lg"
                   className="w-full sm:w-auto bg-[#D4AF37] hover:bg-[#C29F2F] text-[#0F3D3E] font-serif font-bold h-14 px-8 rounded-full shadow-[0_0_25px_rgba(212,175,55,0.4)] transition-all gap-2 text-base"
@@ -463,7 +463,7 @@ export default function PublishPage() {
                   </div>
 
                   <div className="pt-8">
-                    <Link href="/author/manuscripts/new" className="block">
+                    <Link href="/dashboard/become-author" className="block">
                       <Button
                         className={`w-full h-12 font-serif font-bold text-sm rounded-xl transition-all ${
                           isHighlighted
@@ -542,7 +542,7 @@ export default function PublishPage() {
           <p className="text-sm sm:text-base text-white/80 max-w-xl mx-auto font-light leading-relaxed">
             Limited editorial slots available for new authors this month. Submit your manuscript today for priority evaluation.
           </p>
-          <Link href="/author/manuscripts/new" className="inline-block">
+          <Link href="/dashboard/become-author" className="inline-block">
             <Button
               size="lg"
               className="bg-[#D4AF37] hover:bg-[#C29F2F] text-[#0F3D3E] font-serif font-bold h-14 px-10 rounded-xl shadow-lg gap-2 text-base"

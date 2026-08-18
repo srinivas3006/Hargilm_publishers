@@ -387,7 +387,7 @@ export default function DashboardPage() {
                         {book.title}
                       </p>
                       <p className="text-xs text-[#5C6E6E] truncate">
-                        {typeof book.author === "object" ? book.author?.name : book.author || "Harglim Press"}
+                        {(book.author && typeof book.author === "object") ? book.author?.name : (typeof book.author === "string" ? book.author : "Harglim Press")}
                       </p>
                     </div>
                     <p className="font-bold text-sm text-[#0F3D3E]">

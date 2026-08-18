@@ -93,6 +93,8 @@ export default function Home() {
   const { content } = useSiteContent();
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [bestsellers, setBestsellers] = useState<Book[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [authors, setAuthors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -117,26 +119,40 @@ export default function Home() {
     }
   }
 
-  const fetchBooks = async () => {
+  const fetchHomeData = async () => {
     try {
       setLoading(true);
       setError(false);
 
-      const [booksRes, bestsellersRes] = await Promise.allSettled([
-        api.get("/books?featured=true&limit=8"),
-        api.get("/books?sort=rating&limit=4"),
+      const [booksRes, bestsellersRes, categoriesRes, authorsRes] = await Promise.allSettled([
+        api.get("/books?featured=true&limit=8").catch(() => api.get("/books?isFeatured=true&limit=8")),
+        api.get("/books?sort=rating&limit=4").catch(() => api.get("/books?bestseller=true&limit=4")),
+        api.get("/categories?featured=true&limit=6").catch(() => api.get("/categories?limit=6")),
+        api.get("/authors?limit=6"),
       ]);
 
       if (booksRes.status === "fulfilled") {
         const data = booksRes.value.data;
-        const items = data.data?.books || data.data || data || [];
+        const items = data?.data?.books || data?.data || data || [];
         setFeaturedBooks(Array.isArray(items) ? items : []);
       }
 
       if (bestsellersRes.status === "fulfilled") {
         const data = bestsellersRes.value.data;
-        const items = data.data?.books || data.data || data || [];
+        const items = data?.data?.books || data?.data || data || [];
         setBestsellers(Array.isArray(items) ? items : []);
+      }
+
+      if (categoriesRes.status === "fulfilled") {
+        const data = categoriesRes.value.data;
+        const items = data?.data?.categories || data?.data || data || [];
+        setCategories(Array.isArray(items) ? items : []);
+      }
+
+      if (authorsRes.status === "fulfilled") {
+        const data = authorsRes.value.data;
+        const items = data?.data?.authors || data?.data || data || [];
+        setAuthors(Array.isArray(items) ? items : []);
       }
     } catch (error) {
       console.error("Failed to fetch home page data:", error);
@@ -147,7 +163,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchBooks();
+    fetchHomeData();
   }, []);
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
@@ -316,7 +332,7 @@ export default function Home() {
           <ErrorState
             title="Could not load books"
             message="We had trouble fetching featured books. Please try again."
-            onRetry={fetchBooks}
+            onRetry={fetchHomeData}
           />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -368,29 +384,119 @@ export default function Home() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 4. BESTSELLERS / TOP RATED THIS WEEK */}
+      {/* 4. CATEGORIES / GENRE SHOWCASE (/api/categories API) */}
       {/* ------------------------------------------------------------------ */}
-      {bestsellers.length > 0 && (
+      {categories.length > 0 && (
         <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">
             <div>
               <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-1">
-                <Star className="h-4 w-4 fill-[#D4AF37]" />
-                <span>Reader Favorites</span>
+                <BookOpen className="h-4 w-4" />
+                <span>Explore Genres</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
-                Top Rated This Week
+                Browse by Category
               </h2>
             </div>
-            <Link href="/books" className="hidden sm:flex items-center gap-1 text-sm font-serif font-bold text-[#0F3D3E] hover:text-[#D4AF37]">
-              <span>Explore Catalog</span>
+            <Link href="/categories" className="hidden sm:flex items-center gap-1 text-sm font-serif font-bold text-[#0F3D3E] hover:text-[#D4AF37]">
+              <span>All Categories</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {bestsellers.map((book) => (
-              <BookCard key={book._id || (book as any).id} book={book} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.slice(0, 6).map((cat: any) => (
+              <Link
+                key={cat._id || cat.id || cat.slug}
+                href={`/categories/${cat.slug || cat._id}`}
+                className="group p-5 bg-white border border-[#E2E6DF] hover:border-[#D4AF37] rounded-2xl text-center shadow-xs hover:shadow-md transition-all space-y-2 block"
+              >
+                <div className="w-12 h-12 rounded-xl bg-[#0F3D3E]/10 text-[#0F3D3E] group-hover:bg-[#0F3D3E] group-hover:text-[#D4AF37] flex items-center justify-center mx-auto transition-colors">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <h3 className="font-serif font-bold text-sm text-[#0F3D3E] line-clamp-1 group-hover:text-[#D4AF37]">
+                  {cat.name}
+                </h3>
+                <p className="text-[11px] text-[#5C6E6E]">
+                  {cat.bookCount || cat.booksCount || 0} Books
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 5. BESTSELLERS / TOP RATED THIS WEEK (/api/books API) */}
+      {/* ------------------------------------------------------------------ */}
+      {bestsellers.length > 0 && (
+        <section className="py-16 sm:py-20 bg-white border-y border-[#E2E6DF]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-1">
+                  <Star className="h-4 w-4 fill-[#D4AF37]" />
+                  <span>Reader Favorites</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
+                  Top Rated This Week
+                </h2>
+              </div>
+              <Link href="/books" className="hidden sm:flex items-center gap-1 text-sm font-serif font-bold text-[#0F3D3E] hover:text-[#D4AF37]">
+                <span>Explore Catalog</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {bestsellers.map((book) => (
+                <BookCard key={book._id || (book as any).id} book={book} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 6. FEATURED AUTHORS SPOTLIGHT (/api/authors API) */}
+      {/* ------------------------------------------------------------------ */}
+      {authors.length > 0 && (
+        <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-1">
+                <Users className="h-4 w-4" />
+                <span>Featured Voices</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
+                Spotlight Authors
+              </h2>
+            </div>
+            <Link href="/authors" className="hidden sm:flex items-center gap-1 text-sm font-serif font-bold text-[#0F3D3E] hover:text-[#D4AF37]">
+              <span>Meet All Authors</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
+            {authors.slice(0, 6).map((author: any) => (
+              <Link
+                key={author._id || author.id}
+                href={`/authors/${author._id || author.id}`}
+                className="group bg-white border border-[#E2E6DF] hover:border-[#D4AF37] rounded-2xl p-4 text-center shadow-xs hover:shadow-md transition-all space-y-3 block"
+              >
+                <div className="h-16 w-16 rounded-full bg-[#0F3D3E] text-[#D4AF37] font-serif font-bold text-xl flex items-center justify-center mx-auto shadow-xs group-hover:scale-105 transition-transform">
+                  {(author.name || "A").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-sm text-[#0F3D3E] line-clamp-1 group-hover:text-[#D4AF37]">
+                    {author.name}
+                  </h3>
+                  <p className="text-[11px] text-[#5C6E6E] mt-0.5">
+                    {author.bookCount || author.booksCount || 1} Published
+                  </p>
+                </div>
+              </Link>
             ))}
           </div>
         </section>

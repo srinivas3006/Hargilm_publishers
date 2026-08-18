@@ -26,25 +26,51 @@ export default function CategoryDetailPage() {
     const fetchCategoryData = async () => {
       try {
         setLoading(true);
+        const slug = params.slug as string;
+        
+        let sortParam = "newest";
+        if (sortBy === "price-low") sortParam = "price_asc";
+        else if (sortBy === "price-high") sortParam = "price_desc";
+        else if (sortBy === "rating") sortParam = "rating";
+        else if (sortBy === "bestseller") sortParam = "bestseller";
+
         const [catRes, booksRes] = await Promise.all([
-          api.get(`/categories/${params.slug}`).catch(() => null),
-          api.get('/books', { params: { category: params.slug } }).catch(() => null)
+          api.get(`/categories/${slug}`).catch(() => null),
+          api.get(`/categories/${slug}/books`, { params: { sort: sortParam } })
+            .catch(() => api.get("/books", { params: { category: slug, sort: sortParam } }))
+            .catch(() => null)
         ]);
         
         const catData = catRes?.data?.data || catRes?.data;
-        setCategory(catData || null);
+        
+        const items = booksRes?.data?.data?.books || (Array.isArray(booksRes?.data?.data) ? booksRes?.data?.data : []) || booksRes?.data || [];
+        const bookList = Array.isArray(items) ? items : [];
+        setBooks(bookList);
 
-        const items = booksRes?.data?.data?.books || booksRes?.data?.data || booksRes?.data || [];
-        setBooks(Array.isArray(items) ? items : []);
+        if (catData) {
+          setCategory(catData);
+        } else {
+          // Construct graceful fallback if category object isn't returned separately
+          const formattedName = slug ? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Category";
+          setCategory({
+            _id: slug,
+            name: formattedName,
+            slug: slug,
+            description: `Collection of ${formattedName} books`,
+            active: true,
+            featured: false,
+            bookCount: bookList.length,
+            image: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=800&auto=format&fit=crop",
+          } as any);
+        }
       } catch (err) {
         console.error("Failed to fetch category data:", err);
-        setCategory(null);
       } finally {
         setLoading(false);
       }
     };
     fetchCategoryData();
-  }, [params.slug]);
+  }, [params.slug, sortBy]);
 
   if (loading) {
     return (

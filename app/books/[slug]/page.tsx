@@ -225,13 +225,13 @@ export default function BookDetailPage() {
     );
   }
 
-  const author = typeof book.author === "object" ? (book.author as Author) : { _id: "", name: book.author || "Harglim Author" };
-  const category = typeof book.category === "object" ? book.category : null;
-  const price = book.discountPrice || book.price;
-  const hasDiscount = Boolean(book.discountPrice && book.discountPrice < book.price);
-  const discountPercent = hasDiscount
-    ? Math.round(((book.price - book.discountPrice!) / book.price) * 100)
-    : 0;
+  const author = (book.author && typeof book.author === "object")
+    ? (book.author as Author)
+    : { _id: "", name: (typeof book.author === "string" && book.author) ? book.author : "Harglim Author" };
+  const category = (book.category && typeof book.category === "object") ? book.category : null;
+  const price = book.discountPrice || book.price || 0;
+  const hasDiscount = false;
+  const discountPercent = 0;
 
   const ratingAvg = Number(book.rating || 4.5).toFixed(1);
   const reviewCount = reviews.length > 0 ? reviews.length : (book.totalReviews || 0);
@@ -271,12 +271,16 @@ export default function BookDetailPage() {
             <Link href="/" className="hover:text-[#0F3D3E]">Home</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <Link href="/books" className="hover:text-[#0F3D3E]">Books Catalog</Link>
-            {category && (
+            {category && category.name && (
               <>
                 <ChevronRight className="h-3.5 w-3.5" />
-                <Link href={`/categories/${category.slug}`} className="hover:text-[#0F3D3E]">
-                  {category.name}
-                </Link>
+                {category.slug ? (
+                  <Link href={`/categories/${category.slug}`} className="hover:text-[#0F3D3E]">
+                    {category.name}
+                  </Link>
+                ) : (
+                  <span className="text-[#0F3D3E]">{category.name}</span>
+                )}
               </>
             )}
             <ChevronRight className="h-3.5 w-3.5" />
@@ -358,12 +362,16 @@ export default function BookDetailPage() {
               {/* Author */}
               <div className="mt-2 flex items-center gap-2 text-sm font-sans">
                 <span className="text-[#5C6E6E]">By</span>
-                <Link
-                  href={author._id ? `/authors/${author._id}` : "#"}
-                  className="font-bold text-[#0F3D3E] hover:text-[#D4AF37] underline decoration-[#D4AF37]/50 underline-offset-4 transition-colors"
-                >
-                  {author.name}
-                </Link>
+                {author._id ? (
+                  <Link
+                    href={`/authors/${author._id}`}
+                    className="font-bold text-[#0F3D3E] hover:text-[#D4AF37] underline decoration-[#D4AF37]/50 underline-offset-4 transition-colors"
+                  >
+                    {author.name}
+                  </Link>
+                ) : (
+                  <span className="font-bold text-[#0F3D3E]">{author.name}</span>
+                )}
                 {book.publisher && (
                   <>
                     <span className="text-[#5C6E6E]">•</span>

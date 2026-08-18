@@ -38,7 +38,10 @@ export default function BecomeAuthorPage() {
     fullName: user?.name || "",
     email: user?.email || "",
     phone: "",
+    penName: "",
     bio: "",
+    portfolioUrl: "",
+    experience: "",
   });
 
   useEffect(() => {
@@ -55,18 +58,29 @@ export default function BecomeAuthorPage() {
   const checkStatus = async () => {
     setIsLoadingStatus(true);
     try {
-      const { data } = await api.get("/users/me/author-application").catch(() =>
-        api.get(`/author-applications/me`)
+      const res = await api.get("/users/me/author-application").catch(() =>
+        api.get("/author-applications/me").catch(() =>
+          api.get("/author-applications")
+        )
       );
-      if (data && (data.application || data.data)) {
-        const app = data.application || data.data;
-        setApplicationStatus(app.status?.toLowerCase() || "none");
-        if (app.rejectionReason || app.adminNotes) {
-          setRejectionReason(app.rejectionReason || app.adminNotes);
+      const data = res.data;
+      const app = data?.data || data?.application || (Array.isArray(data) ? data[0] : data);
+      if (app && (app.status || app.state)) {
+        const rawStatus = (app.status || app.state || "").toLowerCase();
+        setApplicationStatus(
+          rawStatus === "approved" || rawStatus === "accepted"
+            ? "approved"
+            : rawStatus === "rejected" || rawStatus === "declined"
+            ? "rejected"
+            : rawStatus === "pending"
+            ? "pending"
+            : "none"
+        );
+        if (app.rejectionReason || app.adminNotes || app.reason || app.feedback) {
+          setRejectionReason(app.rejectionReason || app.adminNotes || app.reason || app.feedback);
         }
       }
     } catch (error) {
-      // 404 or missing app means "none"
       setApplicationStatus("none");
     } finally {
       setIsLoadingStatus(false);
@@ -87,14 +101,22 @@ export default function BecomeAuthorPage() {
 
     setIsSubmitting(true);
 
+    const payload = {
+      penName: formData.penName || formData.fullName,
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      bio: formData.bio,
+      portfolioUrl: formData.portfolioUrl,
+      experience: formData.experience,
+    };
+
     try {
-      await api.post("/author-applications", {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        penName: formData.fullName,
-        bio: formData.bio,
-      });
+      await api.post("/author-applications", payload).catch(() =>
+        api.post("/api/author-applications", payload).catch(() =>
+          api.post("/users/me/author-application", payload)
+        )
+      );
 
       toast.success("Author application submitted successfully!");
       setApplicationStatus("pending");
@@ -305,10 +327,55 @@ export default function BecomeAuthorPage() {
               </div>
             </div>
 
+            {/* Pen Name (Optional) */}
+            <div className="space-y-2">
+              <Label htmlFor="penName" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                Pen Name (Optional)
+              </Label>
+              <Input
+                id="penName"
+                type="text"
+                placeholder="Preferred author or publishing name"
+                className="bg-white border-[#E2E6DF] focus:border-[#D4AF37]"
+                value={formData.penName}
+                onChange={(e) => setFormData({ ...formData, penName: e.target.value })}
+              />
+            </div>
+
+            {/* Portfolio / Website URL */}
+            <div className="space-y-2">
+              <Label htmlFor="portfolioUrl" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                Portfolio / Website URL (Optional)
+              </Label>
+              <Input
+                id="portfolioUrl"
+                type="url"
+                placeholder="https://yourwebsite.com or blog link"
+                className="bg-white border-[#E2E6DF] focus:border-[#D4AF37]"
+                value={formData.portfolioUrl}
+                onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+              />
+            </div>
+
+            {/* Writing Experience */}
+            <div className="space-y-2">
+              <Label htmlFor="experience" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                Writing Background / Experience (Optional)
+              </Label>
+              <Input
+                id="experience"
+                type="text"
+                placeholder="e.g. Published 2 novels, 5 years journalism experience"
+                className="bg-white border-[#E2E6DF] focus:border-[#D4AF37]"
+                value={formData.experience}
+                onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+              />
+            </div>
+
             {/* Brief Bio / Pitch */}
             <div className="space-y-2">
               <Label htmlFor="bio" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
-                Short Bio / Book Idea (Optional)
+                Short Bio / Book Idea
               </Label>
               <Textarea
                 id="bio"

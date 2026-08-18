@@ -79,8 +79,18 @@ export default function AdminBooksPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/books").catch(() => api.get("/books"));
-      const items = data.data?.books || data.data || data || [];
+      const params: any = { limit: 100 };
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+        params.q = searchQuery.trim();
+      }
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (categoryFilter !== "all") params.category = categoryFilter;
+
+      const { data } = await api.get("/admin/books", { params }).catch(() =>
+        api.get("/books", { params })
+      );
+      const items = data.data?.books || (Array.isArray(data.data) ? data.data : []) || (Array.isArray(data) ? data : []);
       const apiBooks = Array.isArray(items) ? items : [];
       const localBooks = JSON.parse(localStorage.getItem("harglim_custom_books") || "[]");
       setBooks([...localBooks, ...apiBooks]);
@@ -99,7 +109,7 @@ export default function AdminBooksPage() {
 
   useEffect(() => {
     fetchBooks();
-  }, []);
+  }, [searchQuery, categoryFilter, statusFilter]);
 
   const getCategoryName = (category: any) => 
     typeof category === "object" && category !== null ? category.name : category;
@@ -114,14 +124,24 @@ export default function AdminBooksPage() {
       author.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       categoryFilter === "all" || getCategoryName(book.category) === categoryFilter;
-    const matchesStatus = statusFilter === "all" || book.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || (book.status || "").toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/admin/books/${id}`);
+      await api.delete(`/admin/books/${id}`).catch(() => api.delete(`/books/${id}`));
       setBooks(books.filter((b: any) => (b.id || b._id) !== id));
+      
+      // Also clear from local storage if present
+      try {
+        const localBooks = JSON.parse(localStorage.getItem("harglim_custom_books") || "[]");
+        const updatedLocal = localBooks.filter((b: any) => (b.id || b._id) !== id);
+        localStorage.setItem("harglim_custom_books", JSON.stringify(updatedLocal));
+      } catch (e) {
+        // ignore
+      }
+
       toast.success("Book deleted successfully");
     } catch (err) {
       console.error("Failed to delete book:", err);

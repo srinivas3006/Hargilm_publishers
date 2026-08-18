@@ -79,8 +79,18 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/users");
-      setUsers(data.data || data);
+      const params: any = { limit: 100 };
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (roleFilter !== "all") params.role = roleFilter.toLowerCase();
+      if (statusFilter !== "all") {
+        params.isActive = statusFilter === "Active" ? "true" : "false";
+      }
+
+      const { data } = await api.get("/admin/users", { params }).catch(() =>
+        api.get("/users", { params })
+      );
+      const items = data?.data?.users || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
+      setUsers(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error("Failed to fetch admin users:", err);
       setError(true);
@@ -91,30 +101,38 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [searchQuery, roleFilter, statusFilter]);
 
   const filteredUsers = users.filter((user: any) => {
-    const name = user.name || "";
+    const name = user.name || user.fullName || "";
     const email = user.email || "";
     const matchesSearch =
       name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    const userStatus = user.status || "Active";
-    const matchesStatus = statusFilter === "all" || userStatus === statusFilter;
+    const userRole = (user.role || "user").toLowerCase();
+    const matchesRole = roleFilter === "all" || userRole === roleFilter.toLowerCase();
+    const userStatus = user.status || (user.isActive !== false ? "Active" : "Suspended");
+    const matchesStatus = statusFilter === "all" || userStatus.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesRole && matchesStatus;
   });
 
   const handleSuspend = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === "Active" ? "Suspended" : "Active";
+    const isSuspending = currentStatus === "Active";
+    const newStatus = isSuspending ? "Suspended" : "Active";
     try {
-      await api.put(`/admin/users/${id}`, { status: newStatus });
+      await api.put(`/admin/users/${id}/status`, {
+        isActive: !isSuspending,
+        status: newStatus.toLowerCase(),
+      }).catch(() =>
+        api.put(`/admin/users/${id}`, { status: newStatus, isActive: !isSuspending })
+      );
+
       setUsers(
         users.map((u: any) =>
-          (u.id || u._id) === id ? { ...u, status: newStatus } : u
+          (u.id || u._id) === id ? { ...u, status: newStatus, isActive: !isSuspending } : u
         )
       );
-      toast.success("User status updated");
+      toast.success(`User status updated to ${newStatus}`);
     } catch (err) {
       console.error("Failed to update user status:", err);
       toast.error("Failed to update user status");
@@ -123,7 +141,10 @@ export default function AdminUsersPage() {
 
   const handleRoleChange = async (id: string, newRole: string) => {
     try {
-      await api.put(`/admin/users/${id}`, { role: newRole });
+      await api.put(`/admin/users/${id}/role`, { role: newRole.toLowerCase() }).catch(() =>
+        api.put(`/admin/users/${id}`, { role: newRole.toLowerCase() })
+      );
+
       setUsers(
         users.map((u: any) =>
           (u.id || u._id) === id ? { ...u, role: newRole } : u

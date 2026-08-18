@@ -41,8 +41,12 @@ export default function AuthorsPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/authors");
-      const items = data.data?.authors || data.data || data || [];
+      const params: any = {};
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+      const { data } = await api.get("/authors", { params });
+      const items = data.data?.authors || (Array.isArray(data.data) ? data.data : []) || (Array.isArray(data) ? data : []);
       setAuthors(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error("Failed to fetch authors:", err);
@@ -55,7 +59,7 @@ export default function AuthorsPage() {
 
   useEffect(() => {
     fetchAuthors();
-  }, []);
+  }, [searchQuery]);
 
   const filteredAuthors = authors
     .filter((author) => {

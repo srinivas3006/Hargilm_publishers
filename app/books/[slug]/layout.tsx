@@ -59,7 +59,7 @@ export default async function BookLayout({ children, params }: Props) {
     name: book.title,
     author: {
       '@type': 'Person',
-      name: book.author?.name || 'Unknown Author',
+      name: (book.author && typeof book.author === 'object') ? book.author.name : (typeof book.author === 'string' ? book.author : 'Unknown Author'),
     },
     image: book.coverImage,
     description: book.description,

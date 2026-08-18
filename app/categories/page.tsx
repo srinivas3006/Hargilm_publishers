@@ -88,8 +88,10 @@ export default function CategoriesPage() {
       try {
         setLoading(true);
         setError(false);
-        const { data } = await api.get("/categories");
-        const items = data.data?.categories || data.data || data || [];
+        const { data } = await api.get("/categories", {
+          params: { active: true }
+        });
+        const items = data.data?.categories || (Array.isArray(data.data) ? data.data : []) || (Array.isArray(data) ? data : []);
         setCategories(Array.isArray(items) ? items : []);
       } catch (err) {
         console.error("Failed to fetch categories:", err);

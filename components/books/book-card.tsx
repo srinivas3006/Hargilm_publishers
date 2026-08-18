@@ -60,14 +60,12 @@ export function BookCard({
   };
 
   const authorName =
-    typeof book.author === "object"
+    book.author && typeof book.author === "object"
       ? (book.author as Author)?.name || "Unknown Author"
-      : book.author || "Unknown Author";
+      : (typeof book.author === "string" ? book.author : "Unknown Author");
   const price = book.discountPrice || book.price;
-  const hasDiscount = book.discountPrice && book.discountPrice < book.price;
-  const discountPercent = hasDiscount
-    ? Math.round(((book.price - book.discountPrice!) / book.price) * 100)
-    : 0;
+  const hasDiscount = false;
+  const discountPercent = 0;
 
   if (variant === "horizontal") {
     return (

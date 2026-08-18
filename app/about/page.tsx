@@ -1,18 +1,15 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BookOpen, Users, Globe, Award, ArrowRight, Target, Heart, Sparkles, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-const stats = [
-  { label: "Books Published", value: "30+", icon: BookOpen },
-  { label: "Happy Authors", value: "25+", icon: Users },
-  { label: "Countries Reached", value: "5+", icon: Globe },
-];
+import { useSiteContent } from "@/context/site-content-context";
+import api from "@/lib/api";
 
 const values = [
   {
@@ -41,6 +38,47 @@ const team = [
 ];
 
 export default function AboutPage() {
+  const { content } = useSiteContent();
+  const [liveStats, setLiveStats] = useState({
+    booksCount: 30,
+    authorsCount: 25,
+  });
+
+  useEffect(() => {
+    const fetchLiveStats = async () => {
+      try {
+        const [booksRes, authorsRes] = await Promise.allSettled([
+          api.get("/books?limit=1"),
+          api.get("/authors?limit=1"),
+        ]);
+
+        let bCount = 30;
+        let aCount = 25;
+
+        if (booksRes.status === "fulfilled") {
+          const total = booksRes.value.data?.pagination?.total || booksRes.value.data?.data?.pagination?.total;
+          if (typeof total === "number" && total > 0) bCount = total;
+        }
+
+        if (authorsRes.status === "fulfilled") {
+          const total = authorsRes.value.data?.pagination?.total || authorsRes.value.data?.data?.pagination?.total;
+          if (typeof total === "number" && total > 0) aCount = total;
+        }
+
+        setLiveStats({ booksCount: bCount, authorsCount: aCount });
+      } catch (e) {
+        // Fallback
+      }
+    };
+    fetchLiveStats();
+  }, []);
+
+  const stats = [
+    { label: "Books Published", value: `${liveStats.booksCount}+`, icon: BookOpen },
+    { label: "Happy Authors", value: `${liveStats.authorsCount}+`, icon: Users },
+    { label: "Countries Reached", value: "5+", icon: Globe },
+  ];
+
   return (
     <div className="bg-[#F8F9F7] min-h-screen text-[#0F3D3E] font-sans">
       
@@ -59,7 +97,7 @@ export default function AboutPage() {
           </h1>
 
           <p className="text-base sm:text-lg text-white/80 max-w-2xl mx-auto font-light leading-relaxed">
-            Founded with a mission to empower authors and delight readers, Harglim Publishers is one of India&apos;s most trusted publishing houses, bringing great stories to the world.
+            Founded with a mission to empower authors and delight readers, Harglim Publishers is a premier independent publishing house, bringing great stories to the world.
           </p>
         </div>
       </section>

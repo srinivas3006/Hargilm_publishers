@@ -106,10 +106,14 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/orders?limit=100").catch(() =>
-        api.get("/orders?limit=100")
+      const params: any = { limit: 100 };
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+
+      const { data } = await api.get("/admin/orders", { params }).catch(() =>
+        api.get("/orders", { params })
       );
-      const ordersData = data?.data || data || [];
+      const ordersData = data?.data?.orders || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
       setOrders(Array.isArray(ordersData) ? ordersData : []);
     } catch (err) {
       console.error("Failed to fetch admin orders:", err);
@@ -121,17 +125,17 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [statusFilter, searchQuery]);
 
   // Action 1: Approve Payment
   const handleApprovePayment = async (orderId: string) => {
     try {
-      await api.patch(`/admin/orders/${orderId}`, {
-        isPaid: true,
+      await api.put(`/admin/orders/${orderId}/status`, {
+        status: "Processing",
         paymentStatus: "VERIFIED",
-        status: "PROCESSING",
+        isPaid: true,
       }).catch(() =>
-        api.put(`/orders/${orderId}/status`, {
+        api.patch(`/admin/orders/${orderId}`, {
           isPaid: true,
           paymentStatus: "VERIFIED",
           status: "PROCESSING",
@@ -151,12 +155,12 @@ export default function AdminOrdersPage() {
     if (reason === null) return;
 
     try {
-      await api.patch(`/admin/orders/${orderId}`, {
-        isPaid: false,
+      await api.put(`/admin/orders/${orderId}/status`, {
+        status: "Cancelled",
         paymentStatus: "REJECTED",
-        adminNotes: reason,
+        reason,
       }).catch(() =>
-        api.put(`/orders/${orderId}/status`, {
+        api.patch(`/admin/orders/${orderId}`, {
           isPaid: false,
           paymentStatus: "REJECTED",
           adminNotes: reason,
@@ -173,11 +177,14 @@ export default function AdminOrdersPage() {
   // Action 3: Mark as Printed / Processing
   const handleMarkAsPrinted = async (orderId: string) => {
     try {
-      await api.patch(`/admin/orders/${orderId}`, {
-        status: "PROCESSING",
-        orderStatus: "PROCESSING",
+      await api.put(`/admin/orders/${orderId}/status`, {
+        status: "Processing",
+        reason: "Marked as Printed / Processing",
       }).catch(() =>
-        api.put(`/orders/${orderId}/status`, { status: "PROCESSING" })
+        api.patch(`/admin/orders/${orderId}`, {
+          status: "PROCESSING",
+          orderStatus: "PROCESSING",
+        })
       );
 
       toast.success("Order status updated to Processing / Printed 🖨️");
@@ -199,12 +206,15 @@ export default function AdminOrdersPage() {
     const orderId = selectedOrderForTracking._id || selectedOrderForTracking.id;
 
     try {
-      await api.patch(`/admin/orders/${orderId}`, {
+      await api.put(`/admin/orders/${orderId}/status`, {
+        status: "Shipped",
         trackingNumber: trackingNumberInput,
-        status: "SHIPPED",
-        orderStatus: "SHIPPED",
       }).catch(() =>
-        api.post(`/orders/${orderId}/tracking`, { trackingNumber: trackingNumberInput, status: "SHIPPED" })
+        api.patch(`/admin/orders/${orderId}`, {
+          trackingNumber: trackingNumberInput,
+          status: "SHIPPED",
+          orderStatus: "SHIPPED",
+        })
       );
 
       toast.success("Tracking number saved & status set to Shipped! 🚚");

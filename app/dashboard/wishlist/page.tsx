@@ -137,11 +137,7 @@ export default function WishlistPage() {
                         <Badge variant="secondary">Out of Stock</Badge>
                       </div>
                     )}
-                    {item.discountPrice && item.discountPrice < item.price && (
-                      <Badge className="absolute top-2 left-2 bg-destructive">
-                        {Math.round((1 - item.discountPrice / item.price) * 100)}% OFF
-                      </Badge>
-                    )}
+
                     <Button
                       variant="ghost"
                       size="icon"
@@ -170,11 +166,6 @@ export default function WishlistPage() {
                     </div>
                     <div className="flex items-center gap-2 mt-3">
                       <span className="text-lg font-bold">₹{item.discountPrice || item.price}</span>
-                      {item.discountPrice && item.discountPrice < item.price && (
-                        <span className="text-sm text-muted-foreground line-through">
-                          ₹{item.price}
-                        </span>
-                      )}
                     </div>
                     <Button
                       className="w-full mt-3 gap-2"
@@ -233,11 +224,6 @@ export default function WishlistPage() {
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-bold">₹{item.discountPrice || item.price}</span>
-                          {item.discountPrice && item.discountPrice < item.price && (
-                            <span className="text-sm text-muted-foreground line-through">
-                              ₹{item.price}
-                            </span>
-                          )}
                         </div>
                         <Button
                           size="sm"

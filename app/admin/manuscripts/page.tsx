@@ -85,10 +85,18 @@ export default function AdminManuscriptsPage() {
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.get("/admin/publish-requests");
+      const params: any = { limit: 100 };
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+
+      const { data } = await api.get("/admin/publish-requests", { params }).catch(() =>
+        api.get("/publish-requests", { params })
+      );
       let fetchedManuscripts = [];
       if (Array.isArray(data)) {
         fetchedManuscripts = data;
+      } else if (data && Array.isArray(data.data?.requests)) {
+        fetchedManuscripts = data.data.requests;
       } else if (data && Array.isArray(data.data)) {
         fetchedManuscripts = data.data;
       } else if (data && Array.isArray(data.requests)) {
@@ -110,7 +118,7 @@ export default function AdminManuscriptsPage() {
 
   useEffect(() => {
     fetchManuscripts();
-  }, []);
+  }, [statusFilter, searchQuery]);
 
   const safeManuscripts = Array.isArray(manuscripts) ? manuscripts : [];
   const filteredManuscripts = safeManuscripts.filter((manuscript: any) => {
@@ -119,20 +127,36 @@ export default function AdminManuscriptsPage() {
     const matchesSearch =
       title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       author.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || manuscript.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || String(manuscript.status || "").toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      await api.put(`/admin/publish-requests/${id}/status`, { status: newStatus });
+      if (newStatus === "approved") {
+        await api.post(`/admin/publish-requests/${id}/approve`).catch(() =>
+          api.put(`/admin/publish-requests/${id}/status`, { status: "approved" })
+        );
+      } else if (newStatus === "rejected") {
+        const reason = prompt("Enter rejection reason (optional):", "Editorial standards mismatch");
+        await api.post(`/admin/publish-requests/${id}/reject`, { reason }).catch(() =>
+          api.put(`/admin/publish-requests/${id}/status`, { status: "rejected", reason })
+        );
+      } else if (newStatus === "under_review") {
+        await api.post(`/admin/publish-requests/${id}/request-changes`).catch(() =>
+          api.put(`/admin/publish-requests/${id}/status`, { status: "under_review" })
+        );
+      } else {
+        await api.put(`/admin/publish-requests/${id}/status`, { status: newStatus });
+      }
+
       setManuscripts(
         manuscripts.map((m: any) => ((m.id || m._id) === id ? { ...m, status: newStatus } : m))
       );
       toast.success(`Manuscript status updated to ${newStatus}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update manuscript status:", err);
-      toast.error("Failed to update manuscript status");
+      toast.error(err.response?.data?.message || "Failed to update manuscript status");
     }
   };
 
@@ -254,9 +278,13 @@ export default function AdminManuscriptsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {manuscript.documentUrl && (
+                              {(manuscript.documentUrl || manuscript.manuscriptUrl || manuscript.fileUrl) && (
                                 <DropdownMenuItem asChild>
-                                  <a href={manuscript.documentUrl} target="_blank" rel="noopener noreferrer">
+                                  <a
+                                    href={manuscript.documentUrl || manuscript.manuscriptUrl || manuscript.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
                                     <Download className="mr-2 h-4 w-4" />
                                     Download Manuscript
                                   </a>

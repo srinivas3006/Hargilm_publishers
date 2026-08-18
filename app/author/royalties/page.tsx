@@ -28,8 +28,10 @@ export default function AuthorRoyaltiesPage() {
       let serverEntries: any[] = [];
       if (user?._id || user?.id) {
         const authorId = user._id || user.id;
-        const res = await api.get(`/authors/${authorId}/royalties/history`).catch(() =>
-          api.get("/royalties").catch(() => null)
+        const res = await api.get("/authors/me/royalty-settlements").catch(() =>
+          api.get("/authors/me/royalties").catch(() =>
+            api.get(`/authors/${authorId}/royalties/history`).catch(() => null)
+          )
         );
         if (res?.data) {
           const dataObj = res.data.data || res.data;

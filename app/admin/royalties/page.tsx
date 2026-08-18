@@ -46,7 +46,7 @@ export default function AdminRoyaltiesPage() {
     try {
       const [booksRes, entriesRes] = await Promise.allSettled([
         api.get("/books?limit=100"),
-        api.get("/royalties").catch(() => api.get("/admin/royalties")),
+        api.get("/admin/royalty-settlements").catch(() => api.get("/admin/settlements")).catch(() => api.get("/royalties")).catch(() => null),
       ]);
 
       if (booksRes.status === "fulfilled") {
@@ -64,8 +64,9 @@ export default function AdminRoyaltiesPage() {
       }
 
       let fetchedEntries: any[] = [];
-      if (entriesRes.status === "fulfilled") {
-        const eData = entriesRes.value.data?.data || entriesRes.value.data || [];
+      if (entriesRes.status === "fulfilled" && entriesRes.value) {
+        const val = entriesRes.value as any;
+        const eData = val?.data?.data || val?.data || [];
         if (Array.isArray(eData)) fetchedEntries = eData;
       }
 
@@ -135,9 +136,11 @@ export default function AdminRoyaltiesPage() {
         date: new Date().toISOString(),
       };
 
-      await api.post("/royalties", payload).catch(() =>
-        api.post("/admin/royalties", payload)
-      );
+      await api.post("/admin/royalty-settlements", payload).catch(() =>
+        api.post("/admin/settlements", payload).catch(() =>
+          api.post("/royalties", payload)
+        )
+      ).catch(() => null);
 
       // Save to local storage cache so author dashboard instantly picks up real entries
       try {

@@ -34,16 +34,16 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(false);
     try {
-      const [statsRes, ordersRes, authorsRes, booksRes] = await Promise.allSettled([
-        api.get("/admin/stats").catch(() => api.get("/admin/dashboard")),
+      const [dashRes, ordersRes, authorsRes, booksRes] = await Promise.allSettled([
+        api.get("/admin/dashboard").catch(() => api.get("/admin/stats")),
         api.get("/admin/orders?limit=100"),
         api.get("/author-applications"),
         api.get("/books?limit=100"),
       ]);
 
-      const stats = statsRes.status === "fulfilled" ? (statsRes.value.data?.data || statsRes.value.data) : {};
-      const ordersList = ordersRes.status === "fulfilled" ? (ordersRes.value.data?.data || ordersRes.value.data) : [];
-      const authorsList = authorsRes.status === "fulfilled" ? (authorsRes.value.data?.data || authorsRes.value.data) : [];
+      const dashData = dashRes.status === "fulfilled" ? (dashRes.value.data?.data || dashRes.value.data) : {};
+      const ordersList = ordersRes.status === "fulfilled" ? (ordersRes.value.data?.data?.orders || ordersRes.value.data?.data || ordersRes.value.data) : [];
+      const authorsList = authorsRes.status === "fulfilled" ? (authorsRes.value.data?.data?.applications || authorsRes.value.data?.data || authorsRes.value.data) : [];
       const booksList = booksRes.status === "fulfilled" ? (booksRes.value.data?.books || booksRes.value.data?.data || booksRes.value.data) : [];
 
       const ordersArr = Array.isArray(ordersList) ? ordersList : [];
@@ -51,24 +51,24 @@ export default function AdminDashboard() {
       const booksArr = Array.isArray(booksList) ? booksList : [];
 
       // Calculate state machine metrics
-      const pendingPaymentsCount = ordersArr.filter(
+      const calculatedPendingPayments = ordersArr.filter(
         (o) => !o.isPaid && (o.paymentStatus === "PENDING" || o.paymentStatus === "VERIFICATION_PENDING" || o.utr)
       ).length;
 
-      const processingOrdersCount = ordersArr.filter(
+      const calculatedProcessingOrders = ordersArr.filter(
         (o) => (o.status || o.orderStatus) === "PROCESSING"
       ).length;
 
-      const pendingAuthorsCount = authorsArr.filter(
+      const calculatedPendingAuthors = authorsArr.filter(
         (a) => a.status?.toLowerCase() === "pending"
       ).length;
 
       setDashboardData({
-        ...stats,
-        pendingPaymentsCount,
-        processingOrdersCount,
-        pendingAuthorsCount,
-        totalBooks: booksArr.length || stats.totalBooks || 0,
+        ...dashData,
+        pendingPaymentsCount: dashData.pendingPaymentsCount ?? dashData.pendingOrders ?? calculatedPendingPayments,
+        processingOrdersCount: dashData.processingOrdersCount ?? dashData.processingOrders ?? calculatedProcessingOrders,
+        pendingAuthorsCount: dashData.pendingAuthorsCount ?? dashData.pendingApplications ?? calculatedPendingAuthors,
+        totalBooks: booksArr.length || dashData.totalBooks || dashData.booksCount || 0,
         recentOrders: ordersArr.slice(0, 5),
         recentAuthors: authorsArr.slice(0, 5),
       });
