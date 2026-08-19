@@ -238,9 +238,9 @@ export default function PurchaseDashboardAccessPage() {
 
               {/* QR Image preview */}
               <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-xl border border-border text-center space-y-3">
-                {purchase?.qrMetadata?.qrCodeUrl ? (
+                {purchase?.qrMetadata?.qrCodeUrl || purchase?.qrMetadata?.qrCodeDataUrl || purchase?.qrCodeDataUrl ? (
                   <img
-                    src={purchase.qrMetadata.qrCodeUrl}
+                    src={purchase?.qrMetadata?.qrCodeUrl || purchase?.qrMetadata?.qrCodeDataUrl || purchase?.qrCodeDataUrl}
                     alt="UPI QR Code"
                     className="w-44 h-44 object-contain rounded-lg bg-white p-2 border"
                   />
