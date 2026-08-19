@@ -26,40 +26,48 @@ function SuccessContent() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const utrRef = searchParams?.get("utr") || "";
+
   return (
     <div className="bg-background min-h-screen py-24">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 mb-8">
+        <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 mb-6">
           <CheckCircle2 className="h-12 w-12" />
         </div>
-        <h1 className="text-4xl font-bold">Order Confirmed!</h1>
-        <p className="mt-4 text-muted-foreground">
-          Thank you for your purchase. Your order has been placed successfully
-          and will be processed shortly.
+        <h1 className="text-3xl font-serif font-bold text-[#0F3D3E]">Order Submitted Successfully!</h1>
+        <p className="mt-3 text-sm text-[#5C6E6E] max-w-xl mx-auto font-sans leading-relaxed">
+          Thank you for your purchase! Your order has been registered and your payment UTR has been submitted for admin verification.
         </p>
 
-        <div className="mt-10 max-w-md mx-auto bg-card border border-border rounded-2xl p-6 text-left shadow-sm">
-          <h3 className="font-semibold text-lg border-b pb-4 mb-4">Order Details</h3>
+        <div className="mt-8 max-w-md mx-auto bg-card border border-border rounded-2xl p-6 text-left shadow-sm space-y-4">
+          <h3 className="font-serif font-bold text-base border-b pb-3 text-[#0F3D3E]">Order Details & Payment Status</h3>
           
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Order Tracking ID</p>
-              <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg border border-border/50">
-                <span className="font-mono font-medium">{orderId}</span>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] mb-1">Order Number</p>
+              <div className="flex items-center justify-between bg-muted/50 p-3 rounded-xl border border-border/50">
+                <span className="font-mono font-bold text-sm text-[#0F3D3E]">{orderId}</span>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyToClipboard(orderId)}>
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
             </div>
             
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Payment Reference</p>
-              <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg border border-border/50">
-                <span className="font-mono font-medium">{paymentId}</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyToClipboard(paymentId)}>
-                  <Copy className="h-4 w-4" />
-                </Button>
+            {utrRef && (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] mb-1">Submitted UTR Reference</p>
+                <div className="flex items-center justify-between bg-muted/50 p-3 rounded-xl border border-border/50">
+                  <span className="font-mono font-bold text-xs text-[#0F3D3E]">{utrRef}</span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyToClipboard(utrRef)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+            )}
+
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-800">
+              <span className="font-bold">Status: </span>
+              <span>Pending Admin Verification (Order created, invoice & shipment generated post-approval)</span>
             </div>
           </div>
         </div>

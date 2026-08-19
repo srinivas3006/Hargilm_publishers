@@ -43,6 +43,8 @@ export default function CheckoutStepPage() {
   const [backendPayment, setBackendPayment] = useState<any>(null);
   const [utr, setUtr] = useState('');
 
+  const [upiUrl, setUpiUrl] = useState('');
+
   useEffect(() => {
     if (!items.length) {
       router.push('/checkout/cart');
@@ -53,10 +55,10 @@ export default function CheckoutStepPage() {
     event.preventDefault();
 
     if (!address.fullName || !address.addressLine1 || !address.city || !address.postalCode || !address.country || !address.phone || !address.email) {
+      toast.error("Please fill in all required shipping address fields.");
       return;
     }
 
-    // Since the client wants ONLY UPI payments, we'll force it here
     if (paymentMethod !== 'upi') {
        toast.error("Only UPI payments are supported currently.");
        return;
@@ -68,21 +70,22 @@ export default function CheckoutStepPage() {
   const processOrder = async () => {
     setSubmitting(true);
     try {
-      // Map cart items for backend
       const formattedItems = items.map(item => ({
         book: item.book._id,
         quantity: item.quantity
       }));
 
+      // NOTE: Price fields (mrp, subtotal, tax, shippingPrice, totalPrice) are NOT sent.
+      // Backend automatically calculates totals using canonical Book.mrp.
       const payload = {
         items: formattedItems,
         shippingAddress: {
-          fullName: address.fullName,
-          addressLine1: address.addressLine1,
-          addressLine2: address.addressLine2,
-          city: address.city,
-          postalCode: address.postalCode,
-          country: address.country,
+          fullName: address.fullName.trim(),
+          addressLine1: address.addressLine1.trim(),
+          addressLine2: address.addressLine2 ? address.addressLine2.trim() : undefined,
+          city: address.city.trim(),
+          postalCode: address.postalCode.trim(),
+          country: address.country || 'India',
         },
         paymentMethod: 'UPI'
       };
@@ -108,30 +111,37 @@ export default function CheckoutStepPage() {
           rawQr = `data:image/png;base64,${rawQr}`;
         }
         setQrCodeDataUrl(rawQr);
+        setUpiUrl(paymentObj?.upiUrl || responseData?.upiUrl || '');
         setShowUpiModal(true);
+      } else {
+        throw new Error(data.message || "Failed to create order");
       }
     } catch (error: any) {
-       toast.error(error.response?.data?.message || "Failed to create order");
+      toast.error(error.response?.data?.message || error.message || "Failed to create order");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleVerifyUtr = async () => {
-    if (!utr.trim()) {
-      toast.error("Please enter the UTR / Transaction ID");
+    const sanitizedUtr = utr.trim().toUpperCase();
+    
+    // UTR Validation: A-Z, 0-9, hyphen. Length 6 to 64 characters
+    const utrRegex = /^[A-Z0-9-]{6,64}$/;
+    if (!utrRegex.test(sanitizedUtr)) {
+      toast.error("Invalid UTR format. Must be 6 to 64 alphanumeric characters or hyphens.");
       return;
     }
 
     try {
-      const { data } = await api.put(`/orders/${currentOrderId}/verify-payment`, { utr: utr.trim() });
-      if (data.success || data.status === "success" || data._id) {
+      const { data } = await api.put(`/orders/${currentOrderId}/verify-payment`, { utr: sanitizedUtr });
+      if (data.success || data.status === "success" || data._id || data.data?._id) {
         setUpiStatus('success');
         clearCart();
-        toast.success("Payment submitted for verification! 💳");
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        toast.success("Payment UTR submitted for admin verification! 💳");
+        await new Promise(resolve => setTimeout(resolve, 1800));
         setShowUpiModal(false);
-        router.push(`/checkout/success?orderId=${currentOrderNumber}&paymentId=UPI`);
+        router.push(`/checkout/success?orderId=${currentOrderNumber}&paymentId=UPI&utr=${sanitizedUtr}`);
       } else {
         throw new Error(data.message || "Payment verification failed");
       }
@@ -329,52 +339,77 @@ export default function CheckoutStepPage() {
 
               {upiStatus === 'waiting' ? (
                 <>
-                  <div className="mx-auto w-16 h-16 bg-primary/10 text-primary flex items-center justify-center rounded-2xl mb-4">
-                    <QrCode className="h-8 w-8" />
+                  <div className="mx-auto w-16 h-16 bg-[#0F3D3E]/10 text-[#0F3D3E] flex items-center justify-center rounded-2xl mb-3">
+                    <QrCode className="h-8 w-8 text-[#0F3D3E]" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Scan to Pay</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Amount: <span className="font-bold text-foreground">₹{(backendOrder?.totalPrice ?? backendPayment?.amount ?? total).toFixed(2)}</span>
-                  </p>
                   
-                  <div className="aspect-square bg-white w-48 mx-auto rounded-xl border-2 border-dashed border-border flex items-center justify-center mb-6 overflow-hidden">
+                  <div className="space-y-1 mb-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-[#D4AF37]/20 text-[#0F3D3E] px-2.5 py-0.5 rounded-md">
+                      Order #{currentOrderNumber}
+                    </span>
+                    <h3 className="text-xl font-serif font-bold text-[#0F3D3E]">Scan to Pay with UPI</h3>
+                    <p className="text-xs text-[#5C6E6E]">
+                      Amount: <span className="font-bold text-[#0F3D3E] text-base">₹{(backendPayment?.amount ?? backendOrder?.totalPrice ?? total).toFixed(2)}</span>
+                    </p>
+                  </div>
+                  
+                  <div className="aspect-square bg-white w-48 mx-auto rounded-2xl border-2 border-dashed border-[#E2E6DF] flex items-center justify-center mb-4 overflow-hidden shadow-xs">
                     {qrCodeDataUrl ? (
-                      <img src={qrCodeDataUrl} alt="UPI QR Code" className="w-full h-full object-contain" />
+                      <img src={qrCodeDataUrl} alt="UPI payment QR" className="w-full h-full object-contain p-2" />
                     ) : (
                       <QrCode className="h-24 w-24 text-muted-foreground/30" />
                     )}
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Open your UPI app (GPay, PhonePe, Paytm) and scan this QR code to complete the payment.
+                  {upiUrl && (
+                    <a
+                      href={upiUrl}
+                      target="_self"
+                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 mb-4 text-xs font-serif font-bold rounded-xl bg-[#0F3D3E] text-[#D4AF37] hover:bg-[#174C4D] transition-colors shadow-xs"
+                    >
+                      <span>Pay via UPI App (PhonePe / GPay / Paytm)</span>
+                    </a>
+                  )}
+
+                  <p className="text-xs text-[#5C6E6E] mb-4 font-sans leading-relaxed">
+                    Open your UPI app, scan this QR code or click the button above to pay, then enter your 12-digit UTR below.
                   </p>
 
-                  <div className="space-y-4 mb-6">
-                     <input
+                  <div className="space-y-2 mb-4">
+                    <input
                       type="text"
-                      placeholder="Enter UTR / Transaction ID"
+                      placeholder="Enter UTR / Transaction ID (e.g. UPI1234567890)"
                       value={utr}
-                      onChange={(e) => setUtr(e.target.value)}
-                      className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
-                     />
+                      onChange={(e) => setUtr(e.target.value.toUpperCase())}
+                      maxLength={64}
+                      className="w-full rounded-xl border border-[#E2E6DF] bg-[#F8F9F7] px-4 py-3 text-xs font-mono font-bold uppercase tracking-wider outline-none transition focus:border-[#0F3D3E]"
+                    />
+                    <p className="text-[10px] text-[#5C6E6E] text-left">
+                      * Minimum 6 characters (Letters, numbers, hyphens allowed)
+                    </p>
                   </div>
 
-                  <Button className="w-full" onClick={handleVerifyUtr}>
-                    Verify Payment
+                  <Button className="w-full bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] font-serif font-bold text-sm h-11 rounded-xl shadow-xs" onClick={handleVerifyUtr}>
+                    Submit UTR for Verification
                   </Button>
                 </>
               ) : (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="py-8"
+                  className="py-8 space-y-4"
                 >
-                  <div className="mx-auto w-20 h-20 bg-green-500/10 text-green-500 flex items-center justify-center rounded-full mb-6">
+                  <div className="mx-auto w-20 h-20 bg-emerald-500/10 text-emerald-600 flex items-center justify-center rounded-full shadow-sm">
                     <CheckCircle2 className="h-10 w-10" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Payment Successful!</h3>
-                  <p className="text-muted-foreground flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Redirecting to confirmation...
+                  <div>
+                    <h3 className="text-xl font-serif font-bold text-[#0F3D3E]">Payment Submitted!</h3>
+                    <p className="text-xs text-amber-700 font-medium mt-1 bg-amber-50 border border-amber-200 p-2.5 rounded-xl">
+                      ⏳ Payment UTR submitted. Waiting for admin verification.
+                    </p>
+                  </div>
+                  <p className="text-xs text-[#5C6E6E] flex items-center justify-center gap-2 font-sans pt-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#0F3D3E]" /> Redirecting to order confirmation...
                   </p>
                 </motion.div>
               )}
