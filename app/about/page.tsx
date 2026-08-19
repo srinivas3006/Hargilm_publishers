@@ -33,7 +33,7 @@ const team = [
   {
     name: "Sunkarapally Sai Teja",
     role: "Founder & CEO",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+    image: "/logo.webp",
   },
 ];
 
@@ -147,10 +147,11 @@ export default function AboutPage() {
           <div className="lg:col-span-5">
             <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-xl border-2 border-[#D4AF37]/30">
               <Image
-                src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800&h=600&fit=crop"
+                src="/logo.webp"
+                onError={(e: any) => { if (e?.target) e.target.src = "/logo.webp"; }}
                 alt="Harglim Library"
                 fill
-                className="object-cover"
+                className="object-cover opacity-90 p-4"
               />
             </div>
           </div>

@@ -150,21 +150,21 @@ const authorTestimonials = [
     book: "The Shadows of Heritage",
     quote: "Harglim Publishers made my publishing journey seamless. Their editorial team polished my draft with incredible care, and the cover design exceeded all my expectations!",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop",
+    avatar: "/logo.webp",
   },
   {
     name: "Rahul Mehta",
     book: "Algorithmic Wealth",
     quote: "From interior formatting to Amazon Prime fulfillment, everything was executed with precision. My royalties arrive on time every month like clockwork.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop",
+    avatar: "/logo.webp",
   },
   {
     name: "Ananya Iyer",
     book: "Echoes of the Monsoon",
     quote: "The team treats your book like a masterpiece. Highly recommended for first-time and experienced writers looking for real publishing transparency.",
     rating: 5,
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop",
+    avatar: "/logo.webp",
   },
 ];
 
@@ -273,7 +273,8 @@ export default function PublishPage() {
               className="relative w-full max-w-sm aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border-4 border-[#D4AF37]/40 bg-[#0F3D3E]"
             >
               <Image
-                src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&q=80"
+                src="/logo.webp"
+                onError={(e: any) => { if (e?.target) e.target.src = "/logo.webp"; }}
                 alt="Book Publishing Mockup"
                 fill
                 className="object-cover opacity-90"

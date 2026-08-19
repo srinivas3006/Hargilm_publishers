@@ -11,6 +11,8 @@ import { useCartStore } from "@/store/cart-store";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
+import { useState, useEffect } from "react";
+
 interface BookCardProps {
   book: Book;
   variant?: "default" | "compact" | "horizontal";
@@ -23,6 +25,18 @@ export function BookCard({
   showActions = true,
 }: BookCardProps) {
   const addItem = useCartStore((state) => state.addItem);
+
+  const initialImage = book.coverImage && (book.coverImage.startsWith("http") || book.coverImage.startsWith("/"))
+    ? book.coverImage
+    : "/logo.webp";
+  const [imgSrc, setImgSrc] = useState<string>(initialImage);
+
+  useEffect(() => {
+    const validSrc = book.coverImage && (book.coverImage.startsWith("http") || book.coverImage.startsWith("/"))
+      ? book.coverImage
+      : "/logo.webp";
+    setImgSrc(validSrc);
+  }, [book.coverImage]);
 
   // 3D Tilt & Glare hooks
   const x = useMotionValue(0);
@@ -79,7 +93,8 @@ export function BookCard({
             <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-black/20 to-transparent z-10 mix-blend-multiply pointer-events-none" />
             <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
             <Image
-              src={book.coverImage || "/images/placeholder-book.jpg"}
+              src={imgSrc}
+              onError={() => setImgSrc("/logo.webp")}
               alt={book.title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -132,7 +147,8 @@ export function BookCard({
             <div className="absolute inset-y-0 left-0 w-[4%] bg-gradient-to-r from-black/20 to-transparent z-10 mix-blend-multiply pointer-events-none" />
             <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
             <Image
-              src={book.coverImage || "/images/placeholder-book.jpg"}
+              src={imgSrc}
+              onError={() => setImgSrc("/logo.webp")}
               alt={book.title}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -167,7 +183,8 @@ export function BookCard({
           <div className="absolute inset-y-0 left-0 w-[4%] bg-gradient-to-r from-black/30 to-transparent z-10 mix-blend-multiply pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
           <Image
-            src={book.coverImage || "/images/placeholder-book.jpg"}
+            src={imgSrc}
+            onError={() => setImgSrc("/logo.webp")}
             alt={book.title}
             fill
             className="object-cover group-hover:scale-110 transition-transform duration-500"

@@ -179,7 +179,8 @@ export default function AuthorBooksPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
-                          src={book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800"}
+                          src={book.coverImage && (book.coverImage.startsWith("http") || book.coverImage.startsWith("/")) ? book.coverImage : "/logo.webp"}
+                          onError={(e: any) => { if (e?.target) e.target.src = "/logo.webp"; }}
                           alt={book.title}
                           className="h-12 w-9 rounded object-cover"
                         />

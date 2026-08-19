@@ -60,7 +60,7 @@ export default function CategoryDetailPage() {
             active: true,
             featured: false,
             bookCount: bookList.length,
-            image: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=800&auto=format&fit=crop",
+            image: "/logo.webp",
           } as any);
         }
       } catch (err) {

@@ -143,8 +143,7 @@ export default function CareersPage() {
           >
             <div className="absolute inset-0 bg-black/40 z-10" />
             <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200')" }}
+              className="absolute inset-0 bg-gradient-to-r from-[#0B2E2F] via-[#0F3D3E] to-[#082223]"
             />
             <div className="absolute inset-0 z-20 flex items-center justify-center text-center p-8">
               <h2 className="text-3xl md:text-5xl font-serif font-bold text-white max-w-3xl leading-tight">

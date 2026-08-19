@@ -58,22 +58,11 @@ const getCategoryIcon = (slugOrName: string) => {
   return BookOpen;
 };
 
-// Fallback high-res cover images per category type
-const categoryImageMap: Record<string, string> = {
-  fiction: "https://images.unsplash.com/photo-1476275466078-4007374efbbe?q=80&w=800&auto=format&fit=crop",
-  business: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop",
-  technology: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&auto=format&fit=crop",
-  "self-help": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=800&auto=format&fit=crop",
-  children: "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=800&auto=format&fit=crop",
-};
-
 const getCategoryImage = (cat: any) => {
-  if (cat.image && !cat.image.includes("placeholder")) return cat.image;
-  const key = (cat.slug || cat.name || "").toLowerCase();
-  for (const pattern in categoryImageMap) {
-    if (key.includes(pattern)) return categoryImageMap[pattern];
+  if (cat.image && (cat.image.startsWith("http") || cat.image.startsWith("/")) && !cat.image.includes("placeholder")) {
+    return cat.image;
   }
-  return "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=800&auto=format&fit=crop";
+  return "/logo.webp";
 };
 
 export default function CategoriesPage() {
@@ -268,6 +257,7 @@ export default function CategoriesPage() {
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#0F3D3E]">
                         <Image
                           src={bgImg}
+                          onError={(e: any) => { if (e?.target) e.target.src = "/logo.webp"; }}
                           alt={category.name}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-500 opacity-80"

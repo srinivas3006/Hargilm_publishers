@@ -275,24 +275,39 @@ export default function Home() {
                 <motion.div
                   animate={{ y: [0, -10, 0] }}
                   transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                  className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-2 border-[#D4AF37]/40 bg-[#0C3233]"
+                  className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-2 border-[#D4AF37]/40 bg-[#0C3233] flex flex-col justify-end"
                 >
                   <Image
-                    src={featuredBooks[0]?.coverImage || "/logo.webp"}
-                    alt="Featured Harglim Book"
+                    src={
+                      featuredBooks[0]?.coverImage && (featuredBooks[0].coverImage.startsWith("http") || featuredBooks[0].coverImage.startsWith("/"))
+                        ? featuredBooks[0].coverImage
+                        : "/logo.webp"
+                    }
+                    onError={(e: any) => {
+                      if (e?.target) {
+                        e.target.src = "/logo.webp";
+                      }
+                    }}
+                    alt={featuredBooks[0]?.title || "Harglim Publishers"}
                     fill
                     className="object-cover"
                     priority
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F3D3E] via-transparent to-transparent opacity-80" />
-                  <div className="absolute bottom-6 left-6 right-6 space-y-1 text-white">
-                    <span className="px-2 py-0.5 rounded bg-[#D4AF37] text-[#0F3D3E] text-[10px] font-bold uppercase tracking-wider">
-                      Editor&apos;s Highlight
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F3D3E] via-[#0F3D3E]/40 to-transparent opacity-90" />
+                  <div className="absolute bottom-6 left-6 right-6 space-y-1.5 text-white z-10">
+                    <span className="px-2.5 py-0.5 rounded bg-[#D4AF37] text-[#0F3D3E] text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                      {featuredBooks.length > 0 ? "Featured Release" : "Harglim Publishers"}
                     </span>
-                    <h3 className="font-serif font-bold text-xl line-clamp-1">
-                      {featuredBooks[0]?.title || "The Art of Publishing"}
+                    <h3 className="font-serif font-bold text-xl line-clamp-2">
+                      {featuredBooks[0]?.title || "Discover Inspiring Books"}
                     </h3>
-                    <p className="text-xs text-white/80">By Harglim Publishers</p>
+                    <p className="text-xs text-white/80 font-medium">
+                      {featuredBooks[0]?.author
+                        ? (typeof featuredBooks[0].author === "object"
+                            ? (featuredBooks[0].author as any)?.name
+                            : featuredBooks[0].author)
+                        : "Harglim Publishers Catalog"}
+                    </p>
                   </div>
                 </motion.div>
               </div>

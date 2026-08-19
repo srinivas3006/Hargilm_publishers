@@ -104,16 +104,11 @@ export default function AdminBooksPage() {
       );
       const items = data.data?.books || (Array.isArray(data.data) ? data.data : []) || (Array.isArray(data) ? data : []);
       const apiBooks = Array.isArray(items) ? items : [];
-      const localBooks = JSON.parse(localStorage.getItem("harglim_custom_books") || "[]");
-      setBooks([...localBooks, ...apiBooks]);
+      setBooks(apiBooks);
     } catch (err) {
-      console.warn("Failed to fetch books from API, loading local books:", err);
-      const localBooks = JSON.parse(localStorage.getItem("harglim_custom_books") || "[]");
-      if (localBooks.length > 0) {
-        setBooks(localBooks);
-      } else {
-        setError(true);
-      }
+      console.error("Failed to fetch books from API:", err);
+      setError(true);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
@@ -130,7 +125,7 @@ export default function AdminBooksPage() {
 
   const filteredBooks = books.filter((book: any) => {
     const title = book.title || "";
-    const author = book.author?.name || book.authorName || "";
+    const author = book.author?.name || book.authorName || (typeof book.author === "string" ? book.author : "");
     const matchesSearch =
       title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       author.toLowerCase().includes(searchQuery.toLowerCase());
@@ -144,20 +139,10 @@ export default function AdminBooksPage() {
     try {
       await api.delete(`/admin/books/${id}`).catch(() => api.delete(`/books/${id}`));
       setBooks(books.filter((b: any) => (b.id || b._id) !== id));
-      
-      // Also clear from local storage if present
-      try {
-        const localBooks = JSON.parse(localStorage.getItem("harglim_custom_books") || "[]");
-        const updatedLocal = localBooks.filter((b: any) => (b.id || b._id) !== id);
-        localStorage.setItem("harglim_custom_books", JSON.stringify(updatedLocal));
-      } catch (e) {
-        // ignore
-      }
-
-      toast.success("Book deleted successfully");
-    } catch (err) {
+      toast.success("Book deleted successfully! 🗑️");
+    } catch (err: any) {
       console.error("Failed to delete book:", err);
-      toast.error("Failed to delete book");
+      toast.error(err.response?.data?.message || "Failed to delete book.");
     }
   };
 

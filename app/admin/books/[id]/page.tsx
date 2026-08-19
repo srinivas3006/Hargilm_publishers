@@ -45,6 +45,21 @@ export default function EditBookPage() {
     royaltyPercentage: "",
   });
 
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const { data } = await api.get("/categories").catch(() => api.get("/admin/categories"));
+        const items = data?.data?.categories || data?.data || data || [];
+        setCategoriesList(Array.isArray(items) ? items : []);
+      } catch (err) {
+        console.warn("Failed to load categories:", err);
+      }
+    };
+    loadCategories();
+  }, []);
+
   useEffect(() => {
     if (!bookId) return;
 
@@ -84,17 +99,17 @@ export default function EditBookPage() {
             authorName:
               typeof bookData.author === "object"
                 ? bookData.author?.name || ""
-                : bookData.authorName || bookData.author || "",
+                : bookData.authorName || (typeof bookData.author === "string" ? bookData.author : ""),
             description: bookData.description || "",
             category:
               typeof bookData.category === "object"
-                ? bookData.category?.name || ""
+                ? bookData.category?._id || bookData.category?.id || ""
                 : bookData.category || "",
-            price: bookData.price?.toString() || "",
+            price: (bookData.mrp || bookData.price)?.toString() || "",
             discountPrice: bookData.discountPrice?.toString() || "",
             stock: bookData.stock?.toString() || "0",
             isbn: bookData.isbn || "",
-            status: bookData.status || "Active",
+            status: bookData.status === "Active" ? "published" : (bookData.status || "published"),
             isFeatured: Boolean(bookData.isFeatured),
             isBestseller: Boolean(bookData.isBestseller),
             isNewRelease: Boolean(bookData.isNewRelease),
@@ -284,12 +299,15 @@ export default function EditBookPage() {
                     <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-[#E2E6DF]">
-                    <SelectItem value="Fiction">Fiction</SelectItem>
-                    <SelectItem value="Non-Fiction">Non-Fiction</SelectItem>
-                    <SelectItem value="Business & Leadership">Business & Leadership</SelectItem>
-                    <SelectItem value="Technology">Technology</SelectItem>
-                    <SelectItem value="Self Help">Self Help</SelectItem>
-                    <SelectItem value="Children">Children</SelectItem>
+                    {categoriesList.length > 0 ? (
+                      categoriesList.map((cat: any) => (
+                        <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="General">General</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -321,9 +339,9 @@ export default function EditBookPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-[#E2E6DF]">
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Out of Stock">Out of Stock</SelectItem>
-                    <SelectItem value="Low Stock">Low Stock</SelectItem>
+                    <SelectItem value="published">Published (Active)</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
