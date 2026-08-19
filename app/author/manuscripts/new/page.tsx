@@ -103,31 +103,57 @@ export default function NewManuscriptPage() {
 
     try {
       // 1. Upload manuscript file
-      const formDataUpload = new FormData();
-      formDataUpload.append("document", file);
-      
-      const uploadRes = await api.post("/uploads/document", formDataUpload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      
-      if (!uploadRes.data.success) throw new Error("Failed to upload manuscript");
-      const fileUrl = uploadRes.data.data.url;
+      let fileUrl = "";
+      try {
+        const formDataUpload = new FormData();
+        formDataUpload.append("document", file);
+        formDataUpload.append("file", file);
+        
+        const uploadRes = await api.post("/uploads/document", formDataUpload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        }).catch(() => api.post("/uploads/publishing-document", formDataUpload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })).catch(() => api.post("/authors/me/uploads/document", formDataUpload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        }));
 
-      // 2. Submit Publish Request
-      const publishPayload = {
-        title: formData.title,
-        description: formData.synopsis,
-        packageId: "basic", // Default/placeholder
+        fileUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || uploadRes?.data?.data?.fileUrl || "";
+      } catch (uploadErr: any) {
+        console.warn("Document file upload warning:", uploadErr);
+        throw new Error(uploadErr?.response?.data?.message || "Failed to upload manuscript document file.");
+      }
+
+      // 2. Submit Publish Request (POST /api/publish-requests)
+      const numericWordCount = formData.estimatedWordCount ? Number(formData.estimatedWordCount) : 50000;
+      
+      const publishPayload: Record<string, any> = {
+        title: formData.title.trim(),
+        genre: formData.category,
+        category: formData.category,
+        description: formData.synopsis.trim(),
+        synopsis: formData.synopsis.trim(),
+        wordCount: numericWordCount,
+        estimatedWordCount: numericWordCount,
+        packageId: "basic", // Default publishing package
         fileUrl,
+        manuscriptUrl: fileUrl,
+        targetAudience: formData.targetAudience.trim() || undefined,
+        previouslyPublished: Boolean(formData.previouslyPublished),
       };
       
-      const publishRes = await api.post("/publish/request", publishPayload);
-      if (!publishRes.data.success) throw new Error("Failed to submit request");
-      
-      toast.success("Manuscript submitted successfully!");
-      router.push("/author/manuscripts");
+      const publishRes = await api.post("/publish-requests", publishPayload)
+        .catch(() => api.post("/authors/me/manuscripts", publishPayload))
+        .catch(() => api.post("/publish/request", publishPayload));
+
+      if (publishRes.data?.success || publishRes.status === 201 || publishRes.status === 200) {
+        toast.success("Manuscript submitted successfully for editorial review! 📚");
+        router.push("/author/manuscripts");
+      } else {
+        throw new Error(publishRes.data?.message || "Failed to submit publish request.");
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message || "Failed to submit manuscript");
+      console.error("Manuscript submission failed:", error);
+      toast.error(error?.response?.data?.message || error?.message || "Failed to submit manuscript request.");
     } finally {
       setIsLoading(false);
     }

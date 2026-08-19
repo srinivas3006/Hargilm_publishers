@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { ArrowLeft, Save, Upload, User, UserPlus, Globe, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
@@ -18,15 +18,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import toast from "react-hot-toast";
 
 type AuthorType = "existing" | "new" | "external";
 
 export default function AddBookPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTitle = searchParams.get("title") || "";
+  const initialAuthor = searchParams.get("author") || "";
+
   const [loading, setLoading] = useState(false);
   const [fetchingAuthors, setFetchingAuthors] = useState(true);
+  const [fetchingCategories, setFetchingCategories] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   // Author Selection State
@@ -35,29 +39,56 @@ export default function AddBookPage() {
   const [selectedAuthorId, setSelectedAuthorId] = useState<string>("");
   const [selectedAuthorName, setSelectedAuthorName] = useState<string>("");
 
+  // Categories State
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+
   // New Author State
   const [newAuthorName, setNewAuthorName] = useState<string>("");
   const [newAuthorEmail, setNewAuthorEmail] = useState<string>("");
   const [newAuthorBio, setNewAuthorBio] = useState<string>("");
 
   // External Author State
-  const [externalAuthorName, setExternalAuthorName] = useState<string>("");
+  const [externalAuthorName, setExternalAuthorName] = useState<string>(initialAuthor);
 
   // Book Metadata State
   const [formData, setFormData] = useState({
-    title: "",
+    title: initialTitle,
     description: "",
-    category: "Non-Fiction",
+    category: "",
     price: "",
     discountPrice: "",
     stock: "10",
     isbn: "",
-    status: "Active",
+    status: "published",
+    format: "paperback",
+    pages: "250",
     isFeatured: false,
     isBestseller: false,
     isNewRelease: false,
     royaltyPercentage: "30",
   });
+
+  // Fetch Categories list
+  useEffect(() => {
+    const loadCategories = async () => {
+      setFetchingCategories(true);
+      try {
+        const { data } = await api.get("/categories").catch(() => api.get("/admin/categories"));
+        const items = data?.data?.categories || data?.data || data || [];
+        const arr = Array.isArray(items) ? items : [];
+        setCategoriesList(arr);
+        if (arr.length > 0) {
+          const firstCat = arr[0];
+          setFormData((prev) => ({ ...prev, category: firstCat._id || firstCat.id || firstCat.name }));
+        }
+      } catch (err) {
+        console.warn("Failed to load categories:", err);
+      } finally {
+        setFetchingCategories(false);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // Fetch Existing Authors list
   useEffect(() => {
@@ -103,11 +134,24 @@ export default function AddBookPage() {
       return;
     }
 
+    if (!formData.description.trim()) {
+      toast.error("Please enter a book description.");
+      return;
+    }
+
+    if (!formData.category) {
+      toast.error("Please select a book category.");
+      return;
+    }
+
+    if (!formData.price || Number(formData.price) <= 0) {
+      toast.error("Please enter a valid price (MRP).");
+      return;
+    }
+
     // 1. TRANSFORMATION LOGIC (FRONTEND SIDE)
     let finalAuthorId: string | null = null;
     let finalAuthorName: string = "";
-    let finalAuthorEmail: string | undefined = undefined;
-    let finalAuthorBio: string | undefined = undefined;
 
     if (authorType === "existing") {
       if (!selectedAuthorId) {
@@ -126,8 +170,6 @@ export default function AddBookPage() {
       }
       finalAuthorId = null;
       finalAuthorName = newAuthorName.trim();
-      finalAuthorEmail = newAuthorEmail.trim() || undefined;
-      finalAuthorBio = newAuthorBio.trim() || undefined;
     } else if (authorType === "external") {
       if (!externalAuthorName.trim()) {
         toast.error("Please enter the external author's name.");
@@ -140,79 +182,69 @@ export default function AddBookPage() {
     setLoading(true);
 
     try {
-      // Validate whether finalAuthorId is a 24-char Mongoose ObjectId
+      // 2. IMAGE UPLOAD HANDLING (IF COVER IMAGE FILE ATTACHED)
+      let coverImageUrl: string | undefined = undefined;
+      if (imageFile) {
+        try {
+          const uploadFormData = new FormData();
+          uploadFormData.append("image", imageFile);
+          uploadFormData.append("coverImage", imageFile);
+
+          const uploadRes = await api.post("/uploads/image", uploadFormData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          }).catch(() => api.post("/uploads/publishing-image", uploadFormData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          }));
+
+          coverImageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || uploadRes?.data?.data?.coverImage;
+        } catch (uploadErr) {
+          console.warn("Image upload failed, proceeding with catalog creation:", uploadErr);
+        }
+      }
+
+      // 3. CONSTRUCT STRICT JSON PAYLOAD FOR BACKEND SPECIFICATIONS
       const isObjectId = finalAuthorId && /^[0-9a-fA-F]{24}$/.test(finalAuthorId);
+      const numericPrice = Number(formData.price) || 0;
 
       const jsonPayload: Record<string, any> = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category,
-        price: Number(formData.price) || 0,
+        mrp: numericPrice,
+        price: numericPrice, // Legacy compatibility alias matching mrp
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
         stock: Number(formData.stock) || 0,
         isbn: formData.isbn.trim() || undefined,
-        status: formData.status,
-        isFeatured: formData.isFeatured,
-        isBestseller: formData.isBestseller,
-        isNewRelease: formData.isNewRelease,
+        status: formData.status === "Active" ? "published" : formData.status,
+        format: formData.format || "paperback",
+        pages: formData.pages ? Number(formData.pages) : 250,
+        isFeatured: Boolean(formData.isFeatured),
+        isBestseller: Boolean(formData.isBestseller),
+        isNewRelease: Boolean(formData.isNewRelease),
         royaltyPercentage: formData.royaltyPercentage ? Number(formData.royaltyPercentage) : 30,
-        authorName: finalAuthorName,
-        ...(isObjectId && { author: finalAuthorId, authorId: finalAuthorId }),
       };
 
-      // Form Data construct for image upload endpoint
-      const submitFormData = new FormData();
-      Object.entries(jsonPayload).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          submitFormData.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
-        }
-      });
-
-      if (imageFile) {
-        submitFormData.append("coverImage", imageFile);
+      if (coverImageUrl) {
+        jsonPayload.coverImage = coverImageUrl;
       }
 
-      // Try API submission to backend (safely caught so network/validation 500s don't block the user)
-      try {
-        if (imageFile) {
-          await api.post("/admin/books", submitFormData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-        } else {
-          await api.post("/admin/books", jsonPayload);
-        }
-      } catch (backendError: any) {
-        console.warn("Backend API response warning, persisting book locally:", backendError);
+      if (isObjectId) {
+        jsonPayload.author = finalAuthorId;
       }
 
-      // Always save locally so the newly added book appears in admin & storefront tables!
-      try {
-        const localBooks = JSON.parse(localStorage.getItem("harglim_custom_books") || "[]");
-        const newBookEntry = {
-          _id: `custom-book-${Date.now()}`,
-          title: formData.title.trim(),
-          description: formData.description.trim(),
-          author: { name: finalAuthorName },
-          authorName: finalAuthorName,
-          category: { name: formData.category },
-          price: Number(formData.price) || 399,
-          discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
-          stock: Number(formData.stock) || 10,
-          isbn: formData.isbn,
-          status: formData.status,
-          isFeatured: formData.isFeatured,
-          coverImage: imageFile ? URL.createObjectURL(imageFile) : "/placeholder-book.webp",
-        };
-        localStorage.setItem("harglim_custom_books", JSON.stringify([newBookEntry, ...localBooks]));
-      } catch (e) {
-        console.error("Local storage error:", e);
+      // Submit JSON payload to /api/admin/books
+      const res = await api.post("/admin/books", jsonPayload);
+      
+      if (res.data?.success || res.status === 201 || res.status === 200) {
+        toast.success("Book created and published successfully to catalog! 📚");
+        router.push("/admin/books");
+      } else {
+        throw new Error(res.data?.message || "Backend catalog creation failed.");
       }
-
-      toast.success("Book created and published successfully! 📚");
-      router.push("/admin/books");
     } catch (err: any) {
       console.error("Failed to create book:", err);
-      toast.error("An error occurred while publishing the book.");
+      const errMsg = err?.response?.data?.message || err?.message || "An error occurred while publishing the book to the backend catalog.";
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -470,15 +502,25 @@ export default function AddBookPage() {
                   onValueChange={(val) => setFormData((prev) => ({ ...prev, category: val }))}
                 >
                   <SelectTrigger className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-xs font-bold">
-                    <SelectValue placeholder="Select Category" />
+                    <SelectValue placeholder={fetchingCategories ? "Loading categories..." : "Select Category"} />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-[#E2E6DF]">
-                    <SelectItem value="Fiction">Fiction</SelectItem>
-                    <SelectItem value="Non-Fiction">Non-Fiction</SelectItem>
-                    <SelectItem value="Business & Leadership">Business & Leadership</SelectItem>
-                    <SelectItem value="Technology">Technology</SelectItem>
-                    <SelectItem value="Self Help">Self Help</SelectItem>
-                    <SelectItem value="Children">Children</SelectItem>
+                    {categoriesList.length > 0 ? (
+                      categoriesList.map((cat: any) => (
+                        <SelectItem key={cat._id || cat.id || cat.name} value={cat._id || cat.id || cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="Fiction">Fiction</SelectItem>
+                        <SelectItem value="Non-Fiction">Non-Fiction</SelectItem>
+                        <SelectItem value="Business & Leadership">Business & Leadership</SelectItem>
+                        <SelectItem value="Technology">Technology</SelectItem>
+                        <SelectItem value="Self Help">Self Help</SelectItem>
+                        <SelectItem value="Children">Children</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -509,9 +551,9 @@ export default function AddBookPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-[#E2E6DF]">
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Out of Stock">Out of Stock</SelectItem>
-                    <SelectItem value="Low Stock">Low Stock</SelectItem>
+                    <SelectItem value="published">Published (Active)</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

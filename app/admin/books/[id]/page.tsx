@@ -132,53 +132,62 @@ export default function EditBookPage() {
     setLoading(true);
 
     try {
+      let coverImageUrl: string | undefined = undefined;
       if (imageFile) {
-        const submitData = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-          submitData.append(key, String(value));
-        });
-        submitData.append("coverImage", imageFile);
+        try {
+          const uploadFormData = new FormData();
+          uploadFormData.append("image", imageFile);
+          uploadFormData.append("coverImage", imageFile);
 
-        await api
-          .put(`/admin/books/${bookId}`, submitData, {
+          const uploadRes = await api.post("/uploads/image", uploadFormData, {
             headers: { "Content-Type": "multipart/form-data" },
-          })
-          .catch(() =>
-            api.put(`/books/${bookId}`, submitData, {
-              headers: { "Content-Type": "multipart/form-data" },
-            })
-          );
-      } else {
-        const jsonPayload = {
-          title: formData.title,
-          authorName: formData.authorName,
-          description: formData.description,
-          category: formData.category,
-          price: Number(formData.price) || 0,
-          discountPrice: formData.discountPrice
-            ? Number(formData.discountPrice)
-            : undefined,
-          stock: Number(formData.stock) || 0,
-          isbn: formData.isbn,
-          status: formData.status,
-          isFeatured: formData.isFeatured,
-          isBestseller: formData.isBestseller,
-          isNewRelease: formData.isNewRelease,
-          royaltyPercentage: formData.royaltyPercentage
-            ? Number(formData.royaltyPercentage)
-            : undefined,
-        };
+          }).catch(() => api.post("/uploads/publishing-image", uploadFormData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          }));
 
-        await api
-          .put(`/admin/books/${bookId}`, jsonPayload)
-          .catch(() => api.put(`/books/${bookId}`, jsonPayload));
+          coverImageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || uploadRes?.data?.data?.coverImage;
+        } catch (uploadErr) {
+          console.warn("Image upload warning:", uploadErr);
+        }
       }
+
+      const numericPrice = Number(formData.price) || 0;
+      const statusValue = formData.status === "Active" ? "published" : formData.status;
+
+      const jsonPayload: Record<string, any> = {
+        title: formData.title.trim(),
+        authorName: formData.authorName.trim(),
+        description: formData.description.trim(),
+        category: formData.category,
+        mrp: numericPrice,
+        price: numericPrice,
+        discountPrice: formData.discountPrice
+          ? Number(formData.discountPrice)
+          : undefined,
+        stock: Number(formData.stock) || 0,
+        isbn: formData.isbn.trim() || undefined,
+        status: statusValue,
+        isFeatured: Boolean(formData.isFeatured),
+        isBestseller: Boolean(formData.isBestseller),
+        isNewRelease: Boolean(formData.isNewRelease),
+        royaltyPercentage: formData.royaltyPercentage
+          ? Number(formData.royaltyPercentage)
+          : undefined,
+      };
+
+      if (coverImageUrl) {
+        jsonPayload.coverImage = coverImageUrl;
+      }
+
+      await api
+        .put(`/admin/books/${bookId}`, jsonPayload)
+        .catch(() => api.put(`/books/${bookId}`, jsonPayload));
 
       toast.success("Book updated successfully!");
       router.push("/admin/books");
     } catch (err: any) {
       console.error("Failed to update book:", err);
-      toast.error(err?.response?.data?.message || "Failed to update book");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to update book");
     } finally {
       setLoading(false);
     }

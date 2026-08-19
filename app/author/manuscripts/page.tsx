@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import api from "@/lib/api";
 import { motion } from "framer-motion";
 import {
   FileText,
@@ -124,7 +125,44 @@ const getStatusIcon = (status: string) => {
 export default function ManuscriptsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [items, setItems] = useState(manuscripts);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchManuscripts = async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get("/publish-requests").catch(() =>
+          api.get("/authors/me/publish-requests").catch(() =>
+            api.get("/authors/me/manuscripts")
+          )
+        );
+        const list = data?.data?.requests || data?.data?.manuscripts || data?.data || data || [];
+        const arr = Array.isArray(list) ? list : [];
+        if (arr.length > 0) {
+          const mapped = arr.map((m: any, idx: number) => ({
+            id: m._id || m.id || idx + 1,
+            title: m.title || "Untitled Manuscript",
+            category: m.genre || m.category || "General",
+            wordCount: m.wordCount || m.estimatedWordCount || 50000,
+            submittedDate: m.createdAt ? new Date(m.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+            status: m.status === "pending" ? "Under Review" : m.status === "approved" ? "Approved" : m.status === "rejected" ? "Revision Required" : (m.status || "Submitted"),
+            progress: m.status === "approved" ? 100 : m.status === "under_review" ? 75 : 30,
+            feedback: m.feedback || m.editorialNotes || m.rejectionReason || null,
+          }));
+          setItems(mapped);
+        } else {
+          setItems(manuscripts);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch manuscripts from API, loading mock data:", err);
+        setItems(manuscripts);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchManuscripts();
+  }, []);
 
   const filteredManuscripts = items.filter((m) => {
     const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase());

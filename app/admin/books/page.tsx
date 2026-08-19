@@ -55,16 +55,28 @@ import toast from "react-hot-toast";
 
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Active":
+  switch (status?.toLowerCase()) {
+    case "published":
+    case "active":
       return "bg-emerald-500/10 text-emerald-600";
-    case "Out of Stock":
+    case "draft":
+      return "bg-amber-500/10 text-amber-600";
+    case "archived":
+    case "out of stock":
       return "bg-red-500/10 text-red-600";
-    case "Low Stock":
+    case "low stock":
       return "bg-amber-500/10 text-amber-600";
     default:
       return "bg-muted text-muted-foreground";
   }
+};
+
+const getStatusLabel = (status: string) => {
+  if (!status) return "Active";
+  if (status.toLowerCase() === "published") return "Active";
+  if (status.toLowerCase() === "draft") return "Draft";
+  if (status.toLowerCase() === "archived") return "Archived";
+  return status;
 };
 
 export default function AdminBooksPage() {
@@ -318,7 +330,7 @@ export default function AdminBooksPage() {
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(book.status)}>
-                        {book.status || "Active"}
+                        {getStatusLabel(book.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
