@@ -65,9 +65,11 @@ function SuccessContent() {
               </div>
             )}
 
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-800">
-              <span className="font-bold">Status: </span>
-              <span>Pending Admin Verification (Order created, invoice & shipment generated post-approval)</span>
+            <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-800 space-y-1">
+              <p className="font-bold">Payment Status: Pending Admin Verification</p>
+              <p className="text-[11px] text-amber-700 leading-relaxed font-sans">
+                Your order is registered under <strong>Order Number {orderId}</strong>. Shipment tracking details will be assigned by admin after payment approval & dispatch.
+              </p>
             </div>
           </div>
         </div>
