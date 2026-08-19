@@ -89,14 +89,25 @@ export default function CheckoutStepPage() {
 
       const { data } = await api.post('/orders', payload);
       
-      if (data.success || data.status === 'success') {
+      if (data.success || data.status === 'success' || data._id || data.data?._id) {
         const responseData = data.data || data;
-        const { order, payment } = responseData;
-        setBackendOrder(order);
-        setBackendPayment(payment);
-        setCurrentOrderId(order._id || order.id);
-        setCurrentOrderNumber(order.orderNumber);
-        setQrCodeDataUrl(payment?.qrCodeDataUrl || '');
+        const orderObj = responseData.order || responseData;
+        const paymentObj = typeof responseData.payment === 'object' ? responseData.payment : responseData;
+
+        setBackendOrder(orderObj);
+        setBackendPayment(paymentObj);
+
+        const orderId = orderObj._id || orderObj.id || responseData._id || responseData.id || '';
+        const orderNum = orderObj.orderNumber || responseData.orderNumber || 'HM-ORDER';
+
+        setCurrentOrderId(orderId);
+        setCurrentOrderNumber(orderNum);
+        
+        let rawQr = responseData.qrCodeDataUrl || data.qrCodeDataUrl || paymentObj?.qrCodeDataUrl || orderObj?.qrCodeDataUrl || '';
+        if (rawQr && !rawQr.startsWith('data:') && !rawQr.startsWith('http')) {
+          rawQr = `data:image/png;base64,${rawQr}`;
+        }
+        setQrCodeDataUrl(rawQr);
         setShowUpiModal(true);
       }
     } catch (error: any) {
@@ -113,14 +124,19 @@ export default function CheckoutStepPage() {
     }
 
     try {
-      setUpiStatus('success'); // show loading state visually
-      await api.put(`/orders/${currentOrderId}/verify-payment`, { utr });
-      
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setShowUpiModal(false);
-      router.push(`/checkout/success?orderId=${currentOrderNumber}&paymentId=UPI`);
+      const { data } = await api.put(`/orders/${currentOrderId}/verify-payment`, { utr: utr.trim() });
+      if (data.success || data.status === "success" || data._id) {
+        setUpiStatus('success');
+        clearCart();
+        toast.success("Payment submitted for verification! 💳");
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setShowUpiModal(false);
+        router.push(`/checkout/success?orderId=${currentOrderNumber}&paymentId=UPI`);
+      } else {
+        throw new Error(data.message || "Payment verification failed");
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to verify payment");
+      toast.error(error.response?.data?.message || error?.message || "Failed to verify payment");
       setUpiStatus('waiting');
     }
   };
