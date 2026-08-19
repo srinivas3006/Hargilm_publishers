@@ -91,7 +91,30 @@ export default function AuthorSettingsPage() {
     setLoading(true);
     try {
       const authorId = user?._id || user?.id;
-      const finalImage = profileForm.profileImage || imagePreview;
+      let finalImage = profileForm.profileImage || imagePreview;
+
+      // 1. Upload image file if selected
+      if (imageFile) {
+        try {
+          const uploadFormData = new FormData();
+          uploadFormData.append("image", imageFile);
+
+          const uploadRes = await api.post("/uploads/image", uploadFormData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          }).catch(() => api.post("/uploads/publishing-image", uploadFormData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })).catch(() => api.post("/authors/me/uploads/image", uploadFormData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          }));
+
+          const uploadedUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url;
+          if (uploadedUrl) {
+            finalImage = uploadedUrl;
+          }
+        } catch (imgErr) {
+          console.warn("Failed to upload author profile image:", imgErr);
+        }
+      }
 
       const payload = {
         name: profileForm.name,

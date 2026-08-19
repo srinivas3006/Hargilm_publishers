@@ -260,17 +260,9 @@ export default function CheckoutStepPage() {
                 <span>Subtotal</span>
                 <span>₹{(backendOrder?.subtotal ?? subtotal).toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>GST Tax (5%)</span>
-                <span>₹{(backendOrder?.tax ?? tax).toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="flex items-center justify-between text-sm font-medium text-emerald-600">
                 <span>Shipping</span>
-                <span>
-                  {(backendOrder?.shippingPrice ?? shipping) === 0
-                    ? 'Free'
-                    : `₹${(backendOrder?.shippingPrice ?? shipping).toFixed(2)}`}
-                </span>
+                <span>Free</span>
               </div>
             </div>
 

@@ -163,12 +163,12 @@ export default function CartPage() {
           </section>
 
           <aside className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex items-center gap-3 rounded-2xl bg-primary/5 p-4">
-              <Truck className="h-5 w-5 text-primary" />
+            <div className="flex items-center gap-3 rounded-2xl bg-emerald-500/10 p-4 border border-emerald-500/20">
+              <Truck className="h-5 w-5 text-emerald-600" />
               <div>
-                <p className="text-sm font-medium">Free delivery above ₹499</p>
-                <p className="text-sm text-muted-foreground">
-                  Shipping calculated at checkout.
+                <p className="text-sm font-bold text-emerald-800">Free Express Delivery</p>
+                <p className="text-xs text-emerald-700">
+                  No shipping fee on all orders across India.
                 </p>
               </div>
             </div>
@@ -178,13 +178,9 @@ export default function CartPage() {
                 <span>Subtotal</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
-              {/* <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Tax (5%)</span>
-                <span>₹{tax.toFixed(2)}</span>
-              </div> */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="flex items-center justify-between text-sm font-medium text-emerald-600">
                 <span>Shipping</span>
-                <span>{shipping === 0 ? "Free" : `₹${shipping}`}</span>
+                <span>Free</span>
               </div>
             </div>
 

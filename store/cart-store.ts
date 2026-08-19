@@ -38,9 +38,9 @@ interface CartState {
   itemCount: () => number;
 }
 
-const SHIPPING_THRESHOLD = 499;
-const SHIPPING_FEE = 50;
-const TAX_RATE = 0.05; // 5% GST
+const SHIPPING_THRESHOLD = 0;
+const SHIPPING_FEE = 0;
+const TAX_RATE = 0;
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -91,11 +91,7 @@ export const useCartStore = create<CartState>()(
       
       getTax: () => 0,
       
-      getShipping: () => {
-        const subtotal = get().getSubtotal();
-        if (subtotal === 0) return 0;
-        return subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-      },
+      getShipping: () => 0,
       
       getTotal: () => {
         const totalAmount = get().getSubtotal() + get().getShipping();
