@@ -48,6 +48,7 @@ const sidebarSections = [
   {
     title: "FINANCIAL",
     items: [
+      { href: "/admin/payments", label: "Payment Verification Queue", icon: CreditCard },
       { href: "/admin/royalties", label: "Royalty Entry", icon: DollarSign },
       { href: "/admin/settlements", label: "Settlements", icon: CreditCard },
     ],

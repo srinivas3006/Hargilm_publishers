@@ -128,13 +128,18 @@ export default function AdminOrdersPage() {
   }, [statusFilter, searchQuery]);
 
   // Action 1: Approve Payment
-  const handleApprovePayment = async (orderId: string) => {
+  const handleApprovePayment = async (orderId: string, paymentId?: string) => {
     try {
-      await api.put(`/admin/orders/${orderId}/status`, {
-        status: "Processing",
-        paymentStatus: "VERIFIED",
-        isPaid: true,
+      const targetId = paymentId || orderId;
+      await api.post(`/admin/operations/payments/${targetId}/approve`, {
+        reason: "Admin payment approved from orders view",
       }).catch(() =>
+        api.put(`/admin/orders/${orderId}/status`, {
+          status: "Processing",
+          paymentStatus: "VERIFIED",
+          isPaid: true,
+        })
+      ).catch(() =>
         api.patch(`/admin/orders/${orderId}`, {
           isPaid: true,
           paymentStatus: "VERIFIED",
@@ -150,16 +155,21 @@ export default function AdminOrdersPage() {
   };
 
   // Action 2: Reject Payment
-  const handleRejectPayment = async (orderId: string) => {
+  const handleRejectPayment = async (orderId: string, paymentId?: string) => {
     const reason = prompt("Enter reason for payment rejection (optional):", "UTR reference mismatch");
     if (reason === null) return;
 
     try {
-      await api.put(`/admin/orders/${orderId}/status`, {
-        status: "Cancelled",
-        paymentStatus: "REJECTED",
+      const targetId = paymentId || orderId;
+      await api.post(`/admin/operations/payments/${targetId}/reject`, {
         reason,
       }).catch(() =>
+        api.put(`/admin/orders/${orderId}/status`, {
+          status: "Cancelled",
+          paymentStatus: "REJECTED",
+          reason,
+        })
+      ).catch(() =>
         api.patch(`/admin/orders/${orderId}`, {
           isPaid: false,
           paymentStatus: "REJECTED",

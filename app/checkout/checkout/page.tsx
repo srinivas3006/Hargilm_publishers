@@ -60,8 +60,8 @@ export default function CheckoutStepPage() {
     }
 
     if (paymentMethod !== 'upi') {
-       toast.error("Only UPI payments are supported currently.");
-       return;
+      toast.error("Only UPI payments are supported currently.");
+      return;
     }
 
     processOrder();
@@ -91,7 +91,7 @@ export default function CheckoutStepPage() {
       };
 
       const { data } = await api.post('/orders', payload);
-      
+
       if (data.success || data.status === 'success' || data._id || data.data?._id) {
         const responseData = data.data || data;
         const orderObj = responseData.order || responseData;
@@ -105,7 +105,7 @@ export default function CheckoutStepPage() {
 
         setCurrentOrderId(orderId);
         setCurrentOrderNumber(orderNum);
-        
+
         let rawQr = responseData.qrCodeDataUrl || data.qrCodeDataUrl || paymentObj?.qrCodeDataUrl || orderObj?.qrCodeDataUrl || '';
         if (rawQr && !rawQr.startsWith('data:') && !rawQr.startsWith('http')) {
           rawQr = `data:image/png;base64,${rawQr}`;
@@ -125,7 +125,7 @@ export default function CheckoutStepPage() {
 
   const handleVerifyUtr = async () => {
     const sanitizedUtr = utr.trim().toUpperCase();
-    
+
     // UTR Validation: A-Z, 0-9, hyphen. Length 6 to 64 characters
     const utrRegex = /^[A-Z0-9-]{6,64}$/;
     if (!utrRegex.test(sanitizedUtr)) {
@@ -153,271 +153,271 @@ export default function CheckoutStepPage() {
 
   return (
     <AuthGuard>
-    <div className="bg-background min-h-screen py-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10">
-          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Checkout</p>
-          <h1 className="text-3xl font-bold">Complete Your Order</h1>
-          <p className="text-muted-foreground mt-2">Enter shipping details, select payment, and confirm your purchase.</p>
-        </div>
+      <div className="bg-background min-h-screen py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-10">
+            <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Checkout</p>
+            <h1 className="text-3xl font-bold">Complete Your Order</h1>
+            <p className="text-muted-foreground mt-2">Enter shipping details, select payment, and confirm your purchase.</p>
+          </div>
 
-        <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[2fr_1fr]">
-          <section className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <div>
-              <h2 className="text-xl font-semibold">Shipping Address</h2>
-              <p className="text-sm text-muted-foreground mt-1">Where should we deliver your books?</p>
-            </div>
+          <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+            <section className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm">
+              <div>
+                <h2 className="text-xl font-semibold">Shipping Address</h2>
+                <p className="text-sm text-muted-foreground mt-1">Where should we deliver your books?</p>
+              </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                { name: 'fullName', label: 'Full Name', type: 'text' },
-                { name: 'email', label: 'Email Address', type: 'email' },
-              ].map((field) => (
-                <label key={field.name} className="space-y-2">
-                  <span className="text-sm font-medium">{field.label}</span>
-                  <input
-                    type={field.type}
-                    value={(address as any)[field.name]}
-                    onChange={(event) => setAddress({ ...address, [field.name]: event.target.value })}
-                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
-                  />
-                </label>
-              ))}
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                { name: 'addressLine1', label: 'Address Line 1' },
-                { name: 'addressLine2', label: 'Address Line 2 (optional)' },
-              ].map((field) => (
-                <label key={field.name} className="space-y-2">
-                  <span className="text-sm font-medium">{field.label}</span>
-                  <input
-                    type="text"
-                    value={(address as any)[field.name]}
-                    onChange={(event) => setAddress({ ...address, [field.name]: event.target.value })}
-                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
-                  />
-                </label>
-              ))}
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[
-                { name: 'city', label: 'City' },
-                { name: 'postalCode', label: 'Postal Code' },
-                { name: 'country', label: 'Country' },
-              ].map((field) => (
-                <label key={field.name} className="space-y-2">
-                  <span className="text-sm font-medium">{field.label}</span>
-                  <input
-                    type="text"
-                    value={(address as any)[field.name]}
-                    onChange={(event) => setAddress({ ...address, [field.name]: event.target.value })}
-                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
-                  />
-                </label>
-              ))}
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-medium">Phone</span>
-                <input
-                  type="tel"
-                  value={address.phone}
-                  onChange={(event) => setAddress({ ...address, phone: event.target.value })}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium">Delivery Notes</span>
-                <input
-                  type="text"
-                  value={address.addressLine2}
-                  onChange={(event) => setAddress({ ...address, addressLine2: event.target.value })}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
-                />
-              </label>
-            </div>
-
-            <div className="space-y-4 rounded-3xl border border-border bg-background p-4">
-              <h2 className="text-lg font-semibold">Payment Method</h2>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {([
-                  { value: 'upi', label: 'UPI' },
-                ] as const).map((method) => (
-                  <button
-                    type="button"
-                    key={method.value}
-                    onClick={() => setPaymentMethod(method.value)}
-                    className={`rounded-2xl border p-4 text-left transition border-primary bg-primary/10`}
-                  >
-                    <p className="font-semibold">{method.label}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Pay via Google Pay, PhonePe, Paytm QR Code
-                    </p>
-                  </button>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  { name: 'fullName', label: 'Full Name', type: 'text' },
+                  { name: 'email', label: 'Email Address', type: 'email' },
+                ].map((field) => (
+                  <label key={field.name} className="space-y-2">
+                    <span className="text-sm font-medium">{field.label}</span>
+                    <input
+                      type={field.type}
+                      value={(address as any)[field.name]}
+                      onChange={(event) => setAddress({ ...address, [field.name]: event.target.value })}
+                      className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
+                    />
+                  </label>
                 ))}
               </div>
-            </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Once submitted, your order will appear in the dashboard.</p>
-              </div>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Placing Order...' : 'Place Order'}
-              </Button>
-            </div>
-          </section>
-
-          <aside className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex items-center gap-3 rounded-2xl bg-primary/5 p-4">
-              <CreditCard className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium">Order Summary</p>
-                <p className="text-sm text-muted-foreground">Review your purchase before confirming.</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Subtotal</span>
-                <span>₹{(backendOrder?.subtotal ?? subtotal).toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm font-medium text-emerald-600">
-                <span>Shipping</span>
-                <span>Free</span>
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-4">
-              <div className="flex items-center justify-between text-lg font-semibold">
-                <span>Order Total</span>
-                <span>₹{(backendOrder?.totalPrice ?? backendPayment?.amount ?? total).toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-border bg-background p-4">
-              <p className="text-sm font-medium">Items</p>
-              <div className="mt-3 space-y-3">
-                {items.map((item) => (
-                  <div key={item.book._id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate">{item.book.title}</span>
-                    <span className="text-muted-foreground">×{item.quantity}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </aside>
-        </form>
-      </div>
-
-      {/* UPI Modal Simulation */}
-      <AnimatePresence>
-        {showUpiModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-sm rounded-3xl bg-card border border-border p-6 shadow-2xl text-center"
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-4 top-4"
-                onClick={() => {
-                  setShowUpiModal(false);
-                  setUpiStatus('waiting');
-                }}
-                disabled={upiStatus === 'success'}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-
-              {upiStatus === 'waiting' ? (
-                <>
-                  <div className="mx-auto w-16 h-16 bg-[#0F3D3E]/10 text-[#0F3D3E] flex items-center justify-center rounded-2xl mb-3">
-                    <QrCode className="h-8 w-8 text-[#0F3D3E]" />
-                  </div>
-                  
-                  <div className="space-y-1 mb-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-[#D4AF37]/20 text-[#0F3D3E] px-2.5 py-0.5 rounded-md">
-                      Order #{currentOrderNumber}
-                    </span>
-                    <h3 className="text-xl font-serif font-bold text-[#0F3D3E]">Scan to Pay with UPI</h3>
-                    <p className="text-xs text-[#5C6E6E]">
-                      Amount: <span className="font-bold text-[#0F3D3E] text-base">₹{(backendPayment?.amount ?? backendOrder?.totalPrice ?? total).toFixed(2)}</span>
-                    </p>
-                  </div>
-                  
-                  <div className="aspect-square bg-white w-48 mx-auto rounded-2xl border-2 border-dashed border-[#E2E6DF] flex items-center justify-center mb-4 overflow-hidden shadow-xs">
-                    {qrCodeDataUrl ? (
-                      <img src={qrCodeDataUrl} alt="UPI payment QR" className="w-full h-full object-contain p-2" />
-                    ) : (
-                      <QrCode className="h-24 w-24 text-muted-foreground/30" />
-                    )}
-                  </div>
-
-                  {upiUrl && (
-                    <a
-                      href={upiUrl}
-                      target="_self"
-                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 mb-4 text-xs font-serif font-bold rounded-xl bg-[#0F3D3E] text-[#D4AF37] hover:bg-[#174C4D] transition-colors shadow-xs"
-                    >
-                      <span>Pay via UPI App (PhonePe / GPay / Paytm)</span>
-                    </a>
-                  )}
-
-                  <p className="text-xs text-[#5C6E6E] mb-4 font-sans leading-relaxed">
-                    Open your UPI app, scan this QR code or click the button above to pay, then enter your 12-digit UTR below.
-                  </p>
-
-                  <div className="space-y-2 mb-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  { name: 'addressLine1', label: 'Address Line 1' },
+                  { name: 'addressLine2', label: 'Address Line 2 (optional)' },
+                ].map((field) => (
+                  <label key={field.name} className="space-y-2">
+                    <span className="text-sm font-medium">{field.label}</span>
                     <input
                       type="text"
-                      placeholder="Enter UTR / Transaction ID (e.g. UPI1234567890)"
-                      value={utr}
-                      onChange={(e) => setUtr(e.target.value.toUpperCase())}
-                      maxLength={64}
-                      className="w-full rounded-xl border border-[#E2E6DF] bg-[#F8F9F7] px-4 py-3 text-xs font-mono font-bold uppercase tracking-wider outline-none transition focus:border-[#0F3D3E]"
+                      value={(address as any)[field.name]}
+                      onChange={(event) => setAddress({ ...address, [field.name]: event.target.value })}
+                      className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
                     />
-                    <p className="text-[10px] text-[#5C6E6E] text-left">
-                      * Minimum 6 characters (Letters, numbers, hyphens allowed)
-                    </p>
-                  </div>
+                  </label>
+                ))}
+              </div>
 
-                  <Button className="w-full bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] font-serif font-bold text-sm h-11 rounded-xl shadow-xs" onClick={handleVerifyUtr}>
-                    Submit UTR for Verification
-                  </Button>
-                </>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="py-8 space-y-4"
+              <div className="grid gap-4 sm:grid-cols-3">
+                {[
+                  { name: 'city', label: 'City' },
+                  { name: 'postalCode', label: 'Postal Code' },
+                  { name: 'country', label: 'Country' },
+                ].map((field) => (
+                  <label key={field.name} className="space-y-2">
+                    <span className="text-sm font-medium">{field.label}</span>
+                    <input
+                      type="text"
+                      value={(address as any)[field.name]}
+                      onChange={(event) => setAddress({ ...address, [field.name]: event.target.value })}
+                      className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-sm font-medium">Phone</span>
+                  <input
+                    type="tel"
+                    value={address.phone}
+                    onChange={(event) => setAddress({ ...address, phone: event.target.value })}
+                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium">Delivery Notes</span>
+                  <input
+                    type="text"
+                    value={address.addressLine2}
+                    onChange={(event) => setAddress({ ...address, addressLine2: event.target.value })}
+                    className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition focus:border-primary/80"
+                  />
+                </label>
+              </div>
+
+              <div className="space-y-4 rounded-3xl border border-border bg-background p-4">
+                <h2 className="text-lg font-semibold">Payment Method</h2>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {([
+                    { value: 'upi', label: 'UPI' },
+                  ] as const).map((method) => (
+                    <button
+                      type="button"
+                      key={method.value}
+                      onClick={() => setPaymentMethod(method.value)}
+                      className={`rounded-2xl border p-4 text-left transition border-primary bg-primary/10`}
+                    >
+                      <p className="font-semibold">{method.label}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Pay via Google Pay, PhonePe, Paytm QR Code
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Once submitted, your order will appear in the dashboard.</p>
+                </div>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? 'Placing Order...' : 'Place Order'}
+                </Button>
+              </div>
+            </section>
+
+            <aside className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm">
+              <div className="flex items-center gap-3 rounded-2xl bg-primary/5 p-4">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Order Summary</p>
+                  <p className="text-sm text-muted-foreground">Review your purchase before confirming.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>₹{(backendOrder?.subtotal ?? subtotal).toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-medium text-emerald-600">
+                  <span>Shipping</span>
+                  <span>Free</span>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center justify-between text-lg font-semibold">
+                  <span>Order Total</span>
+                  <span>₹{(backendOrder?.totalPrice ?? backendPayment?.amount ?? total).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-background p-4">
+                <p className="text-sm font-medium">Items</p>
+                <div className="mt-3 space-y-3">
+                  {items.map((item) => (
+                    <div key={item.book._id} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="truncate">{item.book.title}</span>
+                      <span className="text-muted-foreground">×{item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </form>
+        </div>
+
+        {/* UPI Modal Simulation */}
+        <AnimatePresence>
+          {showUpiModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="relative w-full max-w-sm rounded-3xl bg-card border border-border p-6 shadow-2xl text-center"
+              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-4 top-4"
+                  onClick={() => {
+                    setShowUpiModal(false);
+                    setUpiStatus('waiting');
+                  }}
+                  disabled={upiStatus === 'success'}
                 >
-                  <div className="mx-auto w-20 h-20 bg-emerald-500/10 text-emerald-600 flex items-center justify-center rounded-full shadow-sm">
-                    <CheckCircle2 className="h-10 w-10" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-serif font-bold text-[#0F3D3E]">Payment Submitted!</h3>
-                    <p className="text-xs text-amber-700 font-medium mt-1 bg-amber-50 border border-amber-200 p-2.5 rounded-xl">
-                      ⏳ Payment UTR submitted. Waiting for admin verification.
+                  <X className="h-4 w-4" />
+                </Button>
+
+                {upiStatus === 'waiting' ? (
+                  <>
+                    <div className="mx-auto w-16 h-16 bg-[#0F3D3E]/10 text-[#0F3D3E] flex items-center justify-center rounded-2xl mb-3">
+                      <QrCode className="h-8 w-8 text-[#0F3D3E]" />
+                    </div>
+
+                    <div className="space-y-1 mb-4">
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-[#D4AF37]/20 text-[#0F3D3E] px-2.5 py-0.5 rounded-md">
+                        Order #{currentOrderNumber}
+                      </span>
+                      <h3 className="text-xl font-serif font-bold text-[#0F3D3E]">Scan to Pay with UPI</h3>
+                      <p className="text-xs text-[#5C6E6E]">
+                        Amount: <span className="font-bold text-[#0F3D3E] text-base">₹{(backendPayment?.amount ?? backendOrder?.totalPrice ?? total).toFixed(2)}</span>
+                      </p>
+                    </div>
+
+                    <div className="aspect-square bg-white w-48 mx-auto rounded-2xl border-2 border-dashed border-[#E2E6DF] flex items-center justify-center mb-4 overflow-hidden shadow-xs">
+                      {qrCodeDataUrl ? (
+                        <img src={qrCodeDataUrl} alt="UPI payment QR" className="w-full h-full object-contain p-2" />
+                      ) : (
+                        <QrCode className="h-24 w-24 text-muted-foreground/30" />
+                      )}
+                    </div>
+
+                    {upiUrl && (
+                      <a
+                        href={upiUrl}
+                        target="_self"
+                        className="inline-flex items-center justify-center gap-2 w-full py-2.5 mb-4 text-xs font-serif font-bold rounded-xl bg-[#0F3D3E] text-[#D4AF37] hover:bg-[#174C4D] transition-colors shadow-xs"
+                      >
+                        <span>Pay via UPI App (PhonePe / GPay / Paytm)</span>
+                      </a>
+                    )}
+
+                    <p className="text-xs text-[#5C6E6E] mb-4 font-sans leading-relaxed">
+                      Open your UPI app, scan this QR code or click the button above to pay, then enter your 12-digit UTR below.
                     </p>
-                  </div>
-                  <p className="text-xs text-[#5C6E6E] flex items-center justify-center gap-2 font-sans pt-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#0F3D3E]" /> Redirecting to order confirmation...
-                  </p>
-                </motion.div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </div>
+
+                    <div className="space-y-2 mb-4">
+                      <input
+                        type="text"
+                        placeholder="Enter UTR / Transaction ID (e.g. UPI1234567890)"
+                        value={utr}
+                        onChange={(e) => setUtr(e.target.value.toUpperCase())}
+                        maxLength={64}
+                        className="w-full rounded-xl border border-[#E2E6DF] bg-[#F8F9F7] px-4 py-3 text-xs font-mono font-bold uppercase tracking-wider outline-none transition focus:border-[#0F3D3E]"
+                      />
+                      <p className="text-[10px] text-[#5C6E6E] text-left">
+                        * Minimum 6 characters (Letters, numbers, hyphens allowed)
+                      </p>
+                    </div>
+
+                    <Button className="w-full bg-[#0F3D3E] hover:bg-[#174C4D] text-[#D4AF37] font-serif font-bold text-sm h-11 rounded-xl shadow-xs" onClick={handleVerifyUtr}>
+                      Submit UTR for Verification
+                    </Button>
+                  </>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="py-8 space-y-4"
+                  >
+                    <div className="mx-auto w-20 h-20 bg-emerald-500/10 text-emerald-600 flex items-center justify-center rounded-full shadow-sm">
+                      <CheckCircle2 className="h-10 w-10" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-serif font-bold text-[#0F3D3E]">Payment Submitted!</h3>
+                      <p className="text-xs text-amber-700 font-medium mt-1 bg-amber-50 border border-amber-200 p-2.5 rounded-xl">
+                        ⏳ Payment UTR submitted. Waiting for admin verification.
+                      </p>
+                    </div>
+                    <p className="text-xs text-[#5C6E6E] flex items-center justify-center gap-2 font-sans pt-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-[#0F3D3E]" /> Redirecting to order confirmation...
+                    </p>
+                  </motion.div>
+                )}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
     </AuthGuard>
   );
 }
