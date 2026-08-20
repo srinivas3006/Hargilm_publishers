@@ -37,7 +37,7 @@ export default function AdminDashboard() {
       const [dashRes, ordersRes, authorsRes, booksRes, paymentsRes] = await Promise.allSettled([
         api.get("/admin/dashboard").catch(() => api.get("/admin/stats")),
         api.get("/admin/orders?limit=100"),
-        api.get("/author-applications"),
+        api.get("/admin/author-applications"),
         api.get("/books?limit=100"),
         api.get("/admin/operations/payments?status=VERIFICATION_PENDING"),
       ]);

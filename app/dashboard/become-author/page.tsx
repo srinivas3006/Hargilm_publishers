@@ -59,9 +59,7 @@ export default function BecomeAuthorPage() {
     setIsLoadingStatus(true);
     try {
       const res = await api.get("/users/me/author-application").catch(() =>
-        api.get("/author-applications/me").catch(() =>
-          api.get("/author-applications")
-        )
+        api.get("/author-applications/me")
       );
       const data = res.data;
       const app = data?.data || data?.application || (Array.isArray(data) ? data[0] : data);
@@ -112,10 +110,8 @@ export default function BecomeAuthorPage() {
     };
 
     try {
-      await api.post("/author-applications", payload).catch(() =>
-        api.post("/api/author-applications", payload).catch(() =>
-          api.post("/users/me/author-application", payload)
-        )
+      await api.post("/users/me/author-application", payload).catch(() =>
+        api.post("/author-applications", payload)
       );
 
       toast.success("Author application submitted successfully!");

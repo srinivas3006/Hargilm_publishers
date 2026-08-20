@@ -48,9 +48,7 @@ export default function AdminAuthorApplicationsPage() {
       if (statusFilter !== "all") params.status = statusFilter;
       if (searchQuery.trim()) params.search = searchQuery.trim();
 
-      const { data } = await api.get("/admin/author-applications", { params }).catch(() =>
-        api.get("/author-applications", { params })
-      );
+      const { data } = await api.get("/admin/author-applications", { params });
       const items = data?.data?.applications || data?.applications || data?.data?.items || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
       setApplications(Array.isArray(items) ? items : []);
     } catch (err) {
