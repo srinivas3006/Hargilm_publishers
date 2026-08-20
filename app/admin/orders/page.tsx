@@ -128,24 +128,21 @@ export default function AdminOrdersPage() {
   }, [statusFilter, searchQuery]);
 
   // Action 1: Approve Payment
-  const handleApprovePayment = async (orderId: string, paymentId?: string) => {
+  const handleApprovePayment = async (orderMongoId?: string, paymentMongoId?: string) => {
     try {
-      if (paymentId) {
-        await api.post(`/admin/operations/payments/${paymentId}/approve`, {
+      if (paymentMongoId) {
+        await api.post(`/admin/operations/payments/${paymentMongoId}/approve`, {
           reason: "Admin payment approved from orders view",
         });
-      } else {
-        await api.put(`/admin/orders/${orderId}/status`, {
+      } else if (orderMongoId) {
+        await api.put(`/admin/orders/${orderMongoId}/status`, {
           status: "Processing",
           paymentStatus: "VERIFIED",
           isPaid: true,
-        }).catch(() =>
-          api.patch(`/admin/orders/${orderId}`, {
-            isPaid: true,
-            paymentStatus: "VERIFIED",
-            status: "PROCESSING",
-          })
-        );
+        });
+      } else {
+        toast.error("No valid Payment ID or Order ID found for this record.");
+        return;
       }
 
       toast.success("Payment approved & verified successfully! ✅");
@@ -156,27 +153,24 @@ export default function AdminOrdersPage() {
   };
 
   // Action 2: Reject Payment
-  const handleRejectPayment = async (orderId: string, paymentId?: string) => {
+  const handleRejectPayment = async (orderMongoId?: string, paymentMongoId?: string) => {
     const reason = prompt("Enter reason for payment rejection (optional):", "UTR reference mismatch");
     if (reason === null) return;
 
     try {
-      if (paymentId) {
-        await api.post(`/admin/operations/payments/${paymentId}/reject`, {
+      if (paymentMongoId) {
+        await api.post(`/admin/operations/payments/${paymentMongoId}/reject`, {
           reason,
         });
-      } else {
-        await api.put(`/admin/orders/${orderId}/status`, {
+      } else if (orderMongoId) {
+        await api.put(`/admin/orders/${orderMongoId}/status`, {
           status: "Cancelled",
           paymentStatus: "REJECTED",
           reason,
-        }).catch(() =>
-          api.patch(`/admin/orders/${orderId}`, {
-            isPaid: false,
-            paymentStatus: "REJECTED",
-            adminNotes: reason,
-          })
-        );
+        });
+      } else {
+        toast.error("No valid Payment ID or Order ID found for this record.");
+        return;
       }
 
       toast.error("Payment marked as REJECTED.");
@@ -187,17 +181,16 @@ export default function AdminOrdersPage() {
   };
 
   // Action 3: Mark as Printed / Processing
-  const handleMarkAsPrinted = async (orderId: string) => {
+  const handleMarkAsPrinted = async (orderMongoId?: string) => {
+    if (!orderMongoId) {
+      toast.error("No valid Order ID found.");
+      return;
+    }
     try {
-      await api.put(`/admin/orders/${orderId}/status`, {
+      await api.put(`/admin/orders/${orderMongoId}/status`, {
         status: "Processing",
         reason: "Marked as Printed / Processing",
-      }).catch(() =>
-        api.patch(`/admin/orders/${orderId}`, {
-          status: "PROCESSING",
-          orderStatus: "PROCESSING",
-        })
-      );
+      });
 
       toast.success("Order status updated to Processing / Printed 🖨️");
       fetchOrders();
@@ -214,20 +207,19 @@ export default function AdminOrdersPage() {
       return;
     }
 
+    const orderMongoId = selectedOrderForTracking._id || selectedOrderForTracking.id;
+    if (!orderMongoId) {
+      toast.error("Order Mongo ID missing for tracking update.");
+      return;
+    }
+
     setIsSubmittingTracking(true);
-    const orderId = selectedOrderForTracking._id || selectedOrderForTracking.id;
 
     try {
-      await api.put(`/admin/orders/${orderId}/status`, {
+      await api.put(`/admin/orders/${orderMongoId}/status`, {
         status: "Shipped",
         trackingNumber: trackingNumberInput,
-      }).catch(() =>
-        api.patch(`/admin/orders/${orderId}`, {
-          trackingNumber: trackingNumberInput,
-          status: "SHIPPED",
-          orderStatus: "SHIPPED",
-        })
-      );
+      });
 
       toast.success("Tracking number saved & status set to Shipped! 🚚");
       setTrackingModalOpen(false);
@@ -323,8 +315,8 @@ export default function AdminOrdersPage() {
                 <TableBody>
                   {filteredOrders.map((order: any, index: number) => {
                     const orderDisplayId = order.orderNumber || order._id || order.id;
-                    const mongoOrderId = order._id || order.id || order.orderNumber;
-                    const paymentId = order.paymentId || (typeof order.payment === "object" ? order.payment?._id : (typeof order.payment === "string" ? order.payment : undefined));
+                    const mongoOrderId = order._id || order.id;
+                    const paymentId = (typeof order.payment === "object" ? order.payment?._id : (typeof order.payment === "string" ? order.payment : undefined)) || order.paymentId;
                     const isPaid = Boolean(order.isPaid || order.paymentStatus === "VERIFIED");
                     const paymentStatus = order.paymentStatus || (order.utr ? "VERIFICATION_PENDING" : "PENDING");
                     const orderStatus = order.status || order.orderStatus || "PENDING";
