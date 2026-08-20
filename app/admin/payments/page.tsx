@@ -151,14 +151,18 @@ export default function AdminPaymentVerificationPage() {
 
   // 3. Approve Payment
   const handleApprove = async (paymentId: string) => {
+    if (!paymentId || !/^[0-9a-fA-F]{24}$/.test(paymentId)) {
+      toast.error("Invalid payment ObjectId string. Cannot approve.");
+      return;
+    }
     setActionLoading("approve");
     try {
       const reason = actionReason.trim() || "Admin payment approved";
       await approveAdminPayment(paymentId, { reason });
-      toast.success("Payment approved successfully! Order status updated to Paid.");
+      toast.success("Payment approved successfully! Order status updated to Paid. ✅");
       setActionReason("");
+      setDetailModalOpen(false);
       fetchPayments();
-      if (selectedPaymentDetail) handleOpenDetail(paymentId);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to approve payment.");
     } finally {
@@ -168,14 +172,18 @@ export default function AdminPaymentVerificationPage() {
 
   // 4. Reject Payment
   const handleReject = async (paymentId: string) => {
+    if (!paymentId || !/^[0-9a-fA-F]{24}$/.test(paymentId)) {
+      toast.error("Invalid payment ObjectId string. Cannot reject.");
+      return;
+    }
     setActionLoading("reject");
     try {
-      const reason = actionReason.trim() || "UTR not found in bank statement";
+      const reason = actionReason.trim() || "UTR reference mismatch";
       await rejectAdminPayment(paymentId, { reason });
-      toast.error("Payment rejected successfully.");
+      toast.error("Payment rejected successfully. ❌");
       setActionReason("");
+      setDetailModalOpen(false);
       fetchPayments();
-      if (selectedPaymentDetail) handleOpenDetail(paymentId);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to reject payment.");
     } finally {
@@ -532,13 +540,12 @@ export default function AdminPaymentVerificationPage() {
                               <span>View</span>
                             </Button>
 
-                            {isPending && (
+                             {isPending && (
                               <>
                                 <Button
                                   size="sm"
-                                  onClick={() => {
-                                    handleOpenDetail(paymentId);
-                                  }}
+                                  onClick={() => handleApprove(paymentId)}
+                                  disabled={actionLoading === "approve"}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
                                 >
                                   <CheckCircle2 className="h-3 w-3" />
@@ -548,9 +555,8 @@ export default function AdminPaymentVerificationPage() {
                                 <Button
                                   size="sm"
                                   variant="destructive"
-                                  onClick={() => {
-                                    handleOpenDetail(paymentId);
-                                  }}
+                                  onClick={() => handleReject(paymentId)}
+                                  disabled={actionLoading === "reject"}
                                   className="text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
                                 >
                                   <XCircle className="h-3 w-3" />
