@@ -46,7 +46,7 @@ export default function AdminRoyaltiesPage() {
     try {
       const [booksRes, entriesRes] = await Promise.allSettled([
         api.get("/books?limit=100"),
-        api.get("/admin/royalty-settlements").catch(() => api.get("/admin/settlements")).catch(() => api.get("/royalties")).catch(() => null),
+        api.get("/admin/royalties").catch(() => api.get("/admin/royalty-settlements")).catch(() => api.get("/admin/settlements")).catch(() => api.get("/royalties")).catch(() => null),
       ]);
 
       if (booksRes.status === "fulfilled") {
@@ -98,10 +98,10 @@ export default function AdminRoyaltiesPage() {
   // When book selection changes, update amount per book
   const handleBookChange = (bookId: string) => {
     setSelectedBookId(bookId);
-    const foundBook = books.find((b) => (b._id || b.id) === bookId);
-    if (foundBook) {
-      const price = foundBook.discountPrice || foundBook.price || 399;
-      setAmountPerBook(price.toString());
+    const selected = books.find((b) => (b._id || b.id) === bookId);
+    if (selected) {
+      const price = selected.discountPrice || selected.price || 0;
+      setAmountPerBook(price ? price.toString() : "");
       const sold = Number(booksSold) || 0;
       const totalRev = sold * price;
       setRoyaltyAmount(Math.round(totalRev * 0.3).toString());
@@ -134,9 +134,11 @@ export default function AdminRoyaltiesPage() {
         date: new Date().toISOString(),
       };
 
-      await api.post("/admin/royalty-settlements", payload).catch(() =>
-        api.post("/admin/settlements", payload).catch(() =>
-          api.post("/royalties", payload)
+      await api.post("/admin/royalties", payload).catch(() =>
+        api.post("/admin/royalty-settlements", payload).catch(() =>
+          api.post("/admin/settlements", payload).catch(() =>
+            api.post("/royalties", payload)
+          )
         )
       ).catch(() => null);
 
