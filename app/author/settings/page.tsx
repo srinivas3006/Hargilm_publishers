@@ -97,9 +97,7 @@ export default function AuthorSettingsPage() {
       if (imageFile) {
         try {
           const uploadFormData = new FormData();
-          uploadFormData.append("file", imageFile);
           uploadFormData.append("image", imageFile);
-          uploadFormData.append("photo", imageFile);
 
           const uploadRes = await api.post("/uploads/image", uploadFormData, {
             headers: { "Content-Type": undefined },

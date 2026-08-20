@@ -187,20 +187,15 @@ export default function AddBookPage() {
       if (imageFile) {
         try {
           const uploadFormData = new FormData();
-          uploadFormData.append("file", imageFile);
           uploadFormData.append("image", imageFile);
-          uploadFormData.append("coverImage", imageFile);
-          uploadFormData.append("publishing-image", imageFile);
 
           const uploadRes = await api.post("/uploads/image", uploadFormData, {
             headers: { "Content-Type": undefined },
           }).catch(() => api.post("/uploads/publishing-image", uploadFormData, {
             headers: { "Content-Type": undefined },
-          })).catch(() => api.post("/uploads", uploadFormData, {
-            headers: { "Content-Type": undefined },
           }));
 
-          coverImageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url || uploadRes?.data?.data?.coverImage || uploadRes?.data?.coverImage;
+          coverImageUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url;
         } catch (uploadErr) {
           console.warn("Image upload warning:", uploadErr);
         }

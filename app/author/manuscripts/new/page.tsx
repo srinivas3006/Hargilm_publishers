@@ -107,7 +107,6 @@ export default function NewManuscriptPage() {
       try {
         const formDataUpload = new FormData();
         formDataUpload.append("document", file);
-        formDataUpload.append("file", file);
         
         const uploadRes = await api.post("/uploads/document", formDataUpload, {
           headers: { "Content-Type": undefined },
