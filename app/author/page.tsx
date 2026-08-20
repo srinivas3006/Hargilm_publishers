@@ -32,8 +32,8 @@ export default function AuthorDashboard() {
         let resData: any = {};
         try {
           const authorId = user?._id || user?.id;
-          const { data } = await api.get(`/authors/${authorId}/stats`).catch(() =>
-            api.get("/authors/me/dashboard")
+          const { data } = await api.get("/authors/me/dashboard").catch(() =>
+            api.get(`/authors/${authorId}/stats`)
           );
           resData = data?.data || data || {};
         } catch (err) {

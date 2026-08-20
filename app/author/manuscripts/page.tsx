@@ -132,12 +132,14 @@ export default function ManuscriptsPage() {
     const fetchManuscripts = async () => {
       setLoading(true);
       try {
-        const { data } = await api.get("/publish-requests").catch(() =>
-          api.get("/authors/me/publish-requests").catch(() =>
-            api.get("/authors/me/manuscripts")
+        const { data } = await api.get("/authors/me/books").catch(() =>
+          api.get("/publish-requests").catch(() =>
+            api.get("/authors/me/publish-requests").catch(() =>
+              api.get("/authors/me/manuscripts")
+            )
           )
         );
-        const list = data?.data?.requests || data?.data?.manuscripts || data?.data || data || [];
+        const list = data?.data?.books || data?.data?.requests || data?.data?.manuscripts || data?.data || data || [];
         const arr = Array.isArray(list) ? list : [];
         if (arr.length > 0) {
           const mapped = arr.map((m: any, idx: number) => ({

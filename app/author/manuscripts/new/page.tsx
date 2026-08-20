@@ -108,11 +108,11 @@ export default function NewManuscriptPage() {
         const formDataUpload = new FormData();
         formDataUpload.append("document", file);
         
-        const uploadRes = await api.post("/uploads/document", formDataUpload, {
+        const uploadRes = await api.post("/authors/me/uploads/document", formDataUpload, {
           headers: { "Content-Type": undefined },
-        }).catch(() => api.post("/uploads/publishing-document", formDataUpload, {
+        }).catch(() => api.post("/uploads/document", formDataUpload, {
           headers: { "Content-Type": undefined },
-        })).catch(() => api.post("/authors/me/uploads/document", formDataUpload, {
+        })).catch(() => api.post("/uploads/publishing-document", formDataUpload, {
           headers: { "Content-Type": undefined },
         }));
 
