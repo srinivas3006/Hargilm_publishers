@@ -34,17 +34,26 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(false);
     try {
-      const [dashRes, ordersRes, authorsRes, booksRes] = await Promise.allSettled([
+      const [dashRes, ordersRes, authorsRes, booksRes, paymentsRes] = await Promise.allSettled([
         api.get("/admin/dashboard").catch(() => api.get("/admin/stats")),
         api.get("/admin/orders?limit=100"),
         api.get("/author-applications"),
         api.get("/books?limit=100"),
+        api.get("/admin/operations/payments?status=VERIFICATION_PENDING"),
       ]);
 
       const dashData = dashRes.status === "fulfilled" ? (dashRes.value.data?.data || dashRes.value.data) : {};
       const ordersList = ordersRes.status === "fulfilled" ? (ordersRes.value.data?.data?.orders || ordersRes.value.data?.data || ordersRes.value.data) : [];
       const authorsList = authorsRes.status === "fulfilled" ? (authorsRes.value.data?.data?.applications || authorsRes.value.data?.data || authorsRes.value.data) : [];
       const booksList = booksRes.status === "fulfilled" ? (booksRes.value.data?.books || booksRes.value.data?.data || booksRes.value.data) : [];
+      
+      let realPaymentsCount = 0;
+      if (paymentsRes.status === "fulfilled") {
+        const pVal = paymentsRes.value.data;
+        const pItems = pVal?.data?.items || pVal?.items || (Array.isArray(pVal?.data) ? pVal.data : []);
+        const pTotal = pVal?.data?.pagination?.total ?? pVal?.pagination?.total;
+        realPaymentsCount = typeof pTotal === 'number' ? pTotal : (Array.isArray(pItems) ? pItems.length : 0);
+      }
 
       const ordersArr = Array.isArray(ordersList) ? ordersList : [];
       const authorsArr = Array.isArray(authorsList) ? authorsList : [];
@@ -65,7 +74,7 @@ export default function AdminDashboard() {
 
       setDashboardData({
         ...dashData,
-        pendingPaymentsCount: dashData.pendingPaymentsCount ?? dashData.pendingOrders ?? calculatedPendingPayments,
+        pendingPaymentsCount: realPaymentsCount || (dashData.pendingPaymentsCount ?? dashData.pendingOrders ?? calculatedPendingPayments),
         processingOrdersCount: dashData.processingOrdersCount ?? dashData.processingOrders ?? calculatedProcessingOrders,
         pendingAuthorsCount: dashData.pendingAuthorsCount ?? dashData.pendingApplications ?? calculatedPendingAuthors,
         totalBooks: booksArr.length || dashData.totalBooks || dashData.booksCount || 0,
@@ -128,7 +137,7 @@ export default function AdminDashboard() {
       {/* 1. TOP CARDS (Strictly matching prompt) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Pending Payments */}
-        <Link href="/admin/orders">
+        <Link href="/admin/payments">
           <Card className="bg-amber-500/10 border-2 border-amber-500/30 hover:border-amber-500/60 shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
@@ -216,7 +225,7 @@ export default function AdminDashboard() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Verify Payments */}
-          <Link href="/admin/orders">
+          <Link href="/admin/payments">
             <Card className="bg-white border-2 border-[#D4AF37]/50 hover:border-[#D4AF37] shadow-xs hover:shadow-md transition-all rounded-2xl cursor-pointer group">
               <CardContent className="p-5 flex items-center gap-4">
                 <div className="h-11 w-11 rounded-xl bg-[#D4AF37]/20 text-[#0F3D3E] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">

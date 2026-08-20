@@ -97,14 +97,16 @@ export default function AuthorSettingsPage() {
       if (imageFile) {
         try {
           const uploadFormData = new FormData();
+          uploadFormData.append("file", imageFile);
           uploadFormData.append("image", imageFile);
+          uploadFormData.append("photo", imageFile);
 
           const uploadRes = await api.post("/uploads/image", uploadFormData, {
-            headers: { "Content-Type": "multipart/form-data" },
+            headers: { "Content-Type": undefined },
           }).catch(() => api.post("/uploads/publishing-image", uploadFormData, {
-            headers: { "Content-Type": "multipart/form-data" },
+            headers: { "Content-Type": undefined },
           })).catch(() => api.post("/authors/me/uploads/image", uploadFormData, {
-            headers: { "Content-Type": "multipart/form-data" },
+            headers: { "Content-Type": undefined },
           }));
 
           const uploadedUrl = uploadRes?.data?.data?.url || uploadRes?.data?.url;

@@ -130,22 +130,23 @@ export default function AdminOrdersPage() {
   // Action 1: Approve Payment
   const handleApprovePayment = async (orderId: string, paymentId?: string) => {
     try {
-      const targetId = paymentId || orderId;
-      await api.post(`/admin/operations/payments/${targetId}/approve`, {
-        reason: "Admin payment approved from orders view",
-      }).catch(() =>
-        api.put(`/admin/orders/${orderId}/status`, {
+      if (paymentId) {
+        await api.post(`/admin/operations/payments/${paymentId}/approve`, {
+          reason: "Admin payment approved from orders view",
+        });
+      } else {
+        await api.put(`/admin/orders/${orderId}/status`, {
           status: "Processing",
           paymentStatus: "VERIFIED",
           isPaid: true,
-        })
-      ).catch(() =>
-        api.patch(`/admin/orders/${orderId}`, {
-          isPaid: true,
-          paymentStatus: "VERIFIED",
-          status: "PROCESSING",
-        })
-      );
+        }).catch(() =>
+          api.patch(`/admin/orders/${orderId}`, {
+            isPaid: true,
+            paymentStatus: "VERIFIED",
+            status: "PROCESSING",
+          })
+        );
+      }
 
       toast.success("Payment approved & verified successfully! ✅");
       fetchOrders();
@@ -160,22 +161,23 @@ export default function AdminOrdersPage() {
     if (reason === null) return;
 
     try {
-      const targetId = paymentId || orderId;
-      await api.post(`/admin/operations/payments/${targetId}/reject`, {
-        reason,
-      }).catch(() =>
-        api.put(`/admin/orders/${orderId}/status`, {
+      if (paymentId) {
+        await api.post(`/admin/operations/payments/${paymentId}/reject`, {
+          reason,
+        });
+      } else {
+        await api.put(`/admin/orders/${orderId}/status`, {
           status: "Cancelled",
           paymentStatus: "REJECTED",
           reason,
-        })
-      ).catch(() =>
-        api.patch(`/admin/orders/${orderId}`, {
-          isPaid: false,
-          paymentStatus: "REJECTED",
-          adminNotes: reason,
-        })
-      );
+        }).catch(() =>
+          api.patch(`/admin/orders/${orderId}`, {
+            isPaid: false,
+            paymentStatus: "REJECTED",
+            adminNotes: reason,
+          })
+        );
+      }
 
       toast.error("Payment marked as REJECTED.");
       fetchOrders();
@@ -320,17 +322,19 @@ export default function AdminOrdersPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order: any, index: number) => {
-                    const id = order.orderNumber || order._id || order.id;
+                    const orderDisplayId = order.orderNumber || order._id || order.id;
+                    const mongoOrderId = order._id || order.id || order.orderNumber;
+                    const paymentId = order.paymentId || (typeof order.payment === "object" ? order.payment?._id : (typeof order.payment === "string" ? order.payment : undefined));
                     const isPaid = Boolean(order.isPaid || order.paymentStatus === "VERIFIED");
                     const paymentStatus = order.paymentStatus || (order.utr ? "VERIFICATION_PENDING" : "PENDING");
                     const orderStatus = order.status || order.orderStatus || "PENDING";
                     const totalPrice = order.totalPrice ?? order.totalAmount ?? order.amount ?? 0;
 
                     return (
-                      <TableRow key={id} className="hover:bg-[#F8F9F7]/60 text-xs">
+                      <TableRow key={orderDisplayId} className="hover:bg-[#F8F9F7]/60 text-xs">
                         {/* Order ID */}
                         <TableCell className="font-mono font-bold text-[#0F3D3E]">
-                          {id}
+                          {orderDisplayId}
                         </TableCell>
 
                         {/* Customer & Contact */}
@@ -376,7 +380,7 @@ export default function AdminOrdersPage() {
                             {!isPaid && (
                               <Button
                                 size="sm"
-                                onClick={() => handleApprovePayment(id)}
+                                onClick={() => handleApprovePayment(mongoOrderId, paymentId)}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
                                 title="Approve UTR Payment"
                               >
@@ -390,7 +394,7 @@ export default function AdminOrdersPage() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => handleRejectPayment(id)}
+                                onClick={() => handleRejectPayment(mongoOrderId, paymentId)}
                                 className="text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
                                 title="Reject Payment"
                               >
@@ -404,7 +408,7 @@ export default function AdminOrdersPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleMarkAsPrinted(id)}
+                                onClick={() => handleMarkAsPrinted(mongoOrderId)}
                                 className="border-[#0F3D3E]/30 text-[#0F3D3E] hover:bg-[#F0F2ED] text-[11px] h-7 px-2.5 rounded-lg gap-1 font-semibold"
                                 title="Mark as Printed"
                               >

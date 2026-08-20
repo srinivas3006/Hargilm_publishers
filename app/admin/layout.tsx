@@ -123,7 +123,7 @@ export default function AdminLayout({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-xs text-white truncate">{user?.name || "Administrator"}</p>
-                <p className="text-[10px] text-white/60 truncate">{user?.email || "admin@harglim.com"}</p>
+                {user?.email && <p className="text-[10px] text-white/60 truncate">{user.email}</p>}
                 <div className="mt-1">
                   <span className="inline-block px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40">
                     Super Admin

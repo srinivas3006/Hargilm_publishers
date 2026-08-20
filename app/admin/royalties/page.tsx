@@ -35,9 +35,9 @@ export default function AdminRoyaltiesPage() {
 
   // Form Fields
   const [selectedBookId, setSelectedBookId] = useState<string>("");
-  const [booksSold, setBooksSold] = useState<string>("10");
-  const [amountPerBook, setAmountPerBook] = useState<string>("399");
-  const [royaltyAmount, setRoyaltyAmount] = useState<string>("1197"); // 30% default
+  const [booksSold, setBooksSold] = useState<string>("");
+  const [amountPerBook, setAmountPerBook] = useState<string>("");
+  const [royaltyAmount, setRoyaltyAmount] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchData = async () => {
@@ -56,10 +56,8 @@ export default function AdminRoyaltiesPage() {
         if (bArr.length > 0) {
           const firstBook = bArr[0];
           setSelectedBookId(firstBook._id || firstBook.id);
-          const price = firstBook.discountPrice || firstBook.price || 399;
-          setAmountPerBook(price.toString());
-          const totalRev = 10 * price;
-          setRoyaltyAmount(Math.round(totalRev * 0.3).toString());
+          const price = firstBook.discountPrice || firstBook.price || 0;
+          setAmountPerBook(price ? price.toString() : "");
         }
       }
 
