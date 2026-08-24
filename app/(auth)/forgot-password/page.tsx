@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center mb-6">
             <Link href="/" className="inline-flex items-center gap-2 mb-4">
               <Image
-                src="/logo.webp"
+                src="/logo.png"
                 alt="Harglim"
                 width={40}
                 height={40}

@@ -142,7 +142,7 @@ export function RecentOrdersSection() {
                 {items.slice(0, 2).map((item: any, idx: number) => {
                   const bookObj = item.book || {};
                   const title = bookObj.title || item.title || "Book";
-                  const cover = bookObj.coverImage || "/logo.webp";
+                  const cover = bookObj.coverImage || "/logo.png";
                   const slug = bookObj.slug;
 
                   return (

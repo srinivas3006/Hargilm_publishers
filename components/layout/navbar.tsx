@@ -17,7 +17,7 @@ import {
   PenTool,
 } from "lucide-react";
 import Image from "next/image";
-import logo from "@/public/logo.webp";
+import logo from "@/public/logo.png";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -132,15 +132,13 @@ export function Navbar() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center group py-1">
             <Image
               src={logo}
               alt="Harglim Publishers"
-              className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+              className="h-11 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+              priority
             />
-            <span className="font-serif text-2xl font-bold text-gold-gradient">
-              Harglim Publishers
-            </span>
           </Link>
 
           {/* Desktop Navigation */}

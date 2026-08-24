@@ -154,7 +154,7 @@ function LoginFormContent() {
           <div className="text-center space-y-2">
             <Link href="/" className="inline-flex items-center gap-2 group mb-1">
               <Image
-                src="/logo.webp"
+                src="/logo.png"
                 alt="Harglim Publishers"
                 width={36}
                 height={36}
