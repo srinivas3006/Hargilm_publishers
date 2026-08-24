@@ -13,6 +13,13 @@ import {
   Ban,
   Shield,
   Eye,
+  Trash2,
+  Pencil,
+  X,
+  Check,
+  Loader2,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -115,6 +122,93 @@ export default function AdminUsersPage() {
     const matchesStatus = statusFilter === "all" || userStatus.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  // Edit & Delete State
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    role: "user",
+    status: "Active",
+  });
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteUser = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete user "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+    setDeletingId(id);
+    try {
+      await api.delete(`/admin/users/${id}`).catch(() =>
+        api.delete(`/users/${id}`)
+      );
+      setUsers((prev) => prev.filter((u: any) => (u.id || u._id) !== id));
+      toast.success(`User "${name}" deleted successfully.`);
+    } catch (err: any) {
+      console.error("Failed to delete user:", err);
+      toast.error(err.response?.data?.message || "Failed to delete user from backend.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const openEditModal = (user: any) => {
+    setEditingUser(user);
+    setEditForm({
+      name: user.name || user.fullName || "",
+      email: user.email || "",
+      role: (user.role || "user").toLowerCase(),
+      status: user.status || (user.isActive !== false ? "Active" : "Suspended"),
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    const userId = editingUser.id || editingUser._id;
+    setIsSubmittingEdit(true);
+
+    try {
+      const payload = {
+        name: editForm.name,
+        email: editForm.email,
+        role: editForm.role.toLowerCase(),
+        isActive: editForm.status === "Active",
+        status: editForm.status,
+      };
+
+      await api.put(`/admin/users/${userId}`, payload).catch(() =>
+        api.patch(`/admin/users/${userId}`, payload).catch(() =>
+          api.put(`/users/${userId}`, payload)
+        )
+      );
+
+      const formattedRole = editForm.role.charAt(0).toUpperCase() + editForm.role.slice(1);
+      setUsers((prev) =>
+        prev.map((u: any) =>
+          (u.id || u._id) === userId
+            ? {
+                ...u,
+                name: editForm.name,
+                email: editForm.email,
+                role: formattedRole,
+                status: editForm.status,
+                isActive: editForm.status === "Active",
+              }
+            : u
+        )
+      );
+
+      toast.success(`User details for "${editForm.name}" updated successfully!`);
+      setEditingUser(null);
+    } catch (err: any) {
+      console.error("Failed to update user details:", err);
+      toast.error(err.response?.data?.message || "Failed to update user details in backend.");
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
 
   const handleSuspend = async (id: string, currentStatus: string) => {
     const isSuspending = currentStatus === "Active";
@@ -343,30 +437,67 @@ export default function AdminUsersPage() {
                         </Badge>
                       </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => window.location.href = `mailto:${user.email}`}>
-                            <Mail className="mr-2 h-4 w-4" />
-                            Send Email
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className={
-                              status !== "Suspended"
-                                ? "text-destructive"
-                                : "text-emerald-600"
-                            }
-                            onClick={() => handleSuspend(user.id || user._id, status)}
-                          >
-                            <Ban className="mr-2 h-4 w-4" />
-                            {status !== "Suspended" ? "Suspend" : "Activate"}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditModal(user)}
+                          title="Edit User"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteUser(user.id || user._id, user.name || "User")}
+                          disabled={deletingId === (user.id || user._id)}
+                          title="Delete User"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        >
+                          {deletingId === (user.id || user._id) ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem onClick={() => openEditModal(user)}>
+                              <Pencil className="mr-2 h-4 w-4 text-primary" />
+                              Edit Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.location.href = `mailto:${user.email}`}>
+                              <Mail className="mr-2 h-4 w-4" />
+                              Send Email
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className={
+                                status !== "Suspended"
+                                  ? "text-amber-600"
+                                  : "text-emerald-600"
+                              }
+                              onClick={() => handleSuspend(user.id || user._id, status)}
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              {status !== "Suspended" ? "Suspend Account" : "Activate Account"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive font-semibold"
+                              onClick={() => handleDeleteUser(user.id || user._id, user.name || "User")}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </motion.tr>
                 );})}
@@ -375,6 +506,127 @@ export default function AdminUsersPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit User Modal Dialog */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-6"
+          >
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div className="flex items-center gap-2">
+                <Pencil className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold font-serif text-foreground">Edit User Profile</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditingUser(null)}
+                className="h-8 w-8 rounded-full"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                  Full Name
+                </label>
+                <Input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="Enter full name"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                  Email Address
+                </label>
+                <Input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  placeholder="Enter email address"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                    User Role
+                  </label>
+                  <Select
+                    value={editForm.role}
+                    onValueChange={(val) => setEditForm({ ...editForm, role: val })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User / Reader</SelectItem>
+                      <SelectItem value="author">Author</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                    Account Status
+                  </label>
+                  <Select
+                    value={editForm.status}
+                    onValueChange={(val) => setEditForm({ ...editForm, status: val })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Suspended">Suspended</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingUser(null)}
+                  disabled={isSubmittingEdit}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingEdit}
+                  className="gap-2 bg-primary text-primary-foreground font-bold"
+                >
+                  {isSubmittingEdit ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
