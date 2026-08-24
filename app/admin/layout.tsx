@@ -100,10 +100,7 @@ export default function AdminLayout({
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-lg shadow-sm">
                 H
               </div>
-              <div>
-                <span className="font-serif font-bold text-base text-white block leading-none">Harglim Admin</span>
-                <span className="text-[10px] text-[#D4AF37] tracking-wider uppercase font-sans">Control Panel</span>
-              </div>
+              <span className="font-serif font-bold text-base text-white">Harglim Admin</span>
             </Link>
             <Button
               variant="ghost"
@@ -118,8 +115,16 @@ export default function AdminLayout({
           {/* Admin User Info */}
           <div className="border-b border-[#174C4D] p-4 bg-[#0F3D3E]">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-base shadow-sm">
-                {user?.name?.charAt(0).toUpperCase() || "A"}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-base shadow-sm overflow-hidden border border-[#D4AF37]/50">
+                {user?.profileImage || user?.profilePicture ? (
+                  <img
+                    src={user.profileImage || user.profilePicture}
+                    alt={user.name || "Admin"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  user?.name?.charAt(0).toUpperCase() || "A"
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-xs text-white truncate">{user?.name || "Administrator"}</p>
@@ -219,8 +224,18 @@ export default function AdminLayout({
 
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0F3D3E]/5 border border-[#0F3D3E]/10 text-xs">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <span className="font-semibold text-[#0F3D3E]">Admin Logged In: {user?.name || "Admin"}</span>
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-bold text-xs overflow-hidden">
+                  {user?.profileImage || user?.profilePicture ? (
+                    <img
+                      src={user.profileImage || user.profilePicture}
+                      alt={user.name || "Admin"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  )}
+                </div>
+                <span className="font-semibold text-[#0F3D3E]">Admin: {user?.name || "Admin"}</span>
               </div>
             </div>
           </header>

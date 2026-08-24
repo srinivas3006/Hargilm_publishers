@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSiteContent, SiteContent, defaultSiteContent } from "@/context/site-content-context";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,20 +18,110 @@ import {
   HelpCircle,
   Megaphone,
   Sparkles,
+  Camera,
+  User as UserIcon,
+  Upload,
+  Trash2,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthStore } from "@/store/auth-store";
+import api from "@/lib/api";
 
 export default function AdminContentPage() {
   const { content: globalContent, updateContent, resetContent, loading } = useSiteContent();
+  const { user, setUser } = useAuthStore();
   const [formData, setFormData] = useState<SiteContent>(globalContent);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"home" | "contact" | "publish" | "about">("home");
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [activeTab, setActiveTab] = useState<"home" | "contact" | "publish" | "about" | "admin-profile">("home");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (globalContent) {
       setFormData(globalContent);
     }
   }, [globalContent]);
+
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, WEBP, GIF).");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image file size should be less than 10MB.");
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+
+    try {
+      // 1. Try uploading to backend image upload endpoint
+      const formDataUpload = new FormData();
+      formDataUpload.append("image", file);
+
+      let uploadedUrl = "";
+      try {
+        const res = await api.post("/uploads/image", formDataUpload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        }).catch(() =>
+          api.post("/authors/me/uploads/image", formDataUpload, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+        );
+        uploadedUrl = res?.data?.url || res?.data?.data?.url || res?.data?.image || "";
+      } catch (uploadErr) {
+        console.warn("Backend image upload route fallback to base64 encoding:", uploadErr);
+      }
+
+      // 2. Fallback to base64 data URL if backend URL not returned
+      if (!uploadedUrl) {
+        uploadedUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Update local state, SiteContent, and Auth Store user profile
+      setFormData((prev) => ({ ...prev, adminProfileImage: uploadedUrl }));
+      if (user) {
+        setUser({
+          ...user,
+          profileImage: uploadedUrl,
+          profilePicture: uploadedUrl,
+        });
+      }
+
+      // Try persisting profile picture to user profile API
+      await api.patch("/users/me", { profilePicture: uploadedUrl, profileImage: uploadedUrl }).catch(() => null);
+
+      toast.success("Admin profile photo uploaded & updated live!");
+    } catch (err: any) {
+      console.error("Failed to upload profile photo:", err);
+      toast.error("Failed to upload photo. Please try again.");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({ ...prev, adminProfileImage: "" }));
+    if (user) {
+      setUser({
+        ...user,
+        profileImage: "",
+        profilePicture: "",
+      });
+    }
+    toast.success("Admin profile picture removed.");
+  };
 
   const handleSave = async () => {
     // Validate Packages JSON
@@ -56,6 +146,13 @@ export default function AdminContentPage() {
 
     setIsSaving(true);
     try {
+      if (formData.adminProfileImage && user) {
+        setUser({
+          ...user,
+          profileImage: formData.adminProfileImage,
+          profilePicture: formData.adminProfileImage,
+        });
+      }
       await updateContent(formData);
       toast.success("Site content saved & updated live globally!");
     } catch (err) {
@@ -156,6 +253,18 @@ export default function AdminContentPage() {
         >
           <HelpCircle className="h-4 w-4" />
           <span>About Us & FAQs</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("admin-profile")}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "admin-profile"
+              ? "border-primary text-primary font-bold"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Camera className="h-4 w-4 text-[#D4AF37]" />
+          <span>Admin Profile Photo</span>
         </button>
       </div>
 
@@ -553,6 +662,133 @@ export default function AdminContentPage() {
                   value={formData.faqsJson}
                   onChange={(e) => setFormData({ ...formData, faqsJson: e.target.value })}
                 />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ---------------- TAB 5: ADMIN PROFILE PHOTO ---------------- */}
+      {activeTab === "admin-profile" && (
+        <div className="space-y-6">
+          <Card className="border-primary/20 shadow-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl font-serif text-foreground">
+                <Camera className="h-6 w-6 text-[#D4AF37]" />
+                Admin Profile Picture Upload
+              </CardTitle>
+              <CardDescription>
+                Upload and update your admin profile picture. Your photo will be displayed across the admin panel sidebar, navigation header, and operations dashboard.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Hidden File Input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handlePhotoFileChange}
+                className="hidden"
+              />
+
+              {/* Avatar Preview Box */}
+              <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-muted/30 border border-border">
+                <div className="relative group">
+                  <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-[#0F3D3E] text-[#D4AF37] font-serif font-bold text-3xl shadow-lg overflow-hidden border-4 border-[#D4AF37]">
+                    {formData.adminProfileImage || user?.profileImage || user?.profilePicture ? (
+                      <img
+                        src={formData.adminProfileImage || user?.profileImage || user?.profilePicture}
+                        alt="Admin Profile"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      user?.name?.charAt(0).toUpperCase() || "A"
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingPhoto}
+                    className="absolute bottom-0 right-0 p-2.5 rounded-full bg-[#D4AF37] text-[#0F3D3E] hover:bg-[#C29F2F] shadow-md transition-transform group-hover:scale-110"
+                    title="Change Photo"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-center sm:text-left flex-1">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <h3 className="text-lg font-bold text-foreground">{user?.name || "Administrator"}</h3>
+                    <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded bg-[#D4AF37]/20 text-[#0F3D3E] border border-[#D4AF37]/40">
+                      Super Admin
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{user?.email || "admin@harglimpublishers.com"}</p>
+                  <p className="text-xs text-emerald-700 font-medium flex items-center gap-1 justify-center sm:justify-start">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Profile Photo Active & Saved</span>
+                  </p>
+
+                  {/* Upload Action Buttons */}
+                  <div className="pt-2 flex flex-wrap gap-3 justify-center sm:justify-start">
+                    <Button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingPhoto}
+                      className="gap-2 bg-[#0F3D3E] hover:bg-[#174C4D] text-white text-xs font-bold"
+                    >
+                      {isUploadingPhoto ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          <span>Upload Photo from Device</span>
+                        </>
+                      )}
+                    </Button>
+
+                    {(formData.adminProfileImage || user?.profileImage || user?.profilePicture) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleRemovePhoto}
+                        className="gap-1.5 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Remove Photo</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Alternative: Image URL Input */}
+              <div className="space-y-2 pt-2 border-t border-border">
+                <Label htmlFor="adminProfileImage" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Or Paste Direct Profile Photo URL
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="adminProfileImage"
+                    type="url"
+                    placeholder="https://example.com/admin-photo.jpg"
+                    value={formData.adminProfileImage || ""}
+                    onChange={(e) => {
+                      const newUrl = e.target.value;
+                      setFormData({ ...formData, adminProfileImage: newUrl });
+                      if (user) {
+                        setUser({ ...user, profileImage: newUrl, profilePicture: newUrl });
+                      }
+                    }}
+                    className="text-xs font-mono"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Supports PNG, JPG, WEBP, and GIF images. Max recommended resolution: 800x800 px.
+                </p>
               </div>
             </CardContent>
           </Card>

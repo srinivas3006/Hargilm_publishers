@@ -20,11 +20,12 @@ function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect");
+  const urlEmail = searchParams.get("email");
 
   const login = useAuthStore((state) => state.login);
   const setAuthStatus = useAuthStore((state) => state.setAuthStatus);
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(urlEmail || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);

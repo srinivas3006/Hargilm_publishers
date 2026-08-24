@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Package,
@@ -14,8 +15,11 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import api from "@/lib/api";
 
-export default function TrackOrderPage() {
-  const [orderNumber, setOrderNumber] = useState("");
+function TrackOrderContent() {
+  const searchParams = useSearchParams();
+  const initialOrderNumber = searchParams.get("orderNumber") || searchParams.get("orderId") || "";
+
+  const [orderNumber, setOrderNumber] = useState(initialOrderNumber);
   const [trackedOrder, setTrackedOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,12 +28,12 @@ export default function TrackOrderPage() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
-  const handleTrack = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeTrack = async (targetOrderNo: string) => {
+    if (!targetOrderNo.trim()) return;
     setIsLoading(true);
 
     try {
-      const { data } = await api.get(`/orders/track/${orderNumber.toUpperCase()}`);
+      const { data } = await api.get(`/orders/track/${targetOrderNo.trim().toUpperCase()}`);
       const orderData = data.data || data;
       setTrackedOrder({
         orderNumber: orderData.orderNumber || orderData.id,
@@ -56,6 +60,17 @@ export default function TrackOrderPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (initialOrderNumber) {
+      executeTrack(initialOrderNumber);
+    }
+  }, [initialOrderNumber]);
+
+  const handleTrack = async (e: React.FormEvent) => {
+    e.preventDefault();
+    executeTrack(orderNumber);
   };
 
   const getStatusIcon = (status: string) => {
@@ -342,5 +357,13 @@ export default function TrackOrderPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function TrackOrderPage() {
+  return (
+    <Suspense fallback={<div className="py-24 text-center text-muted-foreground">Loading tracking...</div>}>
+      <TrackOrderContent />
+    </Suspense>
   );
 }

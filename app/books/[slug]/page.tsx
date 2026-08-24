@@ -48,6 +48,7 @@ export default function BookDetailPage() {
   const { user } = useAuthStore();
   
   const [book, setBook] = useState<Book | null>(null);
+  const [existingOrder, setExistingOrder] = useState<any | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +186,44 @@ export default function BookDetailPage() {
     fetchBookData();
   }, [params.slug]);
 
+  useEffect(() => {
+    if (!user?._id && !user?.id) {
+      setExistingOrder(null);
+      return;
+    }
+
+    const userId = user._id || user.id;
+
+    async function checkUserOrder() {
+      try {
+        const { data } = await api.get(`/users/${userId}/orders`).catch(() => api.get("/orders"));
+        const ordersData = data?.data || data || [];
+        if (Array.isArray(ordersData) && book) {
+          const matchingOrder = ordersData.find((ord: any) =>
+            (ord.items || []).some((item: any) => {
+              const b = item.book || {};
+              return (
+                b._id === book._id ||
+                b.id === book._id ||
+                b.slug === book.slug ||
+                item.title === book.title
+              );
+            })
+          );
+          if (matchingOrder) {
+            setExistingOrder(matchingOrder);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check user order for book:", err);
+      }
+    }
+
+    if (book) {
+      checkUserOrder();
+    }
+  }, [user, book]);
+
   const scrollToReviews = () => {
     setActiveTab("reviews");
     if (reviewsSectionRef.current) {
@@ -288,6 +327,49 @@ export default function BookDetailPage() {
           </nav>
         </div>
       </div>
+
+      {/* Amazon-style Purchased & Order Tracking Banner */}
+      {existingOrder && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/20 py-3.5 px-4 sm:px-8 shadow-2xs">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-bold shadow-xs">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-emerald-950">
+                  You ordered this book on{" "}
+                  {existingOrder.createdAt ? new Date(existingOrder.createdAt).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  }) : "recently"}
+                </p>
+                <p className="text-xs text-emerald-800 flex items-center gap-1.5 mt-0.5">
+                  <span className="font-semibold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-emerald-200/80 text-emerald-900 border border-emerald-300">
+                    Status: {existingOrder.orderStatus || existingOrder.status || "PROCESSING"}
+                  </span>
+                  <span>• Order #{existingOrder.orderNumber || existingOrder._id || existingOrder.id}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href={`/track-order?orderNumber=${encodeURIComponent(existingOrder.orderNumber || existingOrder._id || existingOrder.id)}`}>
+                <Button size="sm" className="bg-[#0F3D3E] hover:bg-[#174C4D] text-white gap-1.5 text-xs font-bold shadow-xs">
+                  <Truck className="h-4 w-4" />
+                  <span>Track Package</span>
+                </Button>
+              </Link>
+              <Link href="/dashboard/orders">
+                <Button size="sm" variant="outline" className="border-emerald-600/30 text-emerald-900 hover:bg-emerald-100 text-xs">
+                  View Order Details
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. Main 3-Column Layout Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
@@ -457,6 +539,30 @@ export default function BookDetailPage() {
           <div className="lg:col-span-3">
             <div className="sticky top-24 bg-white border-2 border-[#E2E6DF] rounded-2xl p-6 shadow-md space-y-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-2 h-full bg-[#0F3D3E]" />
+
+              {existingOrder && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-xs text-emerald-900 font-semibold space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>Previously Purchased</span>
+                  </div>
+                  <p className="text-[11px] opacity-90 font-normal">
+                    You ordered this item on{" "}
+                    {existingOrder.createdAt ? new Date(existingOrder.createdAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    }) : "recently"}.
+                  </p>
+                  <Link
+                    href={`/track-order?orderNumber=${encodeURIComponent(existingOrder.orderNumber || existingOrder._id || existingOrder.id)}`}
+                    className="inline-flex items-center gap-1 text-[11px] text-[#0F3D3E] underline font-bold hover:no-underline pt-0.5"
+                  >
+                    <span>Track Order Package</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              )}
 
               {/* Price Box */}
               <div className="space-y-1">

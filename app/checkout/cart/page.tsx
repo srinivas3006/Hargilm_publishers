@@ -15,6 +15,8 @@ import { useCartStore } from "@/store/cart-store";
 import { useAuthStore } from "@/store/auth-store";
 import type { CartItem } from "@/types";
 
+import { RecentOrdersSection } from "@/components/orders/recent-orders-section";
+
 function CartItemRow({ item }: { item: CartItem }) {
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -131,6 +133,9 @@ export default function CartPage() {
               </>
             )}
           </div>
+
+          {/* Recent Orders for Logged-In User */}
+          <RecentOrdersSection />
         </div>
       </div>
     );
@@ -203,6 +208,9 @@ export default function CartPage() {
             </div>
           </aside>
         </div>
+
+        {/* Recent Orders Section */}
+        <RecentOrdersSection />
       </div>
     </div>
   );

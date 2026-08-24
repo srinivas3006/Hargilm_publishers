@@ -159,15 +159,24 @@ export function GoogleLoginButton({
       setAuthStatus("error");
       const status = error.response?.status;
       const errorCode = error.response?.data?.error;
-      const errorMessage = error.response?.data?.message;
+      const errorMessage = error.response?.data?.message || error.message || "";
+      const email = error.response?.data?.email || error.response?.data?.data?.email;
 
-      if (status === 409 && errorCode === "ACCOUNT_LINK_REQUIRED") {
+      const isAccountLinkRequired =
+        status === 409 ||
+        errorCode === "ACCOUNT_LINK_REQUIRED" ||
+        errorCode === "ACCOUNT_EXISTS" ||
+        errorMessage.toLowerCase().includes("already exists") ||
+        errorMessage.toLowerCase().includes("linking google") ||
+        errorMessage.toLowerCase().includes("sign in to the existing account") ||
+        errorMessage.toLowerCase().includes("existing account");
+
+      if (isAccountLinkRequired) {
         if (onAccountLinkRequired) {
-          onAccountLinkRequired(error.response?.data?.email);
+          onAccountLinkRequired(email);
         } else {
           toast.error(
-            errorMessage ||
-              "An account with this email already exists. Please sign in with your email & password."
+            "An account with this email already exists. Please sign in with your email & password."
           );
         }
       } else if (status === 403 && (errorCode === "USER_INACTIVE" || errorCode === "ACCOUNT_DISABLED")) {

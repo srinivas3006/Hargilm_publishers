@@ -236,17 +236,15 @@ export function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  {user.role === "reader" && (
-                    <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
-                      <Link
-                        href="/dashboard/orders"
-                        className="flex items-center gap-2.5"
-                      >
-                        <ShoppingCart className="h-4 w-4 text-[#0F3D3E]" />
-                        My Orders
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
+                    <Link
+                      href="/dashboard/orders"
+                      className="flex items-center gap-2.5"
+                    >
+                      <ShoppingCart className="h-4 w-4 text-[#0F3D3E]" />
+                      <span>My Orders & Tracking</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild className="rounded-lg px-3 py-2 cursor-pointer focus:bg-[#F0F2ED] text-xs font-medium text-[#0F3D3E]">
                     <Link
                       href={user.role === "admin" ? "/admin/users" : user.role === "author" ? "/author/settings" : "/dashboard/profile"}

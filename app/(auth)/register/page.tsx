@@ -128,8 +128,27 @@ function RegisterFormContent() {
       }, 300);
     } catch (error: any) {
       setAuthStatus("error");
+      const status = error.response?.status;
+      const errorCode = error.response?.data?.error;
       const errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
-      toast.error(errorMessage);
+
+      const isAccountExistsError =
+        status === 409 ||
+        errorCode === "ACCOUNT_EXISTS" ||
+        errorCode === "ACCOUNT_LINK_REQUIRED" ||
+        errorMessage.toLowerCase().includes("already exists") ||
+        errorMessage.toLowerCase().includes("linking google") ||
+        errorMessage.toLowerCase().includes("existing account");
+
+      if (isAccountExistsError) {
+        setDialogState({
+          isOpen: true,
+          type: "link_required",
+          email: formData.email,
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -144,9 +163,8 @@ function RegisterFormContent() {
         email={dialogState.email}
         onClose={() => setDialogState({ isOpen: false, type: null })}
         onSwitchToPasswordLogin={(targetEmail) => {
-          if (targetEmail) {
-            setFormData((prev) => ({ ...prev, email: targetEmail }));
-          }
+          const emailToPass = targetEmail || formData.email;
+          router.push(`/login${emailToPass ? `?email=${encodeURIComponent(emailToPass)}` : ""}`);
         }}
       />
 

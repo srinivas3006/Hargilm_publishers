@@ -43,9 +43,13 @@ export interface SiteContent {
   aboutMission: string;
   aboutVision: string;
   faqsJson: string;
+
+  // Admin Profile & Avatar
+  adminProfileImage?: string;
 }
 
 export const defaultSiteContent: SiteContent = {
+  adminProfileImage: "",
   // Announcement Bar
   announcementActive: false,
   announcementText: "",
