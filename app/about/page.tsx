@@ -33,7 +33,7 @@ const team = [
   {
     name: "Sunkarapally Sai Teja",
     role: "Founder & CEO",
-    image: "/logo.webp",
+    image: "/founder.webp",
   },
 ];
 
