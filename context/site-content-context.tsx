@@ -276,6 +276,9 @@ export function SiteContentProvider({ children }: { children: React.ReactNode })
           const apiData = res.data.data || res.data;
           if (apiData && typeof apiData === 'object') {
             const merged = { ...defaultSiteContent, ...apiData };
+            if (merged.packagesJson && (merged.packagesJson.includes("Demo Starter") || merged.packagesJson.includes("Demo Pro") || !merged.packagesJson.includes("pkg-999"))) {
+              merged.packagesJson = defaultSiteContent.packagesJson;
+            }
             setContent(merged);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
           }

@@ -256,13 +256,22 @@ export default function PublishPage() {
       setLoadingPackages(true);
       try {
         const { data } = await api.get("/publish-packages").catch(() => ({ data: { data: [] } }));
-        const pkgData = data?.packages || data?.data?.packages || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
-        if (Array.isArray(pkgData) && pkgData.length > 0) {
-          setPackages(pkgData);
+        const rawPkgData = data?.packages || data?.data?.packages || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
+        
+        // Filter out legacy backend demo packages ("Demo Starter Publishing", "Demo Pro Publishing")
+        const validBackendPkgs = Array.isArray(rawPkgData)
+          ? rawPkgData.filter((p: any) => p?.name && !p.name.toLowerCase().includes("demo") && !p.description?.toLowerCase().includes("demo"))
+          : [];
+
+        if (validBackendPkgs.length > 0) {
+          setPackages(validBackendPkgs);
         } else if (content?.packagesJson) {
           try {
             const parsed = JSON.parse(content.packagesJson);
-            setPackages(Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultPackages);
+            const validSitePkgs = Array.isArray(parsed)
+              ? parsed.filter((p: any) => p?.name && !p.name.toLowerCase().includes("demo") && !p.description?.toLowerCase().includes("demo"))
+              : [];
+            setPackages(validSitePkgs.length > 0 ? validSitePkgs : defaultPackages);
           } catch {
             setPackages(defaultPackages);
           }
@@ -273,7 +282,10 @@ export default function PublishPage() {
         if (content?.packagesJson) {
           try {
             const parsed = JSON.parse(content.packagesJson);
-            setPackages(Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultPackages);
+            const validSitePkgs = Array.isArray(parsed)
+              ? parsed.filter((p: any) => p?.name && !p.name.toLowerCase().includes("demo") && !p.description?.toLowerCase().includes("demo"))
+              : [];
+            setPackages(validSitePkgs.length > 0 ? validSitePkgs : defaultPackages);
           } catch {
             setPackages(defaultPackages);
           }
