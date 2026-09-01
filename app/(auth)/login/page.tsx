@@ -152,17 +152,14 @@ function LoginFormContent() {
         >
           {/* Header */}
           <div className="text-center space-y-2">
-            <Link href="/" className="inline-flex items-center gap-2 group mb-1">
+            <Link href="/" className="inline-flex justify-center items-center group mb-2">
               <Image
                 src="/logo.png"
                 alt="Harglim Publishers"
-                width={36}
-                height={36}
-                className="h-8 w-auto object-contain"
+                width={56}
+                height={56}
+                className="h-12 sm:h-14 w-auto object-contain transition-transform group-hover:scale-105"
               />
-              <span className="text-xl font-serif font-bold text-[#0F3D3E] tracking-tight">
-                Harglim Publishers
-              </span>
             </Link>
 
             <h1 className="text-2xl font-serif font-bold text-[#0F3D3E]">

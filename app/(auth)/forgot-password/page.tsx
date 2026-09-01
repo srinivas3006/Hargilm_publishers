@@ -61,17 +61,14 @@ export default function ForgotPasswordPage() {
           className="w-full max-w-md my-auto py-4"
         >
           <div className="text-center mb-6">
-            <Link href="/" className="inline-flex items-center gap-2 mb-4">
+            <Link href="/" className="inline-flex justify-center items-center group mb-4">
               <Image
                 src="/logo.png"
-                alt="Harglim"
-                width={40}
-                height={40}
-                className="h-10 w-auto object-contain text-foreground"
+                alt="Harglim Publishers"
+                width={56}
+                height={56}
+                className="h-12 sm:h-14 w-auto object-contain transition-transform group-hover:scale-105"
               />
-              <span className="text-2xl font-serif font-bold text-foreground">
-                Harglim
-              </span>
             </Link>
 
             <div className="mx-auto w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
