@@ -28,58 +28,136 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useSiteContent } from "@/context/site-content-context";
 
-// Default curated publishing packages to ensure 0 empty state
+// Default curated publishing packages for HarGlim Publishers
 const defaultPackages = [
   {
-    id: "starter",
+    id: "pkg-999",
     name: "Starter Package",
-    tagline: "Essential tools for first-time authors",
-    price: 14999,
+    tagline: "Essential e-book & digital publishing starter kit",
+    price: 999,
     highlighted: false,
     features: [
-      "Basic Copyediting & Proofreading",
-      "Standard Cover Design Concept",
-      "Ebook & Paperback Formatting",
-      "ISBN Assignment",
-      "Amazon & Flipkart Listing",
-      "50% Net Royalty Share",
-      "Author Dashboard Access",
-    ],
+      "ISBN & Barcode Allocation",
+      "Cover Design",
+      "Book formatting & Manuscript design",
+      "E-book & E-certificate",
+      "50% Royalty",
+      "Author copies at printing cost (Lifetime)",
+      "Book available on Amazon and Kindle",
+      "Page limit – 120",
+      "Book launch poster",
+      "Books will be taken to book fairs under HarGlim (if the author pays for copies)"
+    ]
   },
   {
-    id: "professional",
-    name: "Professional Package",
-    tagline: "Complete package for ambitious writers",
-    price: 29999,
+    id: "pkg-1999",
+    name: "Standard Package",
+    tagline: "Standard paperback publishing with 80% royalty share",
+    price: 1999,
+    highlighted: false,
+    features: [
+      "ISBN & Barcode Allocation",
+      "Cover Design",
+      "Book formatting & Manuscript design",
+      "1 Author copy (Paperback)",
+      "Certificate",
+      "80% Royalty",
+      "Author copies at printing cost (Lifetime)",
+      "Book available on Amazon and Kindle",
+      "Page limit – 120",
+      "Book launch poster",
+      "Books will be taken to book fairs under HarGlim (if the author pays for copies)"
+    ]
+  },
+  {
+    id: "pkg-2999",
+    name: "Silver Package",
+    tagline: "100% Royalty & global distribution across 12+ platforms",
+    price: 2999,
+    highlighted: false,
+    features: [
+      "ISBN & Barcode Allocation",
+      "Cover Design",
+      "Book formatting & Manuscript design",
+      "2 Author copies (Paperback)",
+      "Certificate",
+      "100% Royalty",
+      "Author copies at printing cost (Lifetime)",
+      "Book available on Amazon, Kindle, and 12+ International platforms",
+      "Page limit – 150",
+      "Book launch posters",
+      "Books will be taken to book fairs under HarGlim (if the author pays for copies)"
+    ]
+  },
+  {
+    id: "pkg-3499",
+    name: "Gold Package",
+    tagline: "Extended 300 page limit & full global distribution",
+    price: 3499,
+    highlighted: false,
+    features: [
+      "ISBN & Barcode Allocation",
+      "Cover Design",
+      "Book formatting & Manuscript design",
+      "2 Author copies (Paperback)",
+      "Certificate",
+      "100% Royalty",
+      "Author copies at printing cost (Lifetime)",
+      "Book available on Amazon, Kindle, and 12+ International platforms",
+      "Page limit – 300",
+      "Book launch posters",
+      "Books will be taken to book fairs under HarGlim (if the author pays for copies)"
+    ]
+  },
+  {
+    id: "pkg-4999",
+    name: "Platinum Bestseller Package",
+    tagline: "Full promotional kit with video trailer & author interview",
+    price: 4999,
     highlighted: true,
-    badge: "Most Popular",
+    badge: "Most Popular Choice",
     features: [
-      "Comprehensive Line & Copy Editing",
-      "Bespoke Original Cover Artwork",
-      "Hardcover & Paperback Production",
-      "Press Release & Social Media Blast",
-      "Amazon Prime & Flipkart Assured",
-      "70% Net Royalty Share",
-      "Dedicated Publishing Manager",
-    ],
+      "ISBN & Barcode Allocation",
+      "Cover Design",
+      "Book formatting & Manuscript design",
+      "4 Author copies (Paperback)",
+      "Certificate",
+      "100% Royalty",
+      "Author copies at printing cost (Lifetime)",
+      "Book available on Amazon, Kindle, and 12+ International platforms",
+      "Page limit – 250",
+      "Book launch posters",
+      "Books will be taken to book fairs under HarGlim (if the author pays for copies)",
+      "Video trailer",
+      "Author interview (Recorded video will be sent to the author and posted on our social media)"
+    ]
   },
   {
-    id: "elite",
-    name: "Elite Bestseller Package",
-    tagline: "Full-scale publishing & marketing suite",
-    price: 49999,
+    id: "pkg-9999",
+    name: "VIP Executive Mastermind",
+    tagline: "Ultimate publishing package with 1-on-1 dedicated guide & custom bookmarks",
+    price: 9999,
     highlighted: false,
     features: [
-      "Developmental & Line Editing",
-      "Custom Graphic Artwork & Illustration",
-      "Hardcover, Paperback & Audiobook Prep",
-      "National PR Campaign & Press Pitching",
-      "International Global Distribution",
-      "70% Net Royalty Share",
-      "Bookstore Pitching & Launch Event",
-    ],
-  },
+      "ISBN & Barcode Allocation",
+      "Cover Design (2 options)",
+      "Professional Customised Book formatting & Manuscript design",
+      "6 Author copies (Paperback)",
+      "Certificate",
+      "100% Royalty",
+      "Author copies at printing cost (Lifetime)",
+      "Book available on Amazon, Kindle, and 12+ International platforms",
+      "Page limit – 300",
+      "Book launch posters",
+      "Books will be taken to book fairs under HarGlim (if the author pays for copies)",
+      "Author interview (Recorded video will be sent to the author and posted on our social media)",
+      "Bookmarks with book cover image & author's signature (30)",
+      "Video trailer",
+      "Dedicated project guide assigned (5 sessions, 1 hour each, complete guidance from scratch)"
+    ]
+  }
 ];
 
 const publishingServices = [
@@ -169,6 +247,7 @@ const authorTestimonials = [
 ];
 
 export default function PublishPage() {
+  const { content } = useSiteContent();
   const [packages, setPackages] = useState<any[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(true);
 
@@ -178,15 +257,35 @@ export default function PublishPage() {
       try {
         const { data } = await api.get("/publish-packages").catch(() => ({ data: { data: [] } }));
         const pkgData = data?.data?.packages || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
-        setPackages(Array.isArray(pkgData) && pkgData.length > 0 ? pkgData : defaultPackages);
+        if (Array.isArray(pkgData) && pkgData.length > 0) {
+          setPackages(pkgData);
+        } else if (content?.packagesJson) {
+          try {
+            const parsed = JSON.parse(content.packagesJson);
+            setPackages(Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultPackages);
+          } catch {
+            setPackages(defaultPackages);
+          }
+        } else {
+          setPackages(defaultPackages);
+        }
       } catch (err) {
-        setPackages(defaultPackages);
+        if (content?.packagesJson) {
+          try {
+            const parsed = JSON.parse(content.packagesJson);
+            setPackages(Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultPackages);
+          } catch {
+            setPackages(defaultPackages);
+          }
+        } else {
+          setPackages(defaultPackages);
+        }
       } finally {
         setLoadingPackages(false);
       }
     };
     fetchPackages();
-  }, []);
+  }, [content?.packagesJson]);
 
   const displayPackages = packages.length > 0 ? packages : defaultPackages;
 
@@ -410,7 +509,7 @@ export default function PublishPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
           {displayPackages.map((pkg, idx) => {
             const isHighlighted = pkg.highlighted;
 

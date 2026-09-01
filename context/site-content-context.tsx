@@ -81,16 +81,130 @@ export const defaultSiteContent: SiteContent = {
   publishSubtitle: "Transform your manuscript into a professionally published book. We handle everything from editing to distribution, so you can focus on writing.",
   packagesJson: JSON.stringify([
     {
+      id: "pkg-999",
       name: "Starter Package",
-      description: "Ideal for debut authors looking for essential publishing services.",
-      price: 9999,
-      features: ["ISBN Assignment", "Standard Cover Design", "E-book & Paperback Formatting", "Online Distribution", "10 Author Copies"]
+      tagline: "Essential e-book & digital publishing starter kit",
+      price: 999,
+      highlighted: false,
+      features: [
+        "ISBN & Barcode Allocation",
+        "Cover Design",
+        "Book formatting & Manuscript design",
+        "E-book & E-certificate",
+        "50% Royalty",
+        "Author copies at printing cost (Lifetime)",
+        "Book available on Amazon and Kindle",
+        "Page limit – 120",
+        "Book launch poster",
+        "Books will be taken to book fairs under HarGlim (if the author pays for copies)"
+      ]
     },
     {
-      name: "Professional Package",
-      description: "Comprehensive package with full editing and marketing support.",
-      price: 19999,
-      features: ["ISBN & Copyright Assistance", "Premium Customized Cover", "Professional Copyediting", "Global Distribution & Marketing", "25 Author Copies", "Dedicated Author Manager"]
+      id: "pkg-1999",
+      name: "Standard Package",
+      tagline: "Standard paperback publishing with 80% royalty share",
+      price: 1999,
+      highlighted: false,
+      features: [
+        "ISBN & Barcode Allocation",
+        "Cover Design",
+        "Book formatting & Manuscript design",
+        "1 Author copy (Paperback)",
+        "Certificate",
+        "80% Royalty",
+        "Author copies at printing cost (Lifetime)",
+        "Book available on Amazon and Kindle",
+        "Page limit – 120",
+        "Book launch poster",
+        "Books will be taken to book fairs under HarGlim (if the author pays for copies)"
+      ]
+    },
+    {
+      id: "pkg-2999",
+      name: "Silver Package",
+      tagline: "100% Royalty & global distribution across 12+ platforms",
+      price: 2999,
+      highlighted: false,
+      features: [
+        "ISBN & Barcode Allocation",
+        "Cover Design",
+        "Book formatting & Manuscript design",
+        "2 Author copies (Paperback)",
+        "Certificate",
+        "100% Royalty",
+        "Author copies at printing cost (Lifetime)",
+        "Book available on Amazon, Kindle, and 12+ International platforms",
+        "Page limit – 150",
+        "Book launch posters",
+        "Books will be taken to book fairs under HarGlim (if the author pays for copies)"
+      ]
+    },
+    {
+      id: "pkg-3499",
+      name: "Gold Package",
+      tagline: "Extended 300 page limit & full global distribution",
+      price: 3499,
+      highlighted: false,
+      features: [
+        "ISBN & Barcode Allocation",
+        "Cover Design",
+        "Book formatting & Manuscript design",
+        "2 Author copies (Paperback)",
+        "Certificate",
+        "100% Royalty",
+        "Author copies at printing cost (Lifetime)",
+        "Book available on Amazon, Kindle, and 12+ International platforms",
+        "Page limit – 300",
+        "Book launch posters",
+        "Books will be taken to book fairs under HarGlim (if the author pays for copies)"
+      ]
+    },
+    {
+      id: "pkg-4999",
+      name: "Platinum Bestseller Package",
+      tagline: "Full promotional kit with video trailer & author interview",
+      price: 4999,
+      highlighted: true,
+      badge: "Most Popular Choice",
+      features: [
+        "ISBN & Barcode Allocation",
+        "Cover Design",
+        "Book formatting & Manuscript design",
+        "4 Author copies (Paperback)",
+        "Certificate",
+        "100% Royalty",
+        "Author copies at printing cost (Lifetime)",
+        "Book available on Amazon, Kindle, and 12+ International platforms",
+        "Page limit – 250",
+        "Book launch posters",
+        "Books will be taken to book fairs under HarGlim (if the author pays for copies)",
+        "Video trailer",
+        "Author interview (Recorded video will be sent to the author and posted on our social media)"
+      ]
+    },
+    {
+      id: "pkg-9999",
+      name: "VIP Executive Mastermind",
+      tagline: "Ultimate publishing package with 1-on-1 dedicated guide & custom bookmarks",
+      price: 9999,
+      highlighted: false,
+      features: [
+        "ISBN & Barcode Allocation",
+        "Cover Design (2 options)",
+        "Professional Customised Book formatting & Manuscript design",
+        "6 Author copies (Paperback)",
+        "Certificate",
+        "100% Royalty",
+        "Author copies at printing cost (Lifetime)",
+        "Book available on Amazon, Kindle, and 12+ International platforms",
+        "Page limit – 300",
+        "Book launch posters",
+        "Books will be taken to book fairs under HarGlim (if the author pays for copies)",
+        "Author interview (Recorded video will be sent to the author and posted on our social media)",
+        "Bookmarks with book cover image & author's signature (30)",
+        "Video trailer",
+        "Dedicated project guide assigned (5 sessions, 1 hour each, complete guidance from scratch)"
+      ]
     }
   ], null, 2),
   royaltySummary: "Earn up to 70% royalties on every book sold. Transparent monthly reporting and direct payouts.",

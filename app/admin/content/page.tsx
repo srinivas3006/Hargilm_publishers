@@ -552,16 +552,86 @@ export default function AdminContentPage() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Publishing Packages (JSON Format)</CardTitle>
-              <CardDescription>Configure packages displayed on the Publish page.</CardDescription>
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg">Publishing Packages (JSON Format)</CardTitle>
+                <CardDescription>Configure packages displayed on the Publish page (6 official plans from ₹999 to ₹9,999).</CardDescription>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300 hover:bg-amber-500/20"
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      packagesJson: defaultSiteContent.packagesJson,
+                    }));
+                    toast.success("Loaded official HarGlim 6 packages (₹999 to ₹9,999) into editor!");
+                  }}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Pre-fill HarGlim Official Packages
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    try {
+                      const parsed = JSON.parse(formData.packagesJson);
+                      setFormData((prev) => ({
+                        ...prev,
+                        packagesJson: JSON.stringify(parsed, null, 2),
+                      }));
+                      toast.success("JSON formatted successfully!");
+                    } catch (err: any) {
+                      toast.error("Cannot format: Invalid JSON syntax (" + err.message + ")");
+                    }
+                  }}
+                >
+                  Format JSON
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {(() => {
+                let isValid = true;
+                let errorMsg = "";
+                let count = 0;
+                try {
+                  const parsed = JSON.parse(formData.packagesJson);
+                  if (Array.isArray(parsed)) {
+                    count = parsed.length;
+                  } else {
+                    isValid = false;
+                    errorMsg = "Root JSON must be an array of package objects";
+                  }
+                } catch (e: any) {
+                  isValid = false;
+                  errorMsg = e.message;
+                }
+
+                return (
+                  <div className="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border bg-muted/40 font-mono">
+                    <span className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${isValid ? "bg-emerald-500" : "bg-destructive animate-pulse"}`} />
+                      <span>Syntax Status: {isValid ? `Valid JSON (${count} packages configured)` : `Invalid JSON Syntax`}</span>
+                    </span>
+                    {!isValid && <span className="text-destructive font-semibold truncate max-w-xs">{errorMsg}</span>}
+                  </div>
+                );
+              })()}
+
               <div className="space-y-2">
                 <Textarea
                   id="packagesJson"
-                  rows={10}
-                  className="font-mono text-xs bg-muted/30"
+                  rows={14}
+                  className="font-mono text-xs bg-muted/30 border border-input focus:ring-1"
                   value={formData.packagesJson}
                   onChange={(e) => setFormData({ ...formData, packagesJson: e.target.value })}
                 />
