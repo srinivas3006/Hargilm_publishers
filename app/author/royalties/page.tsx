@@ -59,26 +59,7 @@ export default function AuthorRoyaltiesPage() {
           )
       );
 
-      setRoyaltyEntries(unique.length > 0 ? unique : [
-        {
-          bookTitle: "Node APIs in Production",
-          copiesSold: 10,
-          amountPerBook: 599,
-          totalRevenue: 5990,
-          royaltyAmount: 1797,
-          date: new Date().toISOString(),
-          status: "Paid",
-        },
-        {
-          bookTitle: "Small Habits, Big Days",
-          copiesSold: 60,
-          amountPerBook: 299,
-          totalRevenue: 17940,
-          royaltyAmount: 5382,
-          date: new Date(Date.now() - 86400000 * 30).toISOString(),
-          status: "Paid",
-        },
-      ]);
+      setRoyaltyEntries(unique);
     } catch (err) {
       console.error("Failed to fetch royalties:", err);
     } finally {

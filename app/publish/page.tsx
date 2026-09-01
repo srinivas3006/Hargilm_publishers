@@ -256,7 +256,7 @@ export default function PublishPage() {
       setLoadingPackages(true);
       try {
         const { data } = await api.get("/publish-packages").catch(() => ({ data: { data: [] } }));
-        const pkgData = data?.data?.packages || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
+        const pkgData = data?.packages || data?.data?.packages || (Array.isArray(data?.data) ? data.data : []) || (Array.isArray(data) ? data : []);
         if (Array.isArray(pkgData) && pkgData.length > 0) {
           setPackages(pkgData);
         } else if (content?.packagesJson) {

@@ -41,59 +41,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import toast from "react-hot-toast";
 
-const manuscripts = [
-  {
-    id: 1,
-    title: "The Future of Artificial Intelligence",
-    category: "Technology",
-    wordCount: 65000,
-    submittedDate: "2024-01-10",
-    status: "Under Review",
-    progress: 75,
-    feedback: null,
-  },
-  {
-    id: 2,
-    title: "Leadership Lessons from History",
-    category: "Business",
-    wordCount: 48000,
-    submittedDate: "2024-01-05",
-    status: "In Editing",
-    progress: 45,
-    feedback: "Great content! Minor edits needed in chapters 3-5.",
-  },
-  {
-    id: 3,
-    title: "Modern Poetry Collection",
-    category: "Literature",
-    wordCount: 12000,
-    submittedDate: "2023-12-20",
-    status: "Approved",
-    progress: 100,
-    feedback: "Approved for publication. Expected release: Feb 2024.",
-  },
-  {
-    id: 4,
-    title: "Investment Strategies for Beginners",
-    category: "Finance",
-    wordCount: 55000,
-    submittedDate: "2023-12-15",
-    status: "Revision Required",
-    progress: 30,
-    feedback: "Please revise chapters 7-9 with more practical examples.",
-  },
-  {
-    id: 5,
-    title: "Digital Marketing Handbook",
-    category: "Business",
-    wordCount: 42000,
-    submittedDate: "2024-01-18",
-    status: "Submitted",
-    progress: 10,
-    feedback: null,
-  },
-];
-
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Approved":
@@ -154,11 +101,11 @@ export default function ManuscriptsPage() {
           }));
           setItems(mapped);
         } else {
-          setItems(manuscripts);
+          setItems([]);
         }
       } catch (err) {
-        console.warn("Failed to fetch manuscripts from API, loading mock data:", err);
-        setItems(manuscripts);
+        console.warn("Failed to fetch manuscripts from API:", err);
+        setItems([]);
       } finally {
         setLoading(false);
       }

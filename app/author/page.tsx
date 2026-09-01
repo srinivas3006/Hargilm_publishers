@@ -51,16 +51,11 @@ export default function AuthorDashboard() {
         const localRoyaltySum = localEntries.reduce((sum: number, item: any) => sum + Number(item.royaltyAmount || 0), 0);
 
         setDashboardData({
-          publishedBooks: resData.publishedBooks || (localEntries.length > 0 ? localEntries.length : 2),
-          manuscriptsCount: resData.manuscriptsCount || (resData.manuscripts?.length || 1),
-          totalEarnings: (resData.accruedKnown || 0) + (localRoyaltySum || 7440),
-          recentBooks: resData.recentBooks || [
-            { id: "1", title: "Node APIs in Production", sales: 20, revenue: 13980 },
-            { id: "2", title: "Small Habits, Big Days", sales: 60, revenue: 17940 },
-          ],
-          manuscripts: resData.manuscripts || [
-            { id: "m1", title: "The Modern Developer Journey", status: "UNDER_REVIEW", createdAt: new Date().toISOString() },
-          ],
+          publishedBooks: resData.publishedBooks ?? (resData.books?.length || 0),
+          manuscriptsCount: resData.manuscriptsCount ?? (resData.manuscripts?.length || 0),
+          totalEarnings: (resData.accruedKnown || resData.totalEarnings || 0) + localRoyaltySum,
+          recentBooks: Array.isArray(resData.recentBooks) ? resData.recentBooks : (Array.isArray(resData.books) ? resData.books : []),
+          manuscripts: Array.isArray(resData.manuscripts) ? resData.manuscripts : [],
         });
       } catch (err) {
         console.warn("Error fetching dashboard data:", err);

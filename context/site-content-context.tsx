@@ -260,6 +260,10 @@ export function SiteContentProvider({ children }: { children: React.ReactNode })
         if (cached) {
           try {
             const parsed = JSON.parse(cached);
+            // If cached packages contain old dummy packages (missing pkg-999), reset packagesJson to default
+            if (parsed.packagesJson && (!parsed.packagesJson.includes("pkg-999") || parsed.packagesJson.includes("14999") || parsed.packagesJson.includes("Demo Starter"))) {
+              parsed.packagesJson = defaultSiteContent.packagesJson;
+            }
             setContent((prev) => ({ ...prev, ...parsed }));
           } catch (e) {
             console.error('Failed to parse cached site content:', e);
