@@ -16,7 +16,7 @@ import {
   Search,
   Filter,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -73,7 +73,7 @@ export default function ManuscriptsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchManuscripts = async () => {

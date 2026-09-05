@@ -17,15 +17,11 @@ import {
   Star,
   Award,
   Share2,
-  UserPlus,
-  Check,
   Sparkles,
-  Quote,
   Search,
   Book as BookIcon,
   MessageSquare,
   ArrowRight,
-  TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -51,8 +47,7 @@ export default function AuthorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [imgError, setImgError] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'books' | 'bio' | 'awards'>('books');
+  const [activeTab, setActiveTab] = useState<'books' | 'bio'>('books');
   const [bookSearchQuery, setBookSearchQuery] = useState('');
 
   const fetchAuthorData = async () => {
@@ -137,15 +132,6 @@ export default function AuthorDetailPage() {
     fetchAuthorData();
   }, [params.id]);
 
-  const handleFollowToggle = () => {
-    setIsFollowing((prev) => !prev);
-    if (!isFollowing) {
-      toast.success(`You are now following ${author?.name || 'this author'}!`);
-    } else {
-      toast.success(`Unfollowed ${author?.name || 'author'}.`);
-    }
-  };
-
   const handleShare = () => {
     if (typeof window !== 'undefined') {
       navigator.clipboard.writeText(window.location.href);
@@ -158,9 +144,9 @@ export default function AuthorDetailPage() {
   const avgRating =
     books.length > 0
       ? (
-          books.reduce((acc, b) => acc + (b.rating || 4.5), 0) / books.length
+          books.reduce((acc, b) => acc + (b.rating || 0), 0) / books.length
         ).toFixed(1)
-      : '4.9';
+      : '0.0';
   const totalReviewsCount = books.reduce(
     (acc, b) => acc + (b.totalReviews || 0),
     0
@@ -306,27 +292,6 @@ export default function AuthorDetailPage() {
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
                 <Button
-                  onClick={handleFollowToggle}
-                  className={`h-11 px-6 rounded-xl font-serif font-bold text-xs transition-all shadow-md ${
-                    isFollowing
-                      ? 'bg-[#D4AF37] text-[#0F3D3E] hover:bg-[#b8952b]'
-                      : 'bg-white/10 hover:bg-white/20 text-white border border-white/30'
-                  }`}
-                >
-                  {isFollowing ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Following Author
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Follow Author
-                    </>
-                  )}
-                </Button>
-
-                <Button
                   onClick={handleShare}
                   variant="outline"
                   className="h-11 px-5 rounded-xl font-serif font-bold text-xs bg-white/10 hover:bg-white/20 text-white border-white/30"
@@ -386,7 +351,7 @@ export default function AuthorDetailPage() {
             <div className="flex items-center justify-center gap-1.5 text-[#D4AF37]">
               <MessageSquare className="h-5 w-5" />
               <span className="text-2xl font-serif font-bold text-[#0F3D3E]">
-                {totalReviewsCount > 0 ? totalReviewsCount : '120+'}
+                {totalReviewsCount}
               </span>
             </div>
             <p className="text-xs text-[#5C6E6E] font-medium uppercase tracking-wider">
@@ -447,22 +412,6 @@ export default function AuthorDetailPage() {
             )}
           </button>
 
-          <button
-            onClick={() => setActiveTab('awards')}
-            className={`pb-4 text-sm font-serif font-bold transition-all relative ${
-              activeTab === 'awards'
-                ? 'text-[#0F3D3E]'
-                : 'text-[#5C6E6E] hover:text-[#0F3D3E]'
-            }`}
-          >
-            <span>Awards & Highlights</span>
-            {activeTab === 'awards' && (
-              <motion.div
-                layoutId="activeTabUnderline"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]"
-              />
-            )}
-          </button>
         </div>
       </div>
 
@@ -561,17 +510,6 @@ export default function AuthorDetailPage() {
                     </>
                   )}
                 </div>
-
-                {/* Quote Highlight Box */}
-                <div className="bg-gradient-to-br from-[#0F3D3E]/5 to-[#D4AF37]/10 border-l-4 border-[#D4AF37] rounded-r-2xl p-6 relative overflow-hidden">
-                  <Quote className="absolute right-4 bottom-2 h-16 w-16 text-[#D4AF37]/10 pointer-events-none" />
-                  <p className="font-serif italic text-base sm:text-lg text-[#0F3D3E] font-medium leading-relaxed mb-3">
-                    &ldquo;Literature is the quiet bridge between human experience and timeless truth. Through stories, we find who we truly are.&rdquo;
-                  </p>
-                  <span className="text-xs font-serif font-bold text-[#D4AF37] uppercase tracking-wider">
-                    — Author Statement
-                  </span>
-                </div>
               </div>
 
               {/* Sidebar Info */}
@@ -622,80 +560,7 @@ export default function AuthorDetailPage() {
               </div>
             </motion.div>
           )}
-
-          {/* ---------------- TAB 3: AWARDS & HIGHLIGHTS ---------------- */}
-          {activeTab === 'awards' && (
-            <motion.div
-              key="tab-awards"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            >
-              <div className="bg-white border border-[#E2E6DF] hover:border-[#D4AF37] rounded-3xl p-6 space-y-3 shadow-xs transition-all">
-                <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
-                  <Award className="h-6 w-6" />
-                </div>
-                <h3 className="font-serif font-bold text-lg text-[#0F3D3E]">
-                  Harglim Published Author
-                </h3>
-                <p className="text-xs text-[#5C6E6E] leading-relaxed">
-                  Recognized for outstanding manuscript submission and literary contribution.
-                </p>
-              </div>
-
-              <div className="bg-white border border-[#E2E6DF] hover:border-[#D4AF37] rounded-3xl p-6 space-y-3 shadow-xs transition-all">
-                <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
-                  <Star className="h-6 w-6 fill-[#D4AF37]" />
-                </div>
-                <h3 className="font-serif font-bold text-lg text-[#0F3D3E]">
-                  Reader&apos;s Favorite Choice
-                </h3>
-                <p className="text-xs text-[#5C6E6E] leading-relaxed">
-                  Consistently highly rated across reader reviews and library collections.
-                </p>
-              </div>
-
-              <div className="bg-white border border-[#E2E6DF] hover:border-[#D4AF37] rounded-3xl p-6 space-y-3 shadow-xs transition-all">
-                <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
-                  <TrendingUp className="h-6 w-6" />
-                </div>
-                <h3 className="font-serif font-bold text-lg text-[#0F3D3E]">
-                  Bestseller Spotlight
-                </h3>
-                <p className="text-xs text-[#5C6E6E] leading-relaxed">
-                  Featured author spotlight across Harglim Publishers annual showcase.
-                </p>
-              </div>
-            </motion.div>
-          )}
         </AnimatePresence>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* 5. AUTHOR NEWSLETTER / FOLLOW CTA */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="bg-gradient-to-r from-[#0B2E2F] to-[#0F3D3E] text-white py-12 border-t border-[#D4AF37]/30">
-        <div className="max-w-4xl mx-auto px-4 text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] text-xs font-serif font-bold">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Never Miss a Release</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white">
-            Follow {author.name} for New Releases
-          </h2>
-          <p className="text-xs sm:text-sm text-white/70 max-w-xl mx-auto">
-            Get notified whenever {author.name} publishes a new title or holds live signing events with Harglim Publishers.
-          </p>
-          <div className="pt-2 flex justify-center">
-            <Button
-              onClick={handleFollowToggle}
-              className="bg-[#D4AF37] hover:bg-[#b8952b] text-[#0F3D3E] font-serif font-bold text-xs h-11 px-8 rounded-xl shadow-lg"
-            >
-              {isFollowing ? 'Following Author' : `Follow ${author.name}`}
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );

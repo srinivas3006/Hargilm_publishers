@@ -18,7 +18,6 @@ import {
   Globe,
   CreditCard,
   LogOut,
-  Sparkles,
   ShieldCheck,
   ChevronRight,
 } from "lucide-react";
@@ -68,8 +67,8 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
   const router = useRouter();
+  const { user, logout } = useAuthStore();
 
   return (
     <AuthGuard requiredRole="admin">
@@ -107,6 +106,7 @@ export default function AdminLayout({
               size="icon"
               className="text-white/80 hover:text-white lg:hidden"
               onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -115,12 +115,14 @@ export default function AdminLayout({
           {/* Admin User Info */}
           <div className="border-b border-[#174C4D] p-4 bg-[#0F3D3E]">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-base shadow-sm overflow-hidden border border-[#D4AF37]/50">
+              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-serif font-bold text-base shadow-sm overflow-hidden border border-[#D4AF37]/50">
                 {user?.profileImage || user?.profilePicture ? (
-                  <img
-                    src={user.profileImage || user.profilePicture}
+                  <Image
+                    src={user.profileImage || user.profilePicture || ""}
                     alt={user.name || "Admin"}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="40px"
+                    className="object-cover"
                   />
                 ) : (
                   user?.name?.charAt(0).toUpperCase() || "A"
@@ -195,7 +197,7 @@ export default function AdminLayout({
               className="w-full justify-start gap-3 text-red-300 hover:text-red-200 hover:bg-red-950/40 h-9 text-xs"
               onClick={() => {
                 logout();
-                window.location.href = "/";
+                router.push("/");
               }}
             >
               <LogOut className="h-4 w-4" />
@@ -224,12 +226,14 @@ export default function AdminLayout({
 
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0F3D3E]/5 border border-[#0F3D3E]/10 text-xs">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-bold text-xs overflow-hidden">
+                <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4AF37] text-[#0F3D3E] font-bold text-xs overflow-hidden">
                   {user?.profileImage || user?.profilePicture ? (
-                    <img
-                      src={user.profileImage || user.profilePicture}
+                    <Image
+                      src={user.profileImage || user.profilePicture || ""}
                       alt={user.name || "Admin"}
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="24px"
+                      className="object-cover"
                     />
                   ) : (
                     <ShieldCheck className="h-4 w-4 text-emerald-600" />

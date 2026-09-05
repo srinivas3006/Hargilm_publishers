@@ -39,8 +39,8 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuthStore();
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <AuthGuard>
@@ -74,6 +74,7 @@ export default function DashboardLayout({
                 size="icon"
                 className="text-white/80 hover:text-white hover:bg-[#174C4D]"
                 onClick={() => setSidebarOpen(false)}
+                aria-label="Close sidebar"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -166,7 +167,7 @@ export default function DashboardLayout({
                 className="w-full justify-start gap-3 text-red-300 hover:text-red-200 hover:bg-red-950/40 h-9 text-xs"
                 onClick={() => {
                   logout();
-                  window.location.href = "/";
+                  router.push("/");
                 }}
               >
                 <LogOut className="h-4 w-4" />

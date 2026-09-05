@@ -12,15 +12,14 @@ import {
   Mail,
   Ban,
   Shield,
-  Eye,
   Trash2,
   Pencil,
+  UserPlus,
   X,
   Check,
   Loader2,
-  UserCheck,
-  UserX,
 } from "lucide-react";
+import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -123,6 +122,72 @@ export default function AdminUsersPage() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  const currentLoggedInUser = useAuthStore((state) => state.user);
+  const currentUserId = currentLoggedInUser?._id || currentLoggedInUser?.id;
+
+  // Create User State (POST /api/admin/users)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "reader",
+    isActive: true,
+  });
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createForm.name.trim() || !createForm.email.trim() || !createForm.password) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    setIsSubmittingCreate(true);
+    try {
+      const payload = {
+        name: createForm.name.trim(),
+        email: createForm.email.trim(),
+        password: createForm.password,
+        role: createForm.role,
+        isActive: Boolean(createForm.isActive),
+      };
+
+      const res = await api.post("/admin/users", payload);
+      const createdUser =
+        res.data?.data?.user ||
+        res.data?.user ||
+        res.data?.data || {
+          _id: `user-${Date.now()}`,
+          name: createForm.name.trim(),
+          email: createForm.email.trim(),
+          role: createForm.role,
+          isActive: createForm.isActive,
+          status: createForm.isActive ? "Active" : "Suspended",
+        };
+
+      setUsers((prev) => [createdUser, ...prev]);
+      toast.success(`User "${createForm.name}" created successfully! 🎉`);
+      setIsCreateModalOpen(false);
+      setCreateForm({
+        name: "",
+        email: "",
+        password: "",
+        role: "reader",
+        isActive: true,
+      });
+    } catch (err: any) {
+      console.error("Failed to create user:", err);
+      if (err.response?.status === 409) {
+        toast.error("A user with this email address already exists (409 Conflict).");
+      } else {
+        toast.error(err.response?.data?.message || "Failed to create user.");
+      }
+    } finally {
+      setIsSubmittingCreate(false);
+    }
+  };
+
   // Edit & Delete State
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({
@@ -135,19 +200,34 @@ export default function AdminUsersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDeleteUser = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to permanently delete user "${name}"? This action cannot be undone.`)) {
+    if (currentUserId && (id === currentUserId || String(id) === String(currentUserId))) {
+      toast.error("You cannot delete or deactivate your own logged-in account.");
       return;
     }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to deactivate user "${name}"? This performs a production-safe soft delete preserving order history, payments, and book credits.`
+      )
+    ) {
+      return;
+    }
+
     setDeletingId(id);
     try {
-      await api.delete(`/admin/users/${id}`).catch(() =>
-        api.delete(`/users/${id}`)
+      await api.delete(`/admin/users/${id}`);
+      // Production-safe soft delete sets isActive=false, status="Suspended"
+      setUsers((prev) =>
+        prev.map((u: any) =>
+          (u.id || u._id) === id
+            ? { ...u, isActive: false, status: "Suspended" }
+            : u
+        )
       );
-      setUsers((prev) => prev.filter((u: any) => (u.id || u._id) !== id));
-      toast.success(`User "${name}" deleted successfully.`);
+      toast.success(`User "${name}" has been deactivated successfully (soft-deleted).`);
     } catch (err: any) {
       console.error("Failed to delete user:", err);
-      toast.error(err.response?.data?.message || "Failed to delete user from backend.");
+      toast.error(err.response?.data?.message || "Failed to deactivate user.");
     } finally {
       setDeletingId(null);
     }
@@ -233,24 +313,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleRoleChange = async (id: string, newRole: string) => {
-    try {
-      await api.put(`/admin/users/${id}/role`, { role: newRole.toLowerCase() }).catch(() =>
-        api.put(`/admin/users/${id}`, { role: newRole.toLowerCase() })
-      );
-
-      setUsers(
-        users.map((u: any) =>
-          (u.id || u._id) === id ? { ...u, role: newRole } : u
-        )
-      );
-      toast.success(`User role updated to ${newRole}`);
-    } catch (err) {
-      console.error("Failed to update user role:", err);
-      toast.error("Failed to update user role");
-    }
-  };
-
   if (error) {
     return (
       <ErrorState
@@ -271,11 +333,17 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold lg:text-3xl">Users</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage platform users and their roles
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold lg:text-3xl">Users</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage platform users, roles, and credentials
+          </p>
+        </div>
+        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2 bg-primary text-primary-foreground font-bold">
+          <UserPlus className="h-4 w-4" />
+          Add New User
+        </Button>
       </div>
 
       {/* Stats */}
@@ -525,6 +593,7 @@ export default function AdminUsersPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setEditingUser(null)}
+                aria-label="Close"
                 className="h-8 w-8 rounded-full"
               >
                 <X className="h-4 w-4" />
@@ -619,6 +688,147 @@ export default function AdminUsersPage() {
                     <>
                       <Check className="h-4 w-4" />
                       <span>Save Changes</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Create User Modal (POST /api/admin/users) */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-lg bg-card border border-border rounded-xl shadow-lg overflow-hidden"
+          >
+            <div className="p-6 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                  <UserPlus className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">Add New User</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Provision a new reader, author, or admin account
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsCreateModalOpen(false)}
+                disabled={isSubmittingCreate}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                  Full Name *
+                </label>
+                <Input
+                  required
+                  placeholder="e.g. Vikram Seth"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                  Email Address *
+                </label>
+                <Input
+                  type="email"
+                  required
+                  placeholder="e.g. vikram@example.com"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                  Password *
+                </label>
+                <Input
+                  type="password"
+                  required
+                  placeholder="Enter strong password (min 6 chars)"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                    Account Role
+                  </label>
+                  <Select
+                    value={createForm.role}
+                    onValueChange={(val) => setCreateForm({ ...createForm, role: val })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="reader">Reader (User)</SelectItem>
+                      <SelectItem value="author">Author</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                    Initial Status
+                  </label>
+                  <Select
+                    value={createForm.isActive ? "Active" : "Suspended"}
+                    onValueChange={(val) => setCreateForm({ ...createForm, isActive: val === "Active" })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Suspended">Suspended</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  disabled={isSubmittingCreate}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingCreate}
+                  className="gap-2 bg-primary text-primary-foreground font-bold"
+                >
+                  {isSubmittingCreate ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Create User</span>
                     </>
                   )}
                 </Button>

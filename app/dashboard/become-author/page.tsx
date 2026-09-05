@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  BookOpen,
   PenTool,
   CheckCircle2,
   UserCircle,
@@ -19,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/auth-store";
 import toast from "react-hot-toast";
@@ -78,7 +77,7 @@ export default function BecomeAuthorPage() {
           setRejectionReason(app.rejectionReason || app.adminNotes || app.reason || app.feedback);
         }
       }
-    } catch (error) {
+    } catch {
       setApplicationStatus("none");
     } finally {
       setIsLoadingStatus(false);

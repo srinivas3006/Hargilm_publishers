@@ -8,8 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
   ShoppingCart,
-  Heart,
-  Share2,
   BookOpen,
   Calendar,
   FileText,
@@ -32,7 +30,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { BookCard } from "@/components/books/book-card";
 import { ErrorState } from "@/components/ui/error-state";
 import { useCartStore } from "@/store/cart-store";
@@ -266,19 +264,19 @@ export default function BookDetailPage() {
 
   const author = (book.author && typeof book.author === "object")
     ? (book.author as Author)
-    : { _id: "", name: (typeof book.author === "string" && book.author) ? book.author : "Harglim Author" };
+    : { _id: "", name: (typeof book.author === "string" && book.author && !/^[0-9a-fA-F]{24}$/.test(book.author)) ? book.author : ((book as any).authorName || "Harglim Author") };
   const category = (book.category && typeof book.category === "object") ? book.category : null;
   const price = book.discountPrice || book.price || 0;
   const hasDiscount = false;
   const discountPercent = 0;
 
-  const ratingAvg = Number(book.rating || 4.5).toFixed(1);
+  const ratingAvg = Number(book.rating || 0).toFixed(1);
   const reviewCount = reviews.length > 0 ? reviews.length : (book.totalReviews || 0);
 
   // Review star distribution breakdown
   const starCounts = [5, 4, 3, 2, 1].map((star) => {
     const count = reviews.filter((r) => Math.round(r.rating || 5) === star).length;
-    const pct = reviewCount > 0 ? Math.round((count / reviewCount) * 100) : star === 5 ? 85 : 5;
+    const pct = reviewCount > 0 ? Math.round((count / reviewCount) * 100) : 0;
     return { star, count, pct };
   });
 
@@ -388,7 +386,7 @@ export default function BookDetailPage() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/10 z-10 pointer-events-none" />
 
                 <Image
-                  src={book.galleryImages?.[selectedImage] || book.coverImage || "https://placehold.co/400x600/png?text=Book"}
+                  src={book.galleryImages?.[selectedImage] || book.coverImage || "/placeholder-book.svg"}
                   alt={book.title}
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -464,8 +462,10 @@ export default function BookDetailPage() {
             </div>
 
             {/* Clickable Rating Summary Box */}
-            <div
+            <button
+              type="button"
               onClick={scrollToReviews}
+              aria-label={`${ratingAvg} out of 5 stars, ${reviewCount} customer reviews — jump to reviews`}
               className="inline-flex items-center gap-3 p-2.5 px-4 rounded-xl bg-white border border-[#E2E6DF] cursor-pointer hover:border-[#D4AF37] transition-all shadow-xs group"
             >
               <div className="flex items-center gap-1">
@@ -485,7 +485,7 @@ export default function BookDetailPage() {
               <span className="text-xs text-[#5C6E6E] group-hover:text-[#0F3D3E]">
                 ({reviewCount} customer reviews)
               </span>
-            </div>
+            </button>
 
             {/* Short Preview Synopsis */}
             {book.shortDescription && (
@@ -496,10 +496,10 @@ export default function BookDetailPage() {
 
             {/* Structured Highlights Card */}
             <div className="bg-white border border-[#E2E6DF] rounded-2xl p-5 shadow-xs space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] flex items-center gap-1.5">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E] flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-[#D4AF37]" />
                 Book Specifications
-              </h4>
+              </h2>
               <div className="grid grid-cols-2 gap-3 text-xs font-sans">
                 <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F8F9F7]">
                   <BookOpen className="h-4 w-4 text-[#0F3D3E] shrink-0" />
@@ -512,7 +512,7 @@ export default function BookDetailPage() {
                   <FileText className="h-4 w-4 text-[#0F3D3E] shrink-0" />
                   <div>
                     <span className="text-[#5C6E6E] block text-[10px]">Length</span>
-                    <span className="font-bold text-[#0F3D3E]">{book.pages ? `${book.pages} pages` : "240 pages"}</span>
+                    <span className="font-bold text-[#0F3D3E]">{book.pages ? `${book.pages} pages` : "N/A"}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F8F9F7]">
@@ -527,7 +527,7 @@ export default function BookDetailPage() {
                   <div>
                     <span className="text-[#5C6E6E] block text-[10px]">Published</span>
                     <span className="font-bold text-[#0F3D3E]">
-                      {book.publishedDate ? new Date(book.publishedDate).getFullYear() : "2024"}
+                      {book.publishedDate ? new Date(book.publishedDate).getFullYear() : "N/A"}
                     </span>
                   </div>
                 </div>
@@ -863,9 +863,9 @@ export default function BookDetailPage() {
                     exit={{ opacity: 0, height: 0 }}
                   >
                     <Card className="bg-white border-2 border-[#D4AF37]/50 rounded-2xl p-6 shadow-sm space-y-4">
-                      <h4 className="font-serif font-bold text-lg text-[#0F3D3E]">
+                      <h3 className="font-serif font-bold text-lg text-[#0F3D3E]">
                         {editingReviewId ? "Edit Your Review" : "Write a Customer Review"}
-                      </h4>
+                      </h3>
                       <div className="flex items-center gap-3">
                         <span className="text-xs font-bold uppercase tracking-wider text-[#5C6E6E]">Your Rating:</span>
                         <div className="flex items-center gap-1">
@@ -920,9 +920,9 @@ export default function BookDetailPage() {
 
               {/* Reviews List Toolbar */}
               <div className="flex items-center justify-between border-b border-[#E2E6DF] pb-3">
-                <h4 className="font-serif font-bold text-base text-[#0F3D3E]">
+                <h3 className="font-serif font-bold text-base text-[#0F3D3E]">
                   Customer Reviews ({reviews.length})
-                </h4>
+                </h3>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="text-[#5C6E6E]">Sort by:</span>
                   <select

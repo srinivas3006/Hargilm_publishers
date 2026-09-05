@@ -8,7 +8,6 @@ import {
   Truck,
   CheckCircle,
   Clock,
-  Search,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,7 @@ function TrackOrderContent() {
         orderNumber: orderData.orderNumber || orderData.id,
         orderDate: orderData.createdAt || orderData.date,
         status: orderData.orderStatus || orderData.status,
-        expectedDelivery: orderData.expectedDelivery || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        expectedDelivery: orderData.expectedDelivery || null,
         items: (orderData.items || []).map((item: any) => ({
           name: item.book?.title || item.title || "Book",
           quantity: item.quantity,
@@ -200,12 +199,14 @@ function TrackOrderContent() {
                     <div className="text-lg font-semibold text-foreground mb-1">
                       {getStatusText(trackedOrder.status)}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Expected:{" "}
-                      {new Date(
-                        trackedOrder.expectedDelivery,
-                      ).toLocaleDateString()}
-                    </p>
+                    {trackedOrder.expectedDelivery && (
+                      <p className="text-sm text-muted-foreground">
+                        Expected:{" "}
+                        {new Date(
+                          trackedOrder.expectedDelivery,
+                        ).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -310,7 +311,7 @@ function TrackOrderContent() {
                 </p>
                 <p className="text-sm text-red-700 dark:text-red-300">
                   Please check the order number on your confirmation email. If
-                  you still can't find your order,{" "}
+                  you still can&apos;t find your order,{" "}
                   <Link
                     href="/contact"
                     className="underline font-semibold hover:no-underline"
@@ -338,7 +339,7 @@ function TrackOrderContent() {
               Need Help?
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Can't find your order number? Check your confirmation email or
+              Can&apos;t find your order number? Check your confirmation email or
               contact our support team.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

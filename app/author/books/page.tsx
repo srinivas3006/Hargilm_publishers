@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -32,13 +33,11 @@ import {
 } from "@/components/ui/table";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
-import type { Book } from "@/types";
-
 export default function AuthorBooksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [books, setBooks] = useState<any[]>([]);
   const { user } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -178,10 +177,12 @@ export default function AuthorBooksPage() {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <img
+                        <Image
                           src={book.coverImage && (book.coverImage.startsWith("http") || book.coverImage.startsWith("/")) ? book.coverImage : "/logo.webp"}
                           onError={(e: any) => { if (e?.target) e.target.src = "/logo.webp"; }}
                           alt={book.title}
+                          width={36}
+                          height={48}
                           className="h-12 w-9 rounded object-cover"
                         />
                         <div>

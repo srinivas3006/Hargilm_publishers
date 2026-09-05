@@ -17,16 +17,12 @@ import {
   FileText,
   Award,
   Sparkles,
-  ShieldCheck,
-  Star,
   Users,
   Globe,
-  Quote,
   Check,
-  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useSiteContent } from "@/context/site-content-context";
 
@@ -222,34 +218,24 @@ const stepGuide = [
   },
 ];
 
-const authorTestimonials = [
-  {
-    name: "Dr. Priya Sharma",
-    book: "The Shadows of Heritage",
-    quote: "Harglim Publishers made my publishing journey seamless. Their editorial team polished my draft with incredible care, and the cover design exceeded all my expectations!",
-    rating: 5,
-    avatar: "/logo.webp",
-  },
-  {
-    name: "Rahul Mehta",
-    book: "Algorithmic Wealth",
-    quote: "From interior formatting to Amazon Prime fulfillment, everything was executed with precision. My royalties arrive on time every month like clockwork.",
-    rating: 5,
-    avatar: "/logo.webp",
-  },
-  {
-    name: "Ananya Iyer",
-    book: "Echoes of the Monsoon",
-    quote: "The team treats your book like a masterpiece. Highly recommended for first-time and experienced writers looking for real publishing transparency.",
-    rating: 5,
-    avatar: "/logo.webp",
-  },
-];
-
 export default function PublishPage() {
   const { content } = useSiteContent();
   const [packages, setPackages] = useState<any[]>([]);
-  const [loadingPackages, setLoadingPackages] = useState(true);
+  const [, setLoadingPackages] = useState(true);
+  const [authorsCount, setAuthorsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchAuthorsCount = async () => {
+      try {
+        const { data } = await api.get("/authors?limit=1");
+        const total = data?.pagination?.total ?? data?.data?.pagination?.total;
+        if (typeof total === "number") setAuthorsCount(total);
+      } catch {
+        // Keep zero on failure
+      }
+    };
+    fetchAuthorsCount();
+  }, []);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -278,7 +264,7 @@ export default function PublishPage() {
         } else {
           setPackages(defaultPackages);
         }
-      } catch (err) {
+      } catch {
         if (content?.packagesJson) {
           try {
             const parsed = JSON.parse(content.packagesJson);
@@ -353,7 +339,7 @@ export default function PublishPage() {
               <div className="space-y-1">
                 <div className="flex items-center justify-center lg:justify-start gap-1 text-[#D4AF37]">
                   <Users className="h-4 w-4" />
-                  <span className="font-serif font-bold text-lg text-white">500+</span>
+                  <span className="font-serif font-bold text-lg text-white">{authorsCount}+</span>
                 </div>
                 <p className="text-[11px] text-white/70">Authors Published</p>
               </div>
@@ -425,7 +411,7 @@ export default function PublishPage() {
       {/* ------------------------------------------------------------------ */}
       <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block">
             4-Step Seamless Journey
           </span>
           <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
@@ -463,7 +449,7 @@ export default function PublishPage() {
       <section id="services" className="py-16 sm:py-20 bg-white border-y border-[#E2E6DF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12 space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block">
               End-to-End Solutions
             </span>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
@@ -510,7 +496,7 @@ export default function PublishPage() {
       {/* ------------------------------------------------------------------ */}
       <section id="packages" className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block">
             Transparent Pricing Plans
           </span>
           <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
@@ -596,54 +582,7 @@ export default function PublishPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 6. AUTHOR TESTIMONIALS SECTION */}
-      {/* ------------------------------------------------------------------ */}
-      <section className="py-16 sm:py-20 bg-white border-y border-[#E2E6DF]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center max-w-3xl mx-auto space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
-              Success Stories
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
-              What Our Authors Say
-            </h2>
-            <p className="text-sm text-[#5C6E6E]">
-              Hear from writers who transformed their manuscripts into published success stories with Harglim.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {authorTestimonials.map((t, idx) => (
-              <Card key={idx} className="bg-[#F8F9F7] border border-[#E2E6DF] rounded-2xl p-6 shadow-xs space-y-4 relative flex flex-col justify-between">
-                <Quote className="h-8 w-8 text-[#D4AF37]/30 absolute top-4 right-4" />
-                <div className="space-y-3">
-                  <div className="flex items-center gap-1 text-amber-400">
-                    {[...Array(t.rating)].map((_, rIdx) => (
-                      <Star key={rIdx} className="h-4 w-4 fill-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-[#5C6E6E] italic leading-relaxed font-sans">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 pt-4 border-t border-[#E2E6DF]">
-                  <div className="relative h-11 w-11 rounded-full overflow-hidden border-2 border-[#D4AF37]">
-                    <Image src={t.avatar} alt={t.name} fill className="object-cover" />
-                  </div>
-                  <div>
-                    <p className="font-serif font-bold text-sm text-[#0F3D3E]">{t.name}</p>
-                    <p className="text-[11px] text-[#D4AF37] font-medium">Author of &ldquo;{t.book}&rdquo;</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* 7. FINAL CONVERSION CTA SECTION */}
+      {/* 6. FINAL CONVERSION CTA SECTION */}
       {/* ------------------------------------------------------------------ */}
       <section className="py-16 sm:py-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-gradient-to-r from-[#0B2E2F] via-[#0F3D3E] to-[#082223] text-white rounded-3xl p-8 sm:p-14 text-center shadow-2xl border-2 border-[#D4AF37]/40 space-y-6">

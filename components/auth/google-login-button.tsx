@@ -74,34 +74,7 @@ export function GoogleLoginButton({
     document.body.appendChild(script);
   }, []);
 
-  // 2. Initialize GSI client once script is loaded
-  useEffect(() => {
-    if (!isSdkLoaded || !window.google?.accounts?.id) return;
-
-    try {
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleCallback,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
-
-      // Render native hidden GSI button for standard popup triggering
-      if (googleBtnRef.current) {
-        googleBtnRef.current.innerHTML = "";
-        window.google.accounts.id.renderButton(googleBtnRef.current, {
-          theme: "outline",
-          size: "large",
-          type: "standard",
-          width: "100%",
-        });
-      }
-    } catch (err) {
-      console.warn("GSI initialization info:", err);
-    }
-  }, [isSdkLoaded, clientId]);
-
-  // 3. Callback triggered when user selects a Google Account
+  // 2. Callback triggered when user selects a Google Account
   const handleGoogleCallback = async (response: { credential?: string }) => {
     if (!response || !response.credential) {
       toast.error("Google sign-in was cancelled or failed to produce credentials.");
@@ -144,7 +117,7 @@ export function GoogleLoginButton({
       // Bootstrap user context & capabilities
       setStatusMessage("Loading your account context...");
       setAuthStatus("context-loading");
-      const context = await bootstrapUserContext(token);
+      await bootstrapUserContext(token);
 
       toast.success(`Welcome back, ${user.name || "Reader"}!`, {
         duration: 3000,
@@ -197,6 +170,33 @@ export function GoogleLoginButton({
       setStatusMessage(null);
     }
   };
+
+  // 3. Initialize GSI client once script is loaded
+  useEffect(() => {
+    if (!isSdkLoaded || !window.google?.accounts?.id) return;
+
+    try {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCallback,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+
+      // Render native hidden GSI button for standard popup triggering
+      if (googleBtnRef.current) {
+        googleBtnRef.current.innerHTML = "";
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: "outline",
+          size: "large",
+          type: "standard",
+          width: "100%",
+        });
+      }
+    } catch (err) {
+      console.warn("GSI initialization info:", err);
+    }
+  }, [isSdkLoaded, clientId]);
 
   // Trigger Google Login popup directly
   const triggerGoogleSignIn = () => {

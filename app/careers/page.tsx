@@ -2,9 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, Briefcase, Users, Heart, Zap, Coffee, Globe } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export default function CareersPage() {
   const fadeInUp = {
@@ -42,8 +40,6 @@ export default function CareersPage() {
       description: "Monthly allowance for gym memberships, mental health apps, or wellness activities.",
     },
   ];
-
-  const openings: any[] = [];
 
   return (
     <div className="bg-background min-h-screen">
@@ -101,7 +97,7 @@ export default function CareersPage() {
               Why Join Harglim?
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              We're building a culture where creativity thrives, bold ideas are celebrated, and every team member can do their best work.
+              We&apos;re building a culture where creativity thrives, bold ideas are celebrated, and every team member can do their best work.
             </p>
           </motion.div>
 
@@ -147,7 +143,7 @@ export default function CareersPage() {
             />
             <div className="absolute inset-0 z-20 flex items-center justify-center text-center p-8">
               <h2 className="text-3xl md:text-5xl font-serif font-bold text-white max-w-3xl leading-tight">
-                "We believe that great books have the power to change the world, and it takes a great team to make that happen."
+                &ldquo;We believe that great books have the power to change the world, and it takes a great team to make that happen.&rdquo;
               </h2>
             </div>
           </motion.div>
@@ -167,7 +163,7 @@ export default function CareersPage() {
               Open Positions
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              We currently don't have any open positions. Please check back later or send your resume to <a href="mailto:careers@harglim.com" className="text-primary hover:underline">careers@harglim.com</a>.
+              We currently don&apos;t have any open positions. Please check back later or send your resume to <a href="mailto:careers@harglim.com" className="text-primary hover:underline">careers@harglim.com</a>.
             </p>
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-muted/50 mb-6">
               <Users className="h-10 w-10 text-muted-foreground" />

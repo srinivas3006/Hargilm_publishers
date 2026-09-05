@@ -38,10 +38,6 @@ interface CartState {
   itemCount: () => number;
 }
 
-const SHIPPING_THRESHOLD = 0;
-const SHIPPING_FEE = 0;
-const TAX_RATE = 0;
-
 export const useCartStore = create<CartState>()(
   persist(
     (set: any, get: any): CartState => ({

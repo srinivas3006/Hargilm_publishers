@@ -2,13 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { BookOpen, Users, Globe, Award, ArrowRight, Target, Heart, Sparkles, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BookOpen, Users, Target, Heart, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useSiteContent } from "@/context/site-content-context";
 import api from "@/lib/api";
 
 const values = [
@@ -38,10 +33,9 @@ const team = [
 ];
 
 export default function AboutPage() {
-  const { content } = useSiteContent();
   const [liveStats, setLiveStats] = useState({
-    booksCount: 30,
-    authorsCount: 25,
+    booksCount: 0,
+    authorsCount: 0,
   });
 
   useEffect(() => {
@@ -52,22 +46,22 @@ export default function AboutPage() {
           api.get("/authors?limit=1"),
         ]);
 
-        let bCount = 30;
-        let aCount = 25;
+        let bCount = 0;
+        let aCount = 0;
 
         if (booksRes.status === "fulfilled") {
-          const total = booksRes.value.data?.pagination?.total || booksRes.value.data?.data?.pagination?.total;
-          if (typeof total === "number" && total > 0) bCount = total;
+          const total = booksRes.value.data?.pagination?.total ?? booksRes.value.data?.data?.pagination?.total;
+          if (typeof total === "number") bCount = total;
         }
 
         if (authorsRes.status === "fulfilled") {
-          const total = authorsRes.value.data?.pagination?.total || authorsRes.value.data?.data?.pagination?.total;
-          if (typeof total === "number" && total > 0) aCount = total;
+          const total = authorsRes.value.data?.pagination?.total ?? authorsRes.value.data?.data?.pagination?.total;
+          if (typeof total === "number") aCount = total;
         }
 
         setLiveStats({ booksCount: bCount, authorsCount: aCount });
-      } catch (e) {
-        // Fallback
+      } catch {
+        // Keep zeros on failure
       }
     };
     fetchLiveStats();
@@ -76,7 +70,6 @@ export default function AboutPage() {
   const stats = [
     { label: "Books Published", value: `${liveStats.booksCount}+`, icon: BookOpen },
     { label: "Happy Authors", value: `${liveStats.authorsCount}+`, icon: Users },
-    { label: "Countries Reached", value: "5+", icon: Globe },
   ];
 
   return (
@@ -105,7 +98,7 @@ export default function AboutPage() {
       {/* 2. STATS BAR */}
       <section className="py-12 bg-white border-b border-[#E2E6DF]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-center">
             {stats.map((stat, idx) => (
               <div key={idx} className="space-y-1">
                 <div className="h-12 w-12 rounded-2xl bg-[#0F3D3E] text-[#D4AF37] flex items-center justify-center mx-auto shadow-xs mb-2">
@@ -125,7 +118,7 @@ export default function AboutPage() {
       <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-7 space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block">
               Empowering Writers Since 2025
             </span>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
@@ -162,7 +155,7 @@ export default function AboutPage() {
       <section className="py-16 sm:py-20 bg-white border-y border-[#E2E6DF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12 space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block">
               What Guides Us
             </span>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
@@ -187,7 +180,7 @@ export default function AboutPage() {
       {/* 5. FOUNDER HIGHLIGHT */}
       <section className="py-16 sm:py-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
         <div className="space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block">
             Leadership
           </span>
           <h2 className="text-3xl font-serif font-bold text-[#0F3D3E]">
@@ -206,7 +199,7 @@ export default function AboutPage() {
           </div>
           <div>
             <h3 className="font-serif font-bold text-xl text-[#0F3D3E]">{team[0].name}</h3>
-            <p className="text-xs text-[#D4AF37] font-bold uppercase tracking-wider mt-0.5">{team[0].role}</p>
+            <p className="text-xs text-[#8A6D1E] font-bold uppercase tracking-wider mt-0.5">{team[0].role}</p>
           </div>
           <p className="text-xs text-[#5C6E6E] leading-relaxed">
             Championing independent authors and building India&apos;s premier literary publishing house.

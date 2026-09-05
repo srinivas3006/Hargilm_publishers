@@ -117,8 +117,8 @@ export default function FAQPage() {
         if (Array.isArray(dynamicFaqs) && dynamicFaqs.length > 0) {
           setFaqCategories(dynamicFaqs);
         }
-      } catch (err) {
-        console.log("Using default FAQ categories");
+      } catch {
+        // Fall back to the default FAQ categories defined above.
       }
     };
     fetchFaqs();

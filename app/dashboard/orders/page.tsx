@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -23,13 +24,11 @@ import {
   RotateCcw,
   Send,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -197,7 +196,7 @@ export default function OrdersPage() {
       } else {
         toast.error("Invoice document will be generated once payment verification completes.");
       }
-    } catch (err: any) {
+    } catch {
       toast.error("Invoice document is currently unavailable for pending payments.");
     } finally {
       setDownloadingInvoiceId(null);
@@ -352,14 +351,16 @@ export default function OrdersPage() {
                       <div className="flex flex-wrap items-center gap-3">
                         {order.items?.map((item: any, i: number) => {
                           const bookTitle = item.book?.title || "Book Item";
-                          const coverImage = item.book?.coverImage || "https://placehold.co/100x150/png?text=Book";
+                          const coverImage = item.book?.coverImage || "/placeholder-book.svg";
 
                           return (
-                            <div key={item._id || i} className="relative group">
-                              <img
+                            <div key={item._id || i} className="relative group h-14 w-10">
+                              <Image
                                 src={coverImage}
                                 alt={bookTitle}
-                                className="h-14 w-10 object-cover rounded-md border border-[#E2E6DF] shadow-xs"
+                                fill
+                                sizes="40px"
+                                className="object-cover rounded-md border border-[#E2E6DF] shadow-xs"
                               />
                               <span className="absolute -top-1.5 -right-1.5 bg-[#0F3D3E] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                                 {item.quantity}
@@ -563,7 +564,7 @@ export default function OrdersPage() {
                             <div className="space-y-2.5">
                               {order.items?.map((item: any, i: number) => {
                                 const bookTitle = item.book?.title || "Book Title";
-                                const coverImage = item.book?.coverImage || "https://placehold.co/120x180/png?text=Book";
+                                const coverImage = item.book?.coverImage || "/placeholder-book.svg";
                                 const price = item.price || item.book?.price || 0;
 
                                 return (
@@ -571,9 +572,11 @@ export default function OrdersPage() {
                                     key={item._id || i}
                                     className="flex items-center gap-3.5 p-3 rounded-xl bg-[#F8F9F7] border border-[#E2E6DF]"
                                   >
-                                    <img
+                                    <Image
                                       src={coverImage}
                                       alt={bookTitle}
+                                      width={44}
+                                      height={64}
                                       className="h-16 w-11 object-cover rounded-md border border-[#E2E6DF]"
                                     />
                                     <div className="flex-1 min-w-0">

@@ -91,7 +91,7 @@ export default function SearchPage() {
               />
             ) : results.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-muted p-10 text-center text-muted-foreground">
-                No books match "{query}". Try a different keyword.
+                No books match &ldquo;{query}&rdquo;. Try a different keyword.
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

@@ -7,10 +7,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // Fetch all books, categories, and authors for the sitemap
     const [booksRes, categoriesRes, authorsRes] = await Promise.all([
-      fetch(`${API_URL}/books?limit=1000`, { next: { revalidate: 3600 } }).catch(() => null),
-      fetch(`${API_URL}/categories?limit=100`, { next: { revalidate: 3600 } }).catch(() => null),
-      fetch(`${API_URL}/authors?limit=1000`, { next: { revalidate: 3600 } }).catch(() => null)
+      fetch(`${API_URL}/books?limit=1000`, { next: { revalidate: 3600 } }).catch((e) => {
+        console.error('sitemap: failed to fetch books', e);
+        return null;
+      }),
+      fetch(`${API_URL}/categories?limit=100`, { next: { revalidate: 3600 } }).catch((e) => {
+        console.error('sitemap: failed to fetch categories', e);
+        return null;
+      }),
+      fetch(`${API_URL}/authors?limit=1000`, { next: { revalidate: 3600 } }).catch((e) => {
+        console.error('sitemap: failed to fetch authors', e);
+        return null;
+      }),
     ]);
+
+    if (booksRes && !booksRes.ok) console.error(`sitemap: books request returned ${booksRes.status}`);
+    if (categoriesRes && !categoriesRes.ok) console.error(`sitemap: categories request returned ${categoriesRes.status}`);
+    if (authorsRes && !authorsRes.ok) console.error(`sitemap: authors request returned ${authorsRes.status}`);
 
     const booksData = booksRes && booksRes.ok ? await booksRes.json() : { data: [] };
     const categoriesData = categoriesRes && categoriesRes.ok ? await categoriesRes.json() : { data: [] };
@@ -63,7 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return sitemapEntries;
   } catch (error) {
-    // Fallback static sitemap if backend is down
+    console.error('sitemap: falling back to static sitemap after unexpected error', error);
     return [
       { url: `${baseUrl}`, lastModified: new Date() },
       { url: `${baseUrl}/books`, lastModified: new Date() },

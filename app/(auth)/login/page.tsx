@@ -14,7 +14,13 @@ import { useAuthStore } from "@/store/auth-store";
 import toast from "react-hot-toast";
 import api, { bootstrapUserContext } from "@/lib/api";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
-import { AccountLinkDialog } from "@/components/auth/account-link-dialog";
+import dynamic from "next/dynamic";
+import { getSafeRedirect } from "@/lib/utils";
+
+const AccountLinkDialog = dynamic(
+  () => import("@/components/auth/account-link-dialog").then((m) => m.AccountLinkDialog),
+  { ssr: false }
+);
 
 function LoginFormContent() {
   const router = useRouter();
@@ -42,13 +48,8 @@ function LoginFormContent() {
     email: undefined,
   });
 
-  const handleRouteByCapabilities = (context?: any) => {
-    if (redirectUrl) {
-      router.replace(redirectUrl);
-      return;
-    }
-
-    router.replace("/");
+  const handleRouteByCapabilities = (_context?: any) => {
+    router.replace(getSafeRedirect(redirectUrl, "/"));
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {

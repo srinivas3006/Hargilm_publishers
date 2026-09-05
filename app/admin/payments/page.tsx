@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
   CreditCard,
   Search,
@@ -14,22 +14,18 @@ import {
   AlertTriangle,
   Ban,
   Eye,
-  FileText,
   User,
   ShoppingBag,
-  BookOpen,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
   RotateCcw,
   Sparkles,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -479,7 +475,6 @@ export default function AdminPaymentVerificationPage() {
                     const customerEmail = p.user?.email || p.customer?.email || "N/A";
                     const amount = p.amount ?? p.order?.totalPrice ?? 0;
                     const currency = p.currency || "INR";
-                    const utr = p.utr || "N/A";
                     const status = p.status || "VERIFICATION_PENDING";
                     const isPending = status === "VERIFICATION_PENDING" || status === "PAYMENT_SUBMITTED";
 
@@ -681,9 +676,11 @@ export default function AdminPaymentVerificationPage() {
                   </CardHeader>
                   <CardContent className="flex flex-col sm:flex-row items-center gap-4 pt-0">
                     {selectedPaymentDetail.qr.qrCodeDataUrl && (
-                      <img
+                      <Image
                         src={selectedPaymentDetail.qr.qrCodeDataUrl}
                         alt="UPI QR Code"
+                        width={128}
+                        height={128}
                         className="w-32 h-32 rounded-lg border border-indigo-200 shadow-sm bg-white p-1"
                       />
                     )}

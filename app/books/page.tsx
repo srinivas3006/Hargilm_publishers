@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,16 +13,10 @@ import {
   X,
   Star,
   BookOpen,
-  Smartphone,
-  Headphones,
-  Check,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   ShieldCheck,
   Truck,
-  RotateCcw,
-  Book,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,17 +41,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { Book as BookType, Category } from "@/types";
-import api from "@/lib/api";
+import api, { getCachedCategories } from "@/lib/api";
 import { cn } from "@/lib/utils";
-
-const formatIcons: Record<string, { label: string; icon: any }> = {
-  Paperback: { label: "Paperback", icon: BookOpen },
-  Hardcover: { label: "Hardcover", icon: Book },
-  Ebook: { label: "eBook", icon: Smartphone },
-  Audiobook: { label: "Audiobook", icon: Headphones },
-};
-
-const formatOptions = ["Paperback", "Hardcover", "Ebook", "Audiobook"];
 
 const priceRanges = [
   { label: "Under ₹300", min: 0, max: 300 },
@@ -67,7 +52,6 @@ const priceRanges = [
 ];
 
 function BooksContent() {
-  const searchParams = useSearchParams();
   const [books, setBooks] = useState<BookType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -86,7 +70,6 @@ function BooksContent() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalBooks, setTotalBooks] = useState(0);
 
   // Accordion Section Collapse State
   const [openSections, setOpenSections] = useState({
@@ -102,9 +85,8 @@ function BooksContent() {
 
   const fetchCategories = async () => {
     try {
-      const { data } = await api.get("/categories");
-      const items = data.data?.categories || data.data || data || [];
-      setCategories(Array.isArray(items) ? items : []);
+      const items = await getCachedCategories();
+      setCategories(items);
     } catch (err) {
       console.error("Failed to fetch categories:", err);
     }
@@ -172,7 +154,6 @@ function BooksContent() {
 
       setBooks(result);
       setTotalPages(pagination.pages || Math.ceil((pagination.total || result.length) / 12) || 1);
-      setTotalBooks(pagination.total || result.length);
     } catch (err) {
       console.error("Failed to fetch books:", err);
       setError(true);
@@ -200,12 +181,6 @@ function BooksContent() {
   const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories((prev) =>
       prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [categoryId]
-    );
-  };
-
-  const handleFormatToggle = (format: string) => {
-    setSelectedFormats((prev) =>
-      prev.includes(format) ? prev.filter((f) => f !== format) : [...prev, format]
     );
   };
 
@@ -396,7 +371,7 @@ function BooksContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block mb-1">
                 Editorial Books Marketplace
               </span>
               <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
@@ -456,6 +431,7 @@ function BooksContent() {
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
+                    aria-label="Clear search"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5C6E6E] hover:text-[#0F3D3E]"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -481,9 +457,11 @@ function BooksContent() {
                           onClick={() => setShowSuggestions(false)}
                           className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#F8F9F7] transition-colors"
                         >
-                          <img
+                          <Image
                             src={b.coverImage || "/placeholder-book.svg"}
                             alt={b.title}
+                            width={28}
+                            height={40}
                             className="h-10 w-7 rounded object-cover border border-[#E2E6DF]"
                           />
                           <div>
@@ -596,7 +574,7 @@ function BooksContent() {
                       className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0F3D3E]/10 text-[#0F3D3E] font-bold rounded-full"
                     >
                       <span>Category: {cat.name}</span>
-                      <button onClick={() => handleCategoryToggle(catId)} className="hover:text-rose-600">
+                      <button onClick={() => handleCategoryToggle(catId)} aria-label={`Remove category filter: ${cat.name}`} className="hover:text-rose-600">
                         <X className="h-3 w-3" />
                       </button>
                     </span>
@@ -607,7 +585,7 @@ function BooksContent() {
                 {selectedPriceRange && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0F3D3E]/10 text-[#0F3D3E] font-bold rounded-full">
                     <span>Price: {selectedPriceRange}</span>
-                    <button onClick={() => setSelectedPriceRange(null)} className="hover:text-rose-600">
+                    <button onClick={() => setSelectedPriceRange(null)} aria-label="Remove price filter" className="hover:text-rose-600">
                       <X className="h-3 w-3" />
                     </button>
                   </span>
@@ -616,7 +594,7 @@ function BooksContent() {
                 {minRatingFilter && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0F3D3E]/10 text-[#0F3D3E] font-bold rounded-full">
                     <span>Rating: {minRatingFilter}★ & Up</span>
-                    <button onClick={() => setMinRatingFilter(null)} className="hover:text-rose-600">
+                    <button onClick={() => setMinRatingFilter(null)} aria-label="Remove rating filter" className="hover:text-rose-600">
                       <X className="h-3 w-3" />
                     </button>
                   </span>

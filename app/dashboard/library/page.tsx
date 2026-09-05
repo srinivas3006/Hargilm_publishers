@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { BookOpen, Download, Eye, Search, Filter, Compass } from "lucide-react";
+import { BookOpen, Search, Filter, Compass } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 import { ErrorState } from "@/components/ui/error-state";
 import { useAuthStore } from "@/store/auth-store";
 import api from "@/lib/api";
@@ -121,10 +121,12 @@ export default function LibraryPage() {
             >
               <Card className="bg-white border border-[#E2E6DF] hover:border-[#0F3D3E]/40 hover:shadow-md transition-all rounded-2xl overflow-hidden group">
                 <div className="relative aspect-[2/3] bg-[#F8F9F7]">
-                  <img
-                    src={book.coverImage || book.cover || "https://placehold.co/200x300/png?text=Book"}
+                  <Image
+                    src={book.coverImage || book.cover || "/placeholder-book.svg"}
                     alt={book.title}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    fill
+                    sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 90vw"
+                    className="object-cover transition-transform group-hover:scale-105"
                   />
                   <Badge className="absolute top-3 right-3 bg-[#0F3D3E] text-white font-serif">
                     {book.format || "Edition"}

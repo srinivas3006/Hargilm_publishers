@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Package, Truck, Clock, CheckCircle2, ChevronRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -148,10 +149,12 @@ export function RecentOrdersSection() {
                   return (
                     <div key={idx} className="flex items-center gap-3">
                       <div className="relative h-12 w-9 shrink-0 overflow-hidden rounded bg-muted">
-                        <img
+                        <Image
                           src={cover}
                           alt={title}
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="36px"
+                          className="object-cover"
                         />
                       </div>
                       <div className="flex-1 min-w-0">

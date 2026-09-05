@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth-store';
 import { UserContextData } from '@/types';
 
@@ -101,7 +102,6 @@ api.interceptors.response.use(
 
     if (error.response?.status === 429) {
       if (typeof window !== 'undefined') {
-        const toast = require('react-hot-toast').default;
         toast.error('Too many requests. Please wait a few seconds and try again.', {
           id: 'rate-limit-toast',
         });
@@ -136,6 +136,26 @@ export async function bootstrapUserContext(overrideToken?: string): Promise<User
     console.error('Failed to fetch user context:', error);
     return null;
   }
+}
+
+/**
+ * Categories change rarely, but nearly every page (home, books catalog,
+ * categories index, admin book forms) fetches them independently on mount.
+ * This caches the resolved list in memory for a short window so navigating
+ * between those pages doesn't re-issue the same request every time.
+ */
+let categoriesCache: { data: any[]; expiresAt: number } | null = null;
+const CATEGORIES_CACHE_MS = 5 * 60 * 1000;
+
+export async function getCachedCategories(): Promise<any[]> {
+  if (categoriesCache && categoriesCache.expiresAt > Date.now()) {
+    return categoriesCache.data;
+  }
+  const { data } = await api.get('/categories');
+  const items = data?.data?.categories || data?.data || data || [];
+  const list = Array.isArray(items) ? items : [];
+  categoriesCache = { data: list, expiresAt: Date.now() + CATEGORIES_CACHE_MS };
+  return list;
 }
 
 export default api;

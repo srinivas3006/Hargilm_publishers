@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   FileText,
   DollarSign,
-  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -16,7 +15,6 @@ import {
   BookOpen,
   PenTool,
   Store,
-  Sparkles,
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
@@ -40,8 +38,8 @@ export default function AuthorLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuthStore();
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <AuthGuard requiredRole="author">
@@ -82,6 +80,7 @@ export default function AuthorLayout({
               size="icon"
               className="text-white/80 hover:text-white lg:hidden"
               onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -166,7 +165,7 @@ export default function AuthorLayout({
               className="w-full justify-start gap-3 text-red-300 hover:text-red-200 hover:bg-red-950/40 h-9 text-xs"
               onClick={() => {
                 logout();
-                window.location.href = "/";
+                router.push("/");
               }}
             >
               <LogOut className="h-4 w-4" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Heart, ShoppingCart, Trash2, Star, Grid, List } from "lucide-react";
@@ -50,7 +51,7 @@ export default function WishlistPage() {
       await api.delete(`/users/${userId}/wishlist/${id}`);
       setItems(items.filter((item) => (item._id || item.id) !== id));
       toast.success("Removed from wishlist");
-    } catch (err) {
+    } catch {
       toast.error("Failed to remove from wishlist");
     }
   };
@@ -127,10 +128,12 @@ export default function WishlistPage() {
               {viewMode === "grid" ? (
                 <Card className="overflow-hidden group">
                   <div className="relative aspect-[2/3]">
-                    <img
+                    <Image
                       src={item.coverImage || item.cover}
                       alt={item.title}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      fill
+                      sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 90vw"
+                      className="object-cover transition-transform group-hover:scale-105"
                     />
                     {item.stock <= 0 && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
@@ -181,10 +184,12 @@ export default function WishlistPage() {
                 <Card>
                   <CardContent className="flex gap-4 p-4">
                     <div className="relative w-20 h-28 flex-shrink-0">
-                      <img
+                      <Image
                         src={item.coverImage || item.cover}
                         alt={item.title}
-                        className="h-full w-full object-cover rounded"
+                        fill
+                        sizes="80px"
+                        className="object-cover rounded"
                       />
                       {item.stock <= 0 && (
                         <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded">

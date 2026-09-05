@@ -11,8 +11,7 @@ import { useCartStore } from "@/store/cart-store";
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams?.get("orderId") || `ORD-${Date.now().toString().slice(-6)}`;
-  const paymentId = searchParams?.get("paymentId") || "PAY-CONFIRMED";
-  const [copied, setCopied] = useState(false);
+  const [_copied, setCopied] = useState(false);
   const clearCart = useCartStore((state) => state.clearCart);
 
   useEffect(() => {

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Book, Author } from "@/types";
 import { useCartStore } from "@/store/cart-store";
+import { useAuthStore } from "@/store/auth-store";
+import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -66,6 +68,8 @@ export function BookCard({
     y.set(0);
   };
 
+  const [addingToWishlist, setAddingToWishlist] = useState(false);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -73,10 +77,31 @@ export function BookCard({
     toast.success(`"${book.title}" added to cart!`);
   };
 
+  const handleAddToWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { user, isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated || !user) {
+      toast.error("Please log in to save books to your wishlist.");
+      return;
+    }
+    setAddingToWishlist(true);
+    try {
+      await api.post(`/users/${user._id || user.id}/wishlist`, { bookId: book._id });
+      toast.success(`"${book.title}" added to your wishlist!`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Could not add to wishlist.");
+    } finally {
+      setAddingToWishlist(false);
+    }
+  };
+
   const authorName =
     book.author && typeof book.author === "object"
       ? (book.author as Author)?.name || "Unknown Author"
-      : (typeof book.author === "string" ? book.author : "Unknown Author");
+      : typeof book.author === "string" && !/^[0-9a-fA-F]{24}$/.test(book.author)
+      ? book.author
+      : (book as any).authorName || "Unknown Author";
   const price = book.discountPrice || book.price;
   const hasDiscount = false;
   const discountPercent = 0;
@@ -245,8 +270,9 @@ export function BookCard({
               </Button>
               <Button
                 size="icon"
+                disabled={addingToWishlist}
                 className="h-11 w-11 rounded-full bg-white/90 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground text-primary shadow-lg transition-transform hover:scale-110"
-                onClick={(e) => e.preventDefault()}
+                onClick={handleAddToWishlist}
               >
                 <Heart className="h-5 w-5" />
                 <span className="sr-only">Add to wishlist</span>

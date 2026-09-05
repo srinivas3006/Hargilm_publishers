@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
-import { ArrowLeft, Save, Upload, BookOpen } from "lucide-react";
+import { ArrowLeft, Save, Upload } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,18 +46,82 @@ export default function EditBookPage() {
   });
 
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [authorsList, setAuthorsList] = useState<any[]>([]);
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string>("");
 
   useEffect(() => {
-    const loadCategories = async () => {
+    const loadCategoriesAndAuthors = async () => {
       try {
-        const { data } = await api.get("/categories").catch(() => api.get("/admin/categories"));
-        const items = data?.data?.categories || data?.data || data || [];
-        setCategoriesList(Array.isArray(items) ? items : []);
+        const [catRes, usersRes, authorsRes] = await Promise.allSettled([
+          api.get("/categories").catch(() => api.get("/admin/categories")),
+          api.get("/admin/users", { params: { limit: 100 } }),
+          api.get("/authors", { params: { limit: 100 } }),
+        ]);
+
+        if (catRes.status === "fulfilled" && catRes.value?.data) {
+          const cData = catRes.value.data;
+          const items = cData?.data?.categories || cData?.data || cData || [];
+          setCategoriesList(Array.isArray(items) ? items : []);
+        }
+
+        const authorsMap = new Map<string, any>();
+
+        if (usersRes.status === "fulfilled" && usersRes.value?.data) {
+          const uData = usersRes.value.data;
+          const uList = uData?.data?.users || (Array.isArray(uData?.data) ? uData.data : []) || (Array.isArray(uData) ? uData : []);
+          if (Array.isArray(uList)) {
+            uList.forEach((u: any) => {
+              const id = u._id || u.id;
+              if (id) {
+                authorsMap.set(String(id), {
+                  _id: String(id),
+                  name: u.name || u.fullName || u.email || "Registered User",
+                  email: u.email || "",
+                  role: u.role || "user",
+                });
+              }
+            });
+          }
+        }
+
+        if (authorsRes.status === "fulfilled" && authorsRes.value?.data) {
+          const aData = authorsRes.value.data;
+          const aList = aData?.data?.authors || aData?.authors || (Array.isArray(aData?.data) ? aData.data : []) || (Array.isArray(aData) ? aData : []);
+          if (Array.isArray(aList)) {
+            aList.forEach((a: any) => {
+              const userId = a.user?._id || a.user?.id || a.userId || a._id || a.id;
+              const aName = a.name || a.user?.name || a.fullName;
+              if (userId && aName) {
+                if (authorsMap.has(String(userId))) {
+                  const existing = authorsMap.get(String(userId));
+                  authorsMap.set(String(userId), { ...existing, name: aName, role: "author" });
+                } else {
+                  authorsMap.set(String(userId), {
+                    _id: String(userId),
+                    name: aName,
+                    email: a.email || a.user?.email || "",
+                    role: "author",
+                  });
+                }
+              }
+            });
+          }
+        }
+
+        const combined = Array.from(authorsMap.values());
+        combined.sort((a, b) => {
+          const aIsAuthor = a.role === "author" ? 0 : 1;
+          const bIsAuthor = b.role === "author" ? 0 : 1;
+          if (aIsAuthor !== bIsAuthor) return aIsAuthor - bIsAuthor;
+          return (a.name || "").localeCompare(b.name || "");
+        });
+
+        setAuthorsList(combined);
       } catch (err) {
-        console.warn("Failed to load categories:", err);
+        console.warn("Failed to load categories and authors:", err);
       }
     };
-    loadCategories();
+    loadCategoriesAndAuthors();
   }, []);
 
   useEffect(() => {
@@ -94,12 +158,28 @@ export default function EditBookPage() {
         }
 
         if (bookData) {
+          const extractedAuthorId =
+            typeof bookData.author === "object" && bookData.author !== null
+              ? bookData.author._id || bookData.author.id || ""
+              : typeof bookData.author === "string" && /^[0-9a-fA-F]{24}$/.test(bookData.author)
+              ? bookData.author
+              : "";
+
+          if (extractedAuthorId) {
+            setSelectedAuthorId(extractedAuthorId);
+          }
+
+          const extractedAuthorName =
+            typeof bookData.author === "object" && bookData.author !== null
+              ? bookData.author?.name || ""
+              : bookData.authorName ||
+                (typeof bookData.author === "string" && !/^[0-9a-fA-F]{24}$/.test(bookData.author)
+                  ? bookData.author
+                  : "");
+
           setFormData({
             title: bookData.title || "",
-            authorName:
-              typeof bookData.author === "object"
-                ? bookData.author?.name || ""
-                : bookData.authorName || (typeof bookData.author === "string" ? bookData.author : ""),
+            authorName: extractedAuthorName,
             description: bookData.description || "",
             category:
               typeof bookData.category === "object"
@@ -189,6 +269,11 @@ export default function EditBookPage() {
           : undefined,
       };
 
+      // Ensure author user ObjectId is passed to backend
+      if (selectedAuthorId && /^[0-9a-fA-F]{24}$/.test(selectedAuthorId)) {
+        jsonPayload.author = selectedAuthorId;
+      }
+
       if (coverImageUrl) {
         jsonPayload.coverImage = coverImageUrl;
       }
@@ -254,13 +339,45 @@ export default function EditBookPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="authorName" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
-                  Author Name *
+                <Label htmlFor="authorSelect" className="text-xs font-bold uppercase tracking-wider text-[#0F3D3E]">
+                  Author Account & Attribution *
                 </Label>
+                {authorsList.length > 0 && (
+                  <Select
+                    value={selectedAuthorId}
+                    onValueChange={(val) => {
+                      setSelectedAuthorId(val);
+                      const found = authorsList.find((a) => (a._id || a.id) === val);
+                      if (found) {
+                        setFormData((prev) => ({ ...prev, authorName: found.name || "" }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-[#F8F9F7] border-[#E2E6DF] rounded-xl h-10 text-xs font-serif font-bold">
+                      <SelectValue placeholder="Assign author account..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-[#E2E6DF] max-h-64">
+                      {authorsList.map((a) => (
+                        <SelectItem key={a._id || a.id} value={a._id || a.id} className="text-xs py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[#0F3D3E]">{a.name}</span>
+                            {a.email && <span className="text-[#5C6E6E] text-[11px]">({a.email})</span>}
+                            {a.role === "author" && (
+                              <span className="px-1.5 py-0.5 text-[10px] bg-emerald-500/10 text-emerald-700 rounded-md font-semibold">
+                                Author
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Input
                   id="authorName"
                   name="authorName"
                   required
+                  placeholder="Author Display Name"
                   value={formData.authorName}
                   onChange={handleInputChange}
                   className="bg-[#F8F9F7] border-[#E2E6DF] rounded-xl text-sm"

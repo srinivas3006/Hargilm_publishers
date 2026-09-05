@@ -33,6 +33,7 @@ export function AccountLinkDialog({
           {/* Close button */}
           <button
             onClick={onClose}
+            aria-label="Close"
             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
           >
             <X className="h-4 w-4" />

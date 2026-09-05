@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import toast from "react-hot-toast";
-import { DollarSign, Clock, CheckCircle2, Download, FileText } from "lucide-react";
+import { DollarSign, CheckCircle2, Download, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -42,7 +41,7 @@ export default function AuthorRoyaltiesPage() {
       let localEntries: any[] = [];
       try {
         localEntries = JSON.parse(localStorage.getItem("harglim_shared_royalties") || "[]");
-      } catch (e) {
+      } catch {
         localEntries = [];
       }
 

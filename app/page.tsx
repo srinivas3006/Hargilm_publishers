@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,37 +11,23 @@ import {
   Star,
   ArrowRight,
   Sparkles,
-  Award,
-  Globe,
   ShieldCheck,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Search,
-  Mail,
-  Send,
-  Heart,
   TrendingUp,
   Feather,
   Layers,
-  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookCard } from "@/components/books/book-card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
-import toast from "react-hot-toast";
 import api from "@/lib/api";
 import type { Book } from "@/types";
 import { BookCardSkeleton } from "@/components/books/book-card-skeleton";
 
 import { useSiteContent } from "@/context/site-content-context";
-
-const trustBadges = [
-  { label: "30+", sub: "Books Published", icon: BookOpen, color: "text-[#D4AF37]" },
-  { label: "25+", sub: "Happy Authors", icon: Users, color: "text-emerald-400" },
-  { label: "5+", sub: "Countries Reached", icon: Globe, color: "text-blue-400" },
-];
 
 const whyChooseBlocks = [
   {
@@ -95,16 +81,13 @@ export default function Home() {
   const [bestsellers, setBestsellers] = useState<Book[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [authors, setAuthors] = useState<any[]>([]);
+  const [liveStats, setLiveStats] = useState({ booksCount: 0, authorsCount: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   // FAQ Accordion & Search State
   const [faqSearch, setFaqSearch] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-
-  // Newsletter State
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
 
   // Parse FAQs dynamically if provided in site content
   let activeFaqs = defaultFaqs;
@@ -114,7 +97,7 @@ export default function Home() {
       if (Array.isArray(parsed) && parsed.length > 0) {
         activeFaqs = parsed;
       }
-    } catch (e) {
+    } catch {
       // Fallback
     }
   }
@@ -154,6 +137,26 @@ export default function Home() {
         const items = data?.data?.authors || data?.data || data || [];
         setAuthors(Array.isArray(items) ? items : []);
       }
+
+      const [booksCountRes, authorsCountRes] = await Promise.allSettled([
+        api.get("/books?limit=1"),
+        api.get("/authors?limit=1"),
+      ]);
+
+      let booksCount = 0;
+      let authorsCount = 0;
+
+      if (booksCountRes.status === "fulfilled") {
+        const total = booksCountRes.value.data?.pagination?.total ?? booksCountRes.value.data?.data?.pagination?.total;
+        if (typeof total === "number") booksCount = total;
+      }
+
+      if (authorsCountRes.status === "fulfilled") {
+        const total = authorsCountRes.value.data?.pagination?.total ?? authorsCountRes.value.data?.data?.pagination?.total;
+        if (typeof total === "number") authorsCount = total;
+      }
+
+      setLiveStats({ booksCount, authorsCount });
     } catch (error) {
       console.error("Failed to fetch home page data:", error);
       setError(true);
@@ -165,20 +168,6 @@ export default function Home() {
   useEffect(() => {
     fetchHomeData();
   }, []);
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newsletterEmail || !newsletterEmail.includes("@")) {
-      toast.error("Please enter a valid email address.");
-      return;
-    }
-    setNewsletterSubmitting(true);
-    setTimeout(() => {
-      toast.success("Thank you for subscribing to Harglim Publishers! 📚");
-      setNewsletterEmail("");
-      setNewsletterSubmitting(false);
-    }, 800);
-  };
 
   const filteredFaqs = activeFaqs.filter(
     (faq) =>
@@ -247,16 +236,21 @@ export default function Home() {
               </div>
 
               {/* Trust Badges */}
-              <div className="pt-8 border-t border-white/10 grid grid-cols-3 gap-4 text-left">
-                {trustBadges.map((badge, idx) => (
-                  <div key={idx} className="space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <badge.icon className={`h-4 w-4 ${badge.color}`} />
-                      <span className="font-serif font-bold text-sm text-white">{badge.label}</span>
-                    </div>
-                    <p className="text-[11px] text-white/60 hidden sm:block font-sans">{badge.sub}</p>
+              <div className="pt-8 border-t border-white/10 grid grid-cols-2 gap-4 text-left">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen className="h-4 w-4 text-[#D4AF37]" />
+                    <span className="font-serif font-bold text-sm text-white">{liveStats.booksCount}+</span>
                   </div>
-                ))}
+                  <p className="text-[11px] text-white/60 hidden sm:block font-sans">Books Published</p>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-4 w-4 text-emerald-400" />
+                    <span className="font-serif font-bold text-sm text-white">{liveStats.authorsCount}+</span>
+                  </div>
+                  <p className="text-[11px] text-white/60 hidden sm:block font-sans">Happy Authors</p>
+                </div>
               </div>
             </motion.div>
 
@@ -298,9 +292,9 @@ export default function Home() {
                     <span className="px-2.5 py-0.5 rounded bg-[#D4AF37] text-[#0F3D3E] text-[10px] font-bold uppercase tracking-wider shadow-sm">
                       {featuredBooks.length > 0 ? "Featured Release" : "Harglim Publishers"}
                     </span>
-                    <h3 className="font-serif font-bold text-xl line-clamp-2">
+                    <p className="font-serif font-bold text-xl line-clamp-2">
                       {featuredBooks[0]?.title || "Discover Inspiring Books"}
-                    </h3>
+                    </p>
                     <p className="text-xs text-white/80 font-medium">
                       {featuredBooks[0]?.author
                         ? (typeof featuredBooks[0].author === "object"
@@ -323,7 +317,7 @@ export default function Home() {
       <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-1">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8A6D1E] mb-1">
               <TrendingUp className="h-4 w-4" />
               <span>Curated Selection</span>
             </div>
@@ -364,7 +358,7 @@ export default function Home() {
       <section className="py-16 sm:py-20 bg-white border-y border-[#E2E6DF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12 space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block">
               Why Publish With Us
             </span>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">
@@ -405,7 +399,7 @@ export default function Home() {
         <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-1">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8A6D1E] mb-1">
                 <BookOpen className="h-4 w-4" />
                 <span>Explore Genres</span>
               </div>
@@ -449,7 +443,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-end justify-between mb-8">
               <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-1">
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8A6D1E] mb-1">
                   <Star className="h-4 w-4 fill-[#D4AF37]" />
                   <span>Reader Favorites</span>
                 </div>
@@ -479,7 +473,7 @@ export default function Home() {
         <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-1">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#8A6D1E] mb-1">
                 <Users className="h-4 w-4" />
                 <span>Featured Voices</span>
               </div>
@@ -518,60 +512,12 @@ export default function Home() {
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* 5. NEWSLETTER SECTION (Glassmorphic Luxury Subscription Card) */}
-      {/* ------------------------------------------------------------------ */}
-      <section className="py-16 sm:py-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative bg-gradient-to-r from-[#0B2E2F] via-[#0F3D3E] to-[#082223] text-white rounded-3xl p-8 sm:p-12 shadow-2xl border-2 border-[#D4AF37]/40 overflow-hidden text-center space-y-6">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-[#D4AF37] text-[#0F3D3E] mx-auto shadow-md">
-            <Mail className="h-7 w-7" />
-          </div>
-
-          <div className="max-w-2xl mx-auto space-y-2">
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white">
-              Stay Connected with Harglim
-            </h2>
-            <p className="text-sm text-white/80">
-              Subscribe to receive exclusive book releases, author interviews, and publishing tips directly in your inbox.
-            </p>
-          </div>
-
-          <form onSubmit={handleNewsletterSubmit} className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="email"
-                placeholder="Enter your email address..."
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                className="pl-10 h-12 bg-white text-[#0F3D3E] placeholder:text-gray-400 rounded-xl border-0 font-medium"
-                required
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={newsletterSubmitting}
-              className="h-12 px-6 bg-[#D4AF37] hover:bg-[#C29F2F] text-[#0F3D3E] font-serif font-bold rounded-xl shadow-md gap-2"
-            >
-              <span>{newsletterSubmitting ? "Subscribing..." : "Subscribe"}</span>
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
-
-          <p className="text-[11px] text-white/60">
-            🔒 No spam. Only valuable updates. Unsubscribe anytime with 1 click.
-          </p>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* 6. FAQ SECTION (Filterable Accordion with Search) */}
+      {/* 5. FAQ SECTION (Filterable Accordion with Search) */}
       {/* ------------------------------------------------------------------ */}
       <section className="py-16 sm:py-20 bg-white border-t border-[#E2E6DF]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="text-center space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D1E] block">
               Got Questions?
             </span>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#0F3D3E]">

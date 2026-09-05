@@ -14,8 +14,14 @@ import toast from "react-hot-toast";
 import api, { bootstrapUserContext } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
-import { AccountLinkDialog } from "@/components/auth/account-link-dialog";
+import dynamic from "next/dynamic";
 import { PasswordStrengthIndicator } from "@/components/auth/password-strength-indicator";
+import { getSafeRedirect } from "@/lib/utils";
+
+const AccountLinkDialog = dynamic(
+  () => import("@/components/auth/account-link-dialog").then((m) => m.AccountLinkDialog),
+  { ssr: false }
+);
 
 function RegisterFormContent() {
   const router = useRouter();
@@ -46,13 +52,8 @@ function RegisterFormContent() {
     email: undefined,
   });
 
-  const handleRouteAfterAuth = (context?: any) => {
-    if (redirectUrl) {
-      router.replace(redirectUrl);
-      return;
-    }
-
-    router.replace("/");
+  const handleRouteAfterAuth = (_context?: any) => {
+    router.replace(getSafeRedirect(redirectUrl, "/"));
   };
 
   const handleManualRegister = async (e: React.FormEvent) => {

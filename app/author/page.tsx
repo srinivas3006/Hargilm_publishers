@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   BookOpen,
   DollarSign,
@@ -10,11 +9,8 @@ import {
   CreditCard,
   ArrowRight,
   PlusCircle,
-  Clock,
-  CheckCircle2,
-  UserCheck,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/auth-store";
@@ -36,7 +32,7 @@ export default function AuthorDashboard() {
             api.get(`/authors/${authorId}/stats`)
           );
           resData = data?.data || data || {};
-        } catch (err) {
+        } catch {
           resData = {};
         }
 
@@ -44,7 +40,7 @@ export default function AuthorDashboard() {
         let localEntries: any[] = [];
         try {
           localEntries = JSON.parse(localStorage.getItem("harglim_shared_royalties") || "[]");
-        } catch (e) {
+        } catch {
           localEntries = [];
         }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Sparkles, CheckCircle2, ShieldCheck, QrCode, ArrowRight, Loader2, Clock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -239,9 +240,11 @@ export default function PurchaseDashboardAccessPage() {
               {/* QR Image preview */}
               <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-xl border border-border text-center space-y-3">
                 {purchase?.qrMetadata?.qrCodeUrl || purchase?.qrMetadata?.qrCodeDataUrl || purchase?.qrCodeDataUrl ? (
-                  <img
+                  <Image
                     src={purchase?.qrMetadata?.qrCodeUrl || purchase?.qrMetadata?.qrCodeDataUrl || purchase?.qrCodeDataUrl}
                     alt="UPI QR Code"
+                    width={176}
+                    height={176}
                     className="w-44 h-44 object-contain rounded-lg bg-white p-2 border"
                   />
                 ) : (

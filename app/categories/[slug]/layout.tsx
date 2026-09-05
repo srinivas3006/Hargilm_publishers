@@ -12,7 +12,7 @@ const getCategoryData = async (slug: string) => {
     if (!res.ok) return null;
     const data = await res.json();
     return data.data || data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -49,6 +49,14 @@ export default async function CategoryLayout({ children, params }: Props) {
 
   if (!category) return <>{children}</>;
 
+  const collectionJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${category.name} Books`,
+    description: category.description || `Explore our collection of books in the ${category.name} category at Harglim Publishers.`,
+    url: `${APP_URL}/categories/${resolvedParams.slug}`,
+  };
+
   const breadcrumbsJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -76,6 +84,7 @@ export default async function CategoryLayout({ children, params }: Props) {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }} />
       {children}
     </>

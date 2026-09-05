@@ -26,8 +26,8 @@ export default function CheckoutStepPage() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
   const subtotal = useCartStore((state) => state.getSubtotal());
-  const tax = useCartStore((state) => state.getTax());
-  const shipping = useCartStore((state) => state.getShipping());
+  useCartStore((state) => state.getTax());
+  useCartStore((state) => state.getShipping());
   const total = useCartStore((state) => state.getTotal());
   const clearCart = useCartStore((state) => state.clearCart);
 
@@ -333,6 +333,7 @@ export default function CheckoutStepPage() {
                     setUpiStatus('waiting');
                   }}
                   disabled={upiStatus === 'success'}
+                  aria-label="Close payment dialog"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -355,6 +356,7 @@ export default function CheckoutStepPage() {
 
                     <div className="aspect-square bg-white w-48 mx-auto rounded-2xl border-2 border-dashed border-[#E2E6DF] flex items-center justify-center mb-4 overflow-hidden shadow-xs">
                       {qrCodeDataUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- client-generated data URI; next/image adds no benefit here.
                         <img src={qrCodeDataUrl} alt="UPI payment QR" className="w-full h-full object-contain p-2" />
                       ) : (
                         <QrCode className="h-24 w-24 text-muted-foreground/30" />

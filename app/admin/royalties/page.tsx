@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { ErrorState } from "@/components/ui/error-state";
-import { motion } from "framer-motion";
-import { DollarSign, Save, Calendar, CheckCircle2, FileText, Sparkles, BookOpen } from "lucide-react";
+import { DollarSign, Save, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
 
 export default function AdminRoyaltiesPage() {
@@ -80,7 +78,7 @@ export default function AdminRoyaltiesPage() {
         } else {
           setRoyaltyEntries(fetchedEntries);
         }
-      } catch (e) {
+      } catch {
         setRoyaltyEntries(fetchedEntries);
       }
     } catch (err) {
@@ -134,15 +132,37 @@ export default function AdminRoyaltiesPage() {
         date: new Date().toISOString(),
       };
 
-      await api.post("/admin/royalties", payload).catch(() =>
-        api.post("/admin/royalty-settlements", payload).catch(() =>
-          api.post("/admin/settlements", payload).catch(() =>
-            api.post("/royalties", payload)
-          )
-        )
-      ).catch(() => null);
+      let saved = false;
+      try {
+        await api.post("/admin/royalties", payload);
+        saved = true;
+      } catch {
+        try {
+          await api.post("/admin/royalty-settlements", payload);
+          saved = true;
+        } catch {
+          try {
+            await api.post("/admin/settlements", payload);
+            saved = true;
+          } catch {
+            try {
+              await api.post("/royalties", payload);
+              saved = true;
+            } catch {
+              saved = false;
+            }
+          }
+        }
+      }
 
-      // Save to local storage cache so author dashboard instantly picks up real entries
+      if (!saved) {
+        toast.error("Could not reach the royalty API — entry was not saved to the backend.");
+        return;
+      }
+
+      // Local-only convenience cache so this browser's author view reflects
+      // the entry immediately, without waiting on a refetch. Not a substitute
+      // for the backend record above, and cleared on logout.
       try {
         const existing = JSON.parse(localStorage.getItem("harglim_shared_royalties") || "[]");
         const updated = [payload, ...existing];
@@ -151,7 +171,7 @@ export default function AdminRoyaltiesPage() {
         console.error("LocalStorage save error:", e);
       }
 
-      toast.success("Royalty entry submitted & author dashboard updated! ✅");
+      toast.success("Royalty entry saved. ✅");
 
       // Add to local entries table
       setRoyaltyEntries((prev) => [payload, ...prev]);

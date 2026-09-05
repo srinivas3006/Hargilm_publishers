@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { Book } from "@/types";
 import { BookCard } from "@/components/books/book-card";
@@ -59,6 +59,7 @@ export function FeaturedCarousel({ books }: FeaturedCarouselProps) {
       <button
         onClick={scrollPrev}
         disabled={!prevBtnEnabled}
+        aria-label="Previous slide"
         className={cn(
           "absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 h-12 w-12 rounded-full bg-background border border-border shadow-xl flex items-center justify-center text-primary transition-all z-10",
           !prevBtnEnabled ? "opacity-0 pointer-events-none" : "opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-primary hover:text-primary-foreground"
@@ -70,6 +71,7 @@ export function FeaturedCarousel({ books }: FeaturedCarouselProps) {
       <button
         onClick={scrollNext}
         disabled={!nextBtnEnabled}
+        aria-label="Next slide"
         className={cn(
           "absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-12 w-12 rounded-full bg-background border border-border shadow-xl flex items-center justify-center text-primary transition-all z-10",
           !nextBtnEnabled ? "opacity-0 pointer-events-none" : "opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-primary hover:text-primary-foreground"

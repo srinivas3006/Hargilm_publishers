@@ -13,8 +13,6 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { siteConfig } from "@/config/site";
 
 const footerLinks = {
@@ -44,25 +42,6 @@ const footerLinks = {
     { label: "Privacy Policy", href: "/privacy" },
   ],
 };
-
-const socialLinks = [
-  {
-    icon: Facebook,
-    href: siteConfig.social.facebook,
-    label: "Facebook",
-  },
-  { icon: Twitter, href: siteConfig.social.twitter, label: "Twitter" },
-  {
-    icon: Instagram,
-    href: siteConfig.social.instagram,
-    label: "Instagram",
-  },
-  {
-    icon: Linkedin,
-    href: siteConfig.social.linkedin,
-    label: "LinkedIn",
-  },
-];
 
 import { useSiteContent } from "@/context/site-content-context";
 

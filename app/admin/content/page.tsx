@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useSiteContent, SiteContent, defaultSiteContent } from "@/context/site-content-context";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,6 @@ import {
   Megaphone,
   Sparkles,
   Camera,
-  User as UserIcon,
   Upload,
   Trash2,
   CheckCircle2,
@@ -129,7 +129,7 @@ export default function AdminContentPage() {
       if (formData.packagesJson) {
         JSON.parse(formData.packagesJson);
       }
-    } catch (e) {
+    } catch {
       toast.error("Invalid JSON in Publishing Packages. Check your syntax.");
       return;
     }
@@ -139,7 +139,7 @@ export default function AdminContentPage() {
       if (formData.faqsJson) {
         JSON.parse(formData.faqsJson);
       }
-    } catch (e) {
+    } catch {
       toast.error("Invalid JSON in FAQ section. Check your syntax.");
       return;
     }
@@ -764,12 +764,14 @@ export default function AdminContentPage() {
               {/* Avatar Preview Box */}
               <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-muted/30 border border-border">
                 <div className="relative group">
-                  <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-[#0F3D3E] text-[#D4AF37] font-serif font-bold text-3xl shadow-lg overflow-hidden border-4 border-[#D4AF37]">
+                  <div className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-[#0F3D3E] text-[#D4AF37] font-serif font-bold text-3xl shadow-lg overflow-hidden border-4 border-[#D4AF37]">
                     {formData.adminProfileImage || user?.profileImage || user?.profilePicture ? (
-                      <img
-                        src={formData.adminProfileImage || user?.profileImage || user?.profilePicture}
+                      <Image
+                        src={formData.adminProfileImage || user?.profileImage || user?.profilePicture || ""}
                         alt="Admin Profile"
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="112px"
+                        className="object-cover"
                       />
                     ) : (
                       user?.name?.charAt(0).toUpperCase() || "A"

@@ -78,16 +78,21 @@ export const useAuthStore = create<AuthState>()(
       setLoading: (isLoading: boolean) => 
         set({ isLoading }),
 
-      logout: () => 
-        set({ 
-          user: null, 
-          token: null, 
+      logout: () => {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('cart-storage');
+          localStorage.removeItem('harglim_shared_royalties');
+        }
+        set({
+          user: null,
+          token: null,
           refreshToken: null,
           refreshTokenExpiresAt: null,
           userContext: null,
           isAuthenticated: false,
           authStatus: 'idle',
-        }),
+        });
+      },
     }),
     {
       name: 'auth-storage',

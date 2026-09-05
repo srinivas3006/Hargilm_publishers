@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useAuthStore } from "@/store/auth-store";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
-import { User, CreditCard, Save, Upload, Building, CheckCircle2, Image as ImageIcon, Camera } from "lucide-react";
+import { User, CreditCard, Save, Camera } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -192,12 +193,14 @@ export default function AuthorSettingsPage() {
               {/* Photo Upload & Preview Section */}
               <div className="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-2xl bg-[#F8F9F7] border border-[#E2E6DF]">
                 <div className="relative group">
-                  <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-[#D4AF37] shadow-sm bg-white flex items-center justify-center">
+                  <div className="relative h-24 w-24 rounded-full overflow-hidden border-2 border-[#D4AF37] shadow-sm bg-white flex items-center justify-center">
                     {imagePreview || profileForm.profileImage ? (
-                      <img
+                      <Image
                         src={imagePreview || profileForm.profileImage}
                         alt="Author Preview"
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="96px"
+                        className="object-cover"
                       />
                     ) : (
                       <span className="text-2xl font-serif font-bold text-[#0F3D3E]">

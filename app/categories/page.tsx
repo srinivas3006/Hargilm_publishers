@@ -3,22 +3,18 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   BookOpen,
   Search,
   Sparkles,
-  TrendingUp,
   Brain,
   Briefcase,
   Code,
   Feather,
   Baby,
   Compass,
-  Smile,
-  Layers,
-  Filter,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,7 +28,6 @@ import {
 } from "@/components/ui/select";
 import type { Category } from "@/types";
 import api from "@/lib/api";
-import { cn } from "@/lib/utils";
 
 // Category Icons Mapping
 const categoryIconMap: Record<string, any> = {

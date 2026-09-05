@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { DollarSign, CheckCircle2, AlertCircle, RefreshCw, X, ShieldCheck, Eye, Plus, Send } from "lucide-react";
+import { DollarSign, RefreshCw, X, Plus, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -319,6 +319,7 @@ export default function AdminSettlementsPage() {
             >
               <button
                 onClick={() => setSelectedSettlement(null)}
+                aria-label="Close"
                 className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1 rounded-full"
               >
                 <X className="h-4 w-4" />

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { Book } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,9 +22,6 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
   );
   
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-  const { scrollY } = useScroll();
-  const backgroundY = useTransform(scrollY, [0, 1000], ["0%", "40%"]);
 
   const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
@@ -107,7 +104,7 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
               >
                 <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 ring-1 ring-white/30 transform-style-3d group">
                   <Image 
-                    src={book.coverImage || "/images/placeholder-book.jpg"} 
+                    src={book.coverImage || "/placeholder-book.svg"} 
                     alt={book.title} 
                     fill 
                     className="object-cover group-hover:scale-105 transition-transform duration-700"
@@ -124,7 +121,7 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
             {/* Slide Background blur */}
             <motion.div className="absolute inset-0 z-0">
                <Image 
-                 src={book.coverImage || "/images/placeholder-book.jpg"} 
+                 src={book.coverImage || "/placeholder-book.svg"} 
                  alt="" 
                  fill 
                  className="object-cover opacity-30 blur-3xl scale-110 transform-gpu"
@@ -137,8 +134,9 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
 
       {/* Navigation Controls */}
       <div className="absolute bottom-16 left-0 right-0 z-40 flex items-center justify-center gap-6">
-        <button 
-          onClick={scrollPrev} 
+        <button
+          onClick={scrollPrev}
+          aria-label="Previous slide"
           className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 border border-white/20 text-white flex items-center justify-center backdrop-blur-sm transition-all hover:scale-110 disabled:opacity-50"
         >
           <ChevronLeft className="h-6 w-6" />
@@ -148,6 +146,8 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
             <button
               key={index}
               onClick={() => emblaApi && emblaApi.scrollTo(index)}
+              aria-label={`Go to slide ${index + 1}`}
+              aria-current={index === selectedIndex ? "true" : undefined}
               className={cn(
                 "h-2 rounded-full transition-all duration-300",
                 index === selectedIndex ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/70"
@@ -155,8 +155,9 @@ export function HeroCarousel({ books }: HeroCarouselProps) {
             />
           ))}
         </div>
-        <button 
-          onClick={scrollNext} 
+        <button
+          onClick={scrollNext}
+          aria-label="Next slide"
           className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 border border-white/20 text-white flex items-center justify-center backdrop-blur-sm transition-all hover:scale-110 disabled:opacity-50"
         >
           <ChevronRight className="h-6 w-6" />

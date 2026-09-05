@@ -2,11 +2,9 @@
 
 import { motion } from "framer-motion";
 import {
-  BarChart3,
   TrendingUp,
   DollarSign,
   Calendar,
-  Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

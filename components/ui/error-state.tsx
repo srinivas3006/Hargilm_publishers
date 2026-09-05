@@ -1,4 +1,4 @@
-import { ServerCrash, AlertCircle, RefreshCcw } from "lucide-react";
+import { ServerCrash, RefreshCcw } from "lucide-react";
 import { Button } from "./button";
 import { Card, CardContent } from "./card";
 

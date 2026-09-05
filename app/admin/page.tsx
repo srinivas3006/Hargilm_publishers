@@ -4,21 +4,15 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { ErrorState } from "@/components/ui/error-state";
-import { motion } from "framer-motion";
 import {
   BookOpen,
-  Users,
-  ShoppingBag,
   DollarSign,
-  FileText,
   ArrowRight,
   Clock,
-  CheckCircle2,
   AlertTriangle,
   UserPlus,
   PlusCircle,
   ShieldCheck,
-  TrendingUp,
   Sparkles,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

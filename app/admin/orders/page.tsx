@@ -3,23 +3,15 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { ErrorState } from "@/components/ui/error-state";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingBag,
   Search,
   Filter,
   CheckCircle2,
   XCircle,
   Printer,
   Truck,
-  Eye,
-  ExternalLink,
-  Calendar,
-  CreditCard,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -313,7 +305,7 @@ export default function AdminOrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order: any, index: number) => {
+                  {filteredOrders.map((order: any) => {
                     const orderDisplayId = order.orderNumber || order._id || order.id;
                     const mongoOrderId = order._id || order.id;
                     const paymentId = (typeof order.payment === "object" ? order.payment?._id : (typeof order.payment === "string" ? order.payment : undefined)) || order.paymentId;

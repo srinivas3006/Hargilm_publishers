@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -377,9 +378,11 @@ export default function DashboardPage() {
                     href={`/books/${book.slug || book._id || book.id}`}
                     className="flex items-center gap-3.5 p-2.5 rounded-xl border border-[#E2E6DF] bg-white hover:bg-[#F8F9F7] transition-all group"
                   >
-                    <img
-                      src={book.coverImage || "https://placehold.co/100x150/png?text=Book"}
+                    <Image
+                      src={book.coverImage || "/placeholder-book.svg"}
                       alt={book.title}
+                      width={40}
+                      height={56}
                       className="h-14 w-10 object-cover rounded-md border shadow-xs"
                     />
                     <div className="flex-1 min-w-0">

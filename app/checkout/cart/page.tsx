@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -7,7 +8,6 @@ import {
   Plus,
   ShoppingCart,
   Truck,
-  CreditCard,
   ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,9 +26,11 @@ function CartItemRow({ item }: { item: CartItem }) {
     <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex gap-4">
-          <img
+          <Image
             src={item.book.coverImage}
             alt={item.book.title}
+            width={80}
+            height={112}
             className="h-28 w-20 rounded-2xl object-cover"
           />
           <div>
@@ -89,8 +91,8 @@ export default function CartPage() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
   const subtotal = useCartStore((state) => state.getSubtotal());
-  const tax = useCartStore((state) => state.getTax());
-  const shipping = useCartStore((state) => state.getShipping());
+  useCartStore((state) => state.getTax());
+  useCartStore((state) => state.getShipping());
   const total = useCartStore((state) => state.getTotal());
   const { user } = useAuthStore();
 

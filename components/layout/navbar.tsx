@@ -2,17 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { motion, AnimatePresence, useScroll, useSpring } from "framer-motion";
+import { usePathname, useRouter } from "next/navigation";
+import { motion, useScroll, useSpring } from "framer-motion";
 import {
   Menu,
-  X,
   ShoppingCart,
   User,
   ChevronDown,
   Search,
   LogOut,
-  Settings,
   LayoutDashboard,
   PenTool,
 } from "lucide-react";
@@ -55,6 +53,7 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const rawItemCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
   const itemCount = (isAuthenticated && user) ? rawItemCount : 0;
@@ -102,7 +101,7 @@ export function Navbar() {
   const handleLogout = () => {
     useCartStore.getState().clearCart();
     logout();
-    window.location.href = "/";
+    router.push("/");
   };
 
   if (isHiddenRoute) return null;

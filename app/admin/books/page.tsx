@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import api from "@/lib/api";
 import { ErrorState } from "@/components/ui/error-state";
@@ -15,7 +16,7 @@ import {
   Eye,
   Star,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -121,11 +122,24 @@ export default function AdminBooksPage() {
   const getCategoryName = (category: any) => 
     typeof category === "object" && category !== null ? category.name : category;
 
+  const getAuthorName = (book: any) => {
+    if (book.author && typeof book.author === "object") {
+      return book.author.name || book.author.fullName || "Unknown Author";
+    }
+    if (book.authorName && typeof book.authorName === "string" && book.authorName.trim()) {
+      return book.authorName;
+    }
+    if (typeof book.author === "string" && book.author.trim() && !/^[0-9a-fA-F]{24}$/.test(book.author)) {
+      return book.author;
+    }
+    return "Unknown Author";
+  };
+
   const categories = Array.from(new Set(books.map((b: any) => getCategoryName(b.category)))).filter(Boolean);
 
   const filteredBooks = books.filter((book: any) => {
     const title = book.title || "";
-    const author = book.author?.name || book.authorName || (typeof book.author === "string" ? book.author : "");
+    const author = getAuthorName(book);
     const matchesSearch =
       title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       author.toLowerCase().includes(searchQuery.toLowerCase());
@@ -288,15 +302,17 @@ export default function AdminBooksPage() {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <img
+                        <Image
                           src={book.coverImage || book.cover}
                           alt={book.title}
+                          width={36}
+                          height={48}
                           className="h-12 w-9 rounded object-cover"
                         />
                         <div>
                           <p className="font-medium">{book.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            {book.author?.name || book.authorName || "Unknown Author"}
+                            {getAuthorName(book)}
                           </p>
                         </div>
                       </div>

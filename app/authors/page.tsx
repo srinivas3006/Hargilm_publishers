@@ -10,10 +10,6 @@ import {
   Search,
   Sparkles,
   User,
-  Star,
-  Award,
-  Globe,
-  ExternalLink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,7 +24,6 @@ import {
 import { ErrorState } from "@/components/ui/error-state";
 import type { Author } from "@/types";
 import api from "@/lib/api";
-import { cn } from "@/lib/utils";
 
 export default function AuthorsPage() {
   const [authors, setAuthors] = useState<Author[]>([]);

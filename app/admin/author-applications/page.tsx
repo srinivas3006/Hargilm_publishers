@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { ErrorState } from "@/components/ui/error-state";
-import { motion } from "framer-motion";
-import { UserCheck, UserX, CheckCircle2, XCircle, Search, UserPlus, Mail, Phone } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle2, XCircle, Search } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
